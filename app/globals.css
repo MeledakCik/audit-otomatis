@@ -1,0 +1,211 @@
+@import "tailwindcss";
+
+/* Light adalah base (:root) — dark meng-override lewat class "dark" yang
+   diatur next-themes di <html>. Palet terang sengaja bukan putih polos
+   (off-white hangat) biar tetap terasa "instrumented / terminal", bukan
+   dokumen kantoran generik. */
+:root {
+  --background: #f4f1f9;
+  --surface: #ffffff;
+  --surface-raised: #ece6f7;
+  --border: #ddd3ef;
+  --border-strong: #c3b3e3;
+  --foreground: #1a1225;
+  --muted: #5f5573;
+  --muted-dim: #8e83a3;
+  --accent: #b721c9;
+  --accent-2: #7c3aed;
+  --accent-dim: #9111a3;
+  --accent-fg: #fdf6ff;
+
+  --sev-critical: #d81b4d;
+  --sev-high: #d9670c;
+  --sev-medium: #a9760a;
+  --sev-low: #0e7fb0;
+  --sev-info: #5b5f7a;
+
+  --graph-line: #d9cdee;
+  --graph-line-hover: #a98fd1;
+  --radius-card: 1rem;
+  --radius-pill: 999px;
+  --glow-accent: 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent),
+    0 0 24px -6px color-mix(in srgb, var(--accent) 55%, transparent);
+}
+
+.dark {
+  --background: #0a0713;
+  --surface: #120c1f;
+  --surface-raised: #1a1229;
+  --border: #2a2040;
+  --border-strong: #453264;
+  --foreground: #f1e9fb;
+  --muted: #9d8fbe;
+  --muted-dim: #665a85;
+  --accent: #e93ee8;
+  --accent-2: #8b3ffb;
+  --accent-dim: #b52bc4;
+  --accent-fg: #1a0022;
+
+  --sev-critical: #ff4d6d;
+  --sev-high: #ff8a2b;
+  --sev-medium: #ffcc33;
+  --sev-low: #38bdf8;
+  --sev-info: #9ca3d4;
+
+  --graph-line: #322850;
+  --graph-line-hover: #a98fd1;
+  --radius-card: 1rem;
+  --radius-pill: 999px;
+  --glow-accent: 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent),
+    0 0 28px -6px color-mix(in srgb, var(--accent) 65%, transparent);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-muted-dim: var(--muted-dim);
+  --color-accent: var(--accent);
+  --color-accent-2: var(--accent-2);
+  --color-accent-dim: var(--accent-dim);
+  --color-accent-fg: var(--accent-fg);
+
+  --color-sev-critical: var(--sev-critical);
+  --color-sev-high: var(--sev-high);
+  --color-sev-medium: var(--sev-medium);
+  --color-sev-low: var(--sev-low);
+  --color-sev-info: var(--sev-info);
+
+  --radius-card: var(--radius-card);
+  --radius-pill: var(--radius-pill);
+
+  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-geist-mono);
+}
+
+* {
+  border-color: var(--border);
+}
+
+html {
+  color-scheme: light;
+}
+html.dark {
+  color-scheme: dark;
+}
+
+body {
+  background:
+    radial-gradient(ellipse 900px 500px at 15% -10%, color-mix(in srgb, var(--accent) 14%, transparent), transparent),
+    radial-gradient(ellipse 700px 500px at 100% 0%, color-mix(in srgb, var(--accent-2) 12%, transparent), transparent),
+    var(--background);
+  background-attachment: fixed;
+  color: var(--foreground);
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-feature-settings: "liga" 0;
+}
+
+/* Wordmark / hero gradient text — dipakai buat logo AUTO-SEC-AUDITOR &
+   angka-angka besar yang perlu terasa "neon". */
+.text-gradient-accent {
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.glow-accent {
+  box-shadow: var(--glow-accent);
+}
+
+.bg-gradient-accent {
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+
+/* Transisi halus lintas tema: cuma properti "murah" (warna, bukan layout)
+   supaya toggle gelap/terang berasa mulus tanpa bikin jank di elemen yang
+   punya animasi/transition sendiri (misal cursor-blink, accordion). Class
+   Tailwind eksplisit (mis. transition-transform) tetap menang karena
+   selector class (.x) lebih spesifik daripada universal selector (*). */
+*,
+*::before,
+*::after {
+  transition-property: background-color, border-color, color, fill, stroke, box-shadow;
+  transition-timing-function: ease;
+  transition-duration: 180ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* thin scrollbars for the terminal log */
+.thin-scroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.thin-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.thin-scroll::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 0;
+}
+
+@keyframes blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+.cursor-blink {
+  animation: blink 1s step-start infinite;
+}
+
+/* Entrance halus buat konten utama tiap halaman — sekali jalan saat mount,
+   sedikit stagger lewat --delay biar terasa "disusun", bukan cuma nge-fade
+   bareng-bareng sekaligus. */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-up {
+  animation: fade-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: var(--delay, 0ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-up {
+    animation: none;
+  }
+}
+
+/* Accordion halus (finding rows, endpoint cards) lewat trik grid-rows
+   0fr -> 1fr, supaya height bisa animasi walau konten di dalamnya dinamis
+   (tanpa perlu tahu tinggi pasti lewat JS). */
+.accordion-rows {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.25s ease;
+}
+.accordion-rows.is-open {
+  grid-template-rows: 1fr;
+}
+.accordion-rows > .accordion-inner {
+  overflow: hidden;
+  min-height: 0;
+}
