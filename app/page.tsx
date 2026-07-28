@@ -1,6 +1,15 @@
 import { ScanForm } from "@/components/scan-form";
 import { Search, Code2, ShieldCheck, FileText } from "lucide-react";
 
+// startScanAction() dipanggil dari halaman ini, lalu lanjut jalan di
+// background lewat next/server `after()`. Vercel membatasi durasi tiap
+// function invocation (termasuk after()-nya) — default 300s dengan Fluid
+// Compute di semua plan (per pertengahan 2026). Scan bisa makan waktu lebih
+// dari beberapa puluh detik (budget 100 request x delay 500ms + crawling),
+// jadi durasi di-set eksplisit ke batas aman 300s. Kalau butuh lebih lama,
+// perlu plan Pro/Enterprise (bisa sampai 800s).
+export const maxDuration = 300;
+
 export default function Home() {
   return (
     <div className="w-full min-h-full">

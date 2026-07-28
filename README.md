@@ -22,8 +22,8 @@ Buka [http://localhost:3000](http://localhost:3000).
 - **`lib/crawler.ts`** — fetch homepage dengan header Chrome asli, parse dengan `cheerio` (link/script/form) dan `linkedom` (isi inline `<script>`). Hanya crawl 1 halaman + link internal, tidak rekursif ke domain lain.
 - **`lib/js-analyzer.ts`** — parse file JS (eksternal & inline) dengan `acorn`/`acorn-walk`, cari pola `fetch()`, `axios.*`, `localStorage`, dan literal `"/api/..."`. Fallback ke regex kalau AST gagal parse (bundle production sering di-minify agresif).
 - **`lib/tester.ts` + `lib/security-headers.ts`** — 4 kelas pengujian pasif (response leakage, anti-automation, exposed file, security headers ala securityheaders.com). Semua GET-only, tanpa payload.
-- **`lib/rate-limit.ts`** — cooldown 1 scan/domain/5 menit + `RequestBudget` (max 100 request/scan, delay 500ms/request).
-- **`lib/scan-store.ts`** — state scan disimpan **in-memory saja** (bukan file/DB permanen), auto-terhapus 30 menit setelah dibuat.
+- **`lib/rate-limit.ts`** — cooldown 1 scan/domain/5 menit (atomik lewat Redis `SET NX EX`, lihat bagian Deploy ke Vercel) + `RequestBudget` (max 100 request/scan, delay 500ms/request).
+- **`lib/scan-store.ts`** — state scan disimpan di Redis (Upstash), auto-terhapus 30 menit setelah dibuat (`EXPIRE`). Tidak permanen, sesuai desain "no permanent logging" — tapi *shared* antar semua serverless instance, bukan in-memory per-proses (lihat `lib/redis.ts`). Dev lokal tanpa Redis otomatis jatuh ke in-memory Map (perilaku lama), tapi ini TIDAK dipakai kalau Redis sudah dikonfigurasi.
 - **Cloudflare handling** — kalau terdeteksi challenge page / `cf-mitigated: challenge`, scan langsung dihentikan dan tidak mencoba bypass apa pun.
 
 ## Fitur audit mendalam (baru)

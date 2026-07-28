@@ -28,34 +28,34 @@ export async function runScan(scanId: string, origin: string) {
   const budget = new RequestBudget(100, 500);
 
   try {
-    setStatus(scanId, "crawling");
-    log(scanId, `Crawling ${origin} (multi-level, same-origin, max 50 URL, depth 3)...`);
+    await setStatus(scanId, "crawling");
+    await log(scanId, `Crawling ${origin} (multi-level, same-origin, max 50 URL, depth 3)...`);
 
     const crawl = await crawlSite(origin, budget, (msg) => log(scanId, msg));
-    bumpRequestCount(scanId, crawl.pages.length);
-    setPagesCrawled(scanId, crawl.pages.length);
+    await bumpRequestCount(scanId, crawl.pages.length);
+    await setPagesCrawled(scanId, crawl.pages.length);
 
     if (crawl.pages.length === 0 && crawl.cloudflare) {
-      log(scanId, `Cloudflare challenge terdeteksi: ${crawl.cloudflare.reason}`);
-      markBlocked(scanId, CF_MESSAGE);
+      await log(scanId, `Cloudflare challenge terdeteksi: ${crawl.cloudflare.reason}`);
+      await markBlocked(scanId, CF_MESSAGE);
       return;
     }
 
-    log(
+    await log(
       scanId,
       `Crawl selesai: ${crawl.pages.length} halaman di-crawl, ${crawl.allInternalLinks.length} link internal unik, ${crawl.allScripts.length} file JS unik, ${crawl.allForms.length} form.`
     );
 
     if (crawl.cloudflare) {
-      log(scanId, `Cloudflare challenge terdeteksi di tengah crawl (data sebagian tetap dipakai): ${crawl.cloudflare.reason}`);
+      await log(scanId, `Cloudflare challenge terdeteksi di tengah crawl (data sebagian tetap dipakai): ${crawl.cloudflare.reason}`);
     }
 
     // --- Analisis JS: endpoint + secret + library fingerprint ---
-    setStatus(scanId, "analyzing_js");
-    log(scanId, `Mengunduh hingga ${Math.min(crawl.allScripts.length, 20)} file JS eksternal...`);
+    await setStatus(scanId, "analyzing_js");
+    await log(scanId, `Mengunduh hingga ${Math.min(crawl.allScripts.length, 20)} file JS eksternal...`);
     const jsFiles = await fetchJsFiles(crawl.allScripts, (msg) => log(scanId, msg));
-    bumpRequestCount(scanId, jsFiles.length);
-    bumpJsFilesScanned(scanId, jsFiles.length);
+    await bumpRequestCount(scanId, jsFiles.length);
+    await bumpJsFilesScanned(scanId, jsFiles.length);
 
     // [PERBAIKAN] Pastikan graph & edges di-generate dengan aman (Fallback otomatis jika crawler kosong)
     const initialNodes: GraphData["nodes"] = crawl.graph?.nodes?.length ? [...crawl.graph.nodes] : [];
@@ -80,7 +80,7 @@ export async function runScan(scanId: string, origin: string) {
     const jsEndpoints: DiscoveredEndpoint[] = [];
     const allLibraryDetections: LibraryDetection[] = [];
 
-    setStatus(scanId, "scanning_secrets");
+    await setStatus(scanId, "scanning_secrets");
     for (const file of jsFiles) {
       const { endpoints } = analyzeJsSource(file.text, file.label);
       jsEndpoints.push(...endpoints);
@@ -93,20 +93,20 @@ export async function runScan(scanId: string, origin: string) {
         graph.edges.push({ from: scriptId, to: epId });
       }
       if (endpoints.length > 0) {
-        log(scanId, `Parsed ${file.label} — ${endpoints.length} endpoint ditemukan`);
+        await log(scanId, `Parsed ${file.label} — ${endpoints.length} endpoint ditemukan`);
       }
 
       const secretFindings = scanSecrets(file.text, file.label);
       for (const f of secretFindings) {
-        addFinding(scanId, f);
-        log(scanId, `[SECRET] ${f.severity} — ${f.title} (${f.endpoint})`);
+        await addFinding(scanId, f);
+        await log(scanId, `[SECRET] ${f.severity} — ${f.title} (${f.endpoint})`);
       }
 
       const libs = fingerprintLibraries(file.text, file.label);
       allLibraryDetections.push(...libs);
     }
 
-    setStatus(scanId, "fingerprinting_libraries");
+    await setStatus(scanId, "fingerprinting_libraries");
     const homepage = crawl.pages.find((p) => p.depth === 0);
     if (homepage) {
       const usesNext = detectNextJs(homepage.scripts);
@@ -114,15 +114,15 @@ export async function runScan(scanId: string, origin: string) {
     }
     const libFindings = libraryDetectionsToFindings(allLibraryDetections);
     for (const f of libFindings) {
-      addFinding(scanId, f);
-      log(scanId, `[LIBRARY] ${f.severity} — ${f.title}`);
+      await addFinding(scanId, f);
+      await log(scanId, `[LIBRARY] ${f.severity} — ${f.title}`);
     }
-    setLibrariesDetected(scanId, allLibraryDetections);
-    log(scanId, `Fingerprint library selesai: ${allLibraryDetections.length} versi terdeteksi, ${libFindings.length} CVE cocok.`);
+    await setLibrariesDetected(scanId, allLibraryDetections);
+    await log(scanId, `Fingerprint library selesai: ${allLibraryDetections.length} versi terdeteksi, ${libFindings.length} CVE cocok.`);
 
     // --- Inline scripts ---
     const allInline = crawl.allInlineScripts.flatMap((p) => p.scripts);
-    log(scanId, `Menganalisis ${allInline.length} inline script (semua halaman)...`);
+    await log(scanId, `Menganalisis ${allInline.length} inline script (semua halaman)...`);
     const inlineResult = analyzeInlineScripts(allInline, (msg) => log(scanId, msg));
     for (const ep of inlineResult.endpoints) {
       jsEndpoints.push(ep);
@@ -131,59 +131,59 @@ export async function runScan(scanId: string, origin: string) {
       for (const src of p.scripts) {
         const secretFindings = scanSecrets(src, `inline-script@${p.pageUrl}`);
         for (const f of secretFindings) {
-          addFinding(scanId, f);
-          log(scanId, `[SECRET] ${f.severity} — ${f.title} (${f.endpoint})`);
+          await addFinding(scanId, f);
+          await log(scanId, `[SECRET] ${f.severity} — ${f.title} (${f.endpoint})`);
         }
       }
     }
 
-    setGraph(scanId, graph);
+    await setGraph(scanId, graph);
 
     const discoveredForDisplay = buildDiscoveredList(origin, crawl.allInternalLinks, crawl.allForms, jsEndpoints);
-    setDiscoveredEndpoints(scanId, discoveredForDisplay);
+    await setDiscoveredEndpoints(scanId, discoveredForDisplay);
     const postCount = discoveredForDisplay.filter((e) => e.method === "POST").length;
-    log(scanId, `Total ${discoveredForDisplay.length} link/endpoint ditemukan (${postCount} bermetode POST).`);
+    await log(scanId, `Total ${discoveredForDisplay.length} link/endpoint ditemukan (${postCount} bermetode POST).`);
 
     const testTargets = buildTestTargets(origin, crawl.allInternalLinks, crawl.allForms, jsEndpoints);
-    setEndpointsDiscovered(scanId, testTargets.length);
-    log(scanId, `Total ${testTargets.length} target akan diuji secara pasif (GET only).`);
+    await setEndpointsDiscovered(scanId, testTargets.length);
+    await log(scanId, `Total ${testTargets.length} target akan diuji secara pasif (GET only).`);
 
-    setStatus(scanId, "testing");
+    await setStatus(scanId, "testing");
 
-    log(scanId, "Mengecek file sensitif (robots.txt, .env, .git/HEAD)...");
+    await log(scanId, "Mengecek file sensitif (robots.txt, .env, .git/HEAD)...");
     const exposedFindings = await testExposedFiles(origin, budget);
     for (const f of exposedFindings) addFinding(scanId, f);
-    bumpRequestCount(scanId, 3);
+    await bumpRequestCount(scanId, 3);
 
-    log(scanId, "Mengecek security headers...");
+    await log(scanId, "Mengecek security headers...");
     const headerFindings = await budget.spend(() => testSecurityHeaders(origin));
-    bumpRequestCount(scanId);
+    await bumpRequestCount(scanId);
     if (headerFindings) for (const f of headerFindings) addFinding(scanId, f);
 
     for (const target of testTargets) {
       if (!budget.canSpend(2)) {
-        log(scanId, "Request budget (max 100) tercapai, menghentikan pengujian.");
+        await log(scanId, "Request budget (max 100) tercapai, menghentikan pengujian.");
         break;
       }
 
-      log(scanId, `Menguji: ${target.method} ${target.url}`);
+      await log(scanId, `Menguji: ${target.method} ${target.url}`);
 
       const leakFinding = await budget.spend(() => testResponseLeakage(target.url));
-      bumpRequestCount(scanId);
+      await bumpRequestCount(scanId);
       if (leakFinding) addFinding(scanId, leakFinding);
 
       const autoFinding = await budget.spend(() => testAntiAutomation(target.url));
-      bumpRequestCount(scanId);
+      await bumpRequestCount(scanId);
       if (autoFinding) addFinding(scanId, autoFinding);
 
       await sleep(50);
     }
 
-    log(scanId, "Semua pengujian pasif selesai.");
-    setStatus(scanId, "done");
-    markDone(scanId);
+    await log(scanId, "Semua pengujian pasif selesai.");
+    await setStatus(scanId, "done");
+    await markDone(scanId);
   } catch (err) {
-    markError(scanId, `Scan gagal: ${(err as Error).message}`);
+    await markError(scanId, `Scan gagal: ${(err as Error).message}`);
   }
 }
 

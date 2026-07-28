@@ -8,7 +8,7 @@ export default async function ScanPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const scan = getScan(id);
+  const scan = await getScan(id);
 
   if (!scan) {
     notFound();

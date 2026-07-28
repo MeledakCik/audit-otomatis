@@ -6,7 +6,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const scan = getScan(id);
+  const scan = await getScan(id);
 
   if (!scan) {
     return new Response("Scan tidak ditemukan.", { status: 404 });

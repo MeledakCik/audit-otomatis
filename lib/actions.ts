@@ -33,7 +33,7 @@ export async function startScanAction(formData: FormData): Promise<StartScanResu
   const h = await headers();
   const userKey = h.get("x-forwarded-for") || h.get("x-real-ip") || "anonymous";
 
-  const cooldown = checkAndRegisterCooldown(userKey, validation.hostname);
+  const cooldown = await checkAndRegisterCooldown(userKey, validation.hostname);
   if (!cooldown.allowed) {
     const seconds = Math.ceil(cooldown.retryAfterMs / 1000);
     return {
@@ -43,7 +43,10 @@ export async function startScanAction(formData: FormData): Promise<StartScanResu
   }
 
   const scanId = nanoid(10);
-  createScan(scanId, validation.hostname, validation.normalizedUrl);
+  // WAJIB di-await: harus tersimpan di Redis sebelum response balik ke
+  // client, karena client langsung connect ke /api/scan/[id]/stream begitu
+  // dapat scanId — kalau belum ke-persist, stream route akan 404.
+  await createScan(scanId, validation.hostname, validation.normalizedUrl);
   after(async () => {
     await runScan(scanId, validation.normalizedUrl!);
   });

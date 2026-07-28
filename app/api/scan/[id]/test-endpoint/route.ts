@@ -37,7 +37,7 @@ const SAFE_RESPONSE_HEADERS = [
  */
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const scan = getScan(id);
+  const scan = await getScan(id);
   if (!scan) {
     return Response.json({ error: "Scan tidak ditemukan atau sudah kedaluwarsa." }, { status: 404 });
   }

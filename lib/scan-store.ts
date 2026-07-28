@@ -1,36 +1,54 @@
-import type { DiscoveredEndpoint, Finding, ScanLogEvent, ScanState, ScanStatus } from "./types";
+import type {
+  DiscoveredEndpoint,
+  Finding,
+  GraphData,
+  LibraryDetection,
+  ScanLogEvent,
+  ScanState,
+  ScanStatus,
+} from "./types";
+import { getRedis, REDIS_CONFIGURED } from "./redis";
 
 /**
- * Store di memory proses (bukan file/DB permanen). Data hilang saat server
- * restart — sesuai requirement "jangan di log permanen".
+ * Store untuk state scan — SEKARANG berbasis Redis (Upstash) supaya konsisten
+ * di semua serverless instance Vercel. Lihat lib/redis.ts untuk penjelasan
+ * kenapa ini perlu.
  *
- * PENTING: modul ini bisa ter-instantiate lebih dari sekali dalam satu
- * proses Node yang sama — Next.js (khususnya dengan Turbopack di dev mode)
- * meng-compile Route Handlers (app/api/**\/route.ts) sebagai module graph
- * yang terpisah dari Server Components/Actions. Kalau `scans`/`subscribers`
- * cuma module-level `const`, tiap graph dapat instance Map-nya sendiri —
- * akibatnya scan yang dibuat lewat Server Action (startScanAction) tidak
- * ketemu saat di-query dari Route Handler (stream/export), walau masih
- * dalam proses `next dev` yang sama. Nempelin ke globalThis memastikan
- * semua graph share satu instance yang sama, sekaligus survive HMR reload.
+ * Data tetap tidak permanen: semua key di-set dengan TTL (SCAN_TTL_SECONDS),
+ * sama seperti behavior lama ("jangan di log permanen").
+ *
+ * Kalau Redis belum dikonfigurasi (mis. dev lokal tanpa setup), semua fungsi
+ * di file ini otomatis jatuh ke in-memory Map per-proses — cukup untuk
+ * `next dev`, TAPI TIDAK aman dipakai di Vercel production (lihat warning di
+ * lib/redis.ts).
+ *
+ * Semua fungsi publik sekarang async (network round-trip ke Redis), jadi
+ * semua pemanggilnya (scan-runner.ts, route handlers) HARUS di-await.
  */
-const globalForScanStore = globalThis as unknown as {
-  __troutScans?: Map<string, ScanState>;
-  __troutSubscribers?: Map<string, Set<(event: ScanLogEvent) => void>>;
-};
-
-const scans = globalForScanStore.__troutScans ?? new Map<string, ScanState>();
-const subscribers =
-  globalForScanStore.__troutSubscribers ?? new Map<string, Set<(event: ScanLogEvent) => void>>();
-
-globalForScanStore.__troutScans = scans;
-globalForScanStore.__troutSubscribers = subscribers;
 
 const MAX_LOGS_KEPT = 500;
-const SCAN_TTL_MS = 30 * 60 * 1000; // auto-bersihkan 30 menit setelah dibuat
+const SCAN_TTL_SECONDS = 30 * 60; // auto-bersih 30 menit setelah dibuat, sama seperti sebelumnya
 
-export function createScan(id: string, domain: string, origin: string): ScanState {
-  const state: ScanState = {
+const metaKey = (id: string) => `trout:scan:${id}:meta`;
+const logsKey = (id: string) => `trout:scan:${id}:logs`;
+
+type ScanMeta = Omit<ScanState, "logs">;
+
+// --- Fallback in-memory (HANYA dev lokal tanpa Redis) ---
+const globalForScanStore = globalThis as unknown as {
+  __troutScansMem?: Map<string, ScanState>;
+};
+const memScans = globalForScanStore.__troutScansMem ?? new Map<string, ScanState>();
+globalForScanStore.__troutScansMem = memScans;
+
+function scheduleMemCleanup(id: string) {
+  setTimeout(() => {
+    memScans.delete(id);
+  }, SCAN_TTL_SECONDS * 1000).unref?.();
+}
+
+function freshState(id: string, domain: string, origin: string): ScanState {
+  return {
     id,
     domain,
     origin,
@@ -46,99 +64,139 @@ export function createScan(id: string, domain: string, origin: string): ScanStat
     jsFilesScanned: 0,
     librariesDetected: [],
   };
-  scans.set(id, state);
-  scheduleCleanup(id);
+}
+
+export async function createScan(id: string, domain: string, origin: string): Promise<ScanState> {
+  const state = freshState(id, domain, origin);
+
+  if (REDIS_CONFIGURED) {
+    const redis = getRedis();
+    const { logs: _logs, ...meta } = state;
+    await redis.set(metaKey(id), meta, { ex: SCAN_TTL_SECONDS });
+  } else {
+    memScans.set(id, state);
+    scheduleMemCleanup(id);
+  }
+
   return state;
 }
 
-export function getScan(id: string): ScanState | undefined {
-  return scans.get(id);
+export async function getScan(id: string): Promise<ScanState | undefined> {
+  if (REDIS_CONFIGURED) {
+    const redis = getRedis();
+    const meta = await redis.get<ScanMeta>(metaKey(id));
+    if (!meta) return undefined;
+    const logs = await getLogsSince(id, 0);
+    return { ...meta, logs };
+  }
+  return memScans.get(id);
 }
 
-function scheduleCleanup(id: string) {
-  setTimeout(() => {
-    scans.delete(id);
-    subscribers.delete(id);
-  }, SCAN_TTL_MS).unref?.();
+/** Ambil log dari index tertentu (dipakai SSE stream buat resume via Last-Event-ID). */
+export async function getLogsSince(id: string, fromIndex: number): Promise<ScanLogEvent[]> {
+  if (REDIS_CONFIGURED) {
+    const redis = getRedis();
+    const raw = await redis.lrange<ScanLogEvent>(logsKey(id), fromIndex, -1);
+    return raw ?? [];
+  }
+  const state = memScans.get(id);
+  if (!state) return [];
+  return state.logs.slice(fromIndex);
 }
 
-export function emit(id: string, event: Omit<ScanLogEvent, "timestamp">) {
-  const state = scans.get(id);
-  if (!state) return;
+async function updateMeta(id: string, mutate: (state: ScanMeta) => void): Promise<void> {
+  if (REDIS_CONFIGURED) {
+    const redis = getRedis();
+    const meta = await redis.get<ScanMeta>(metaKey(id));
+    if (!meta) return;
+    mutate(meta);
+    await redis.set(metaKey(id), meta, { ex: SCAN_TTL_SECONDS });
+  } else {
+    const state = memScans.get(id);
+    if (!state) return;
+    mutate(state);
+  }
+}
+
+export async function emit(id: string, event: Omit<ScanLogEvent, "timestamp">): Promise<void> {
   const full: ScanLogEvent = { ...event, timestamp: Date.now() };
 
+  if (REDIS_CONFIGURED) {
+    const redis = getRedis();
+    const pipeline = redis.pipeline();
+    pipeline.rpush(logsKey(id), full);
+    pipeline.ltrim(logsKey(id), -MAX_LOGS_KEPT, -1);
+    pipeline.expire(logsKey(id), SCAN_TTL_SECONDS);
+    await pipeline.exec();
+  } else {
+    const state = memScans.get(id);
+    if (!state) return;
+    state.logs.push(full);
+    if (state.logs.length > MAX_LOGS_KEPT) {
+      state.logs.splice(0, state.logs.length - MAX_LOGS_KEPT);
+    }
+  }
+
   if (event.type === "status" && event.status) {
-    state.status = event.status;
+    await updateMeta(id, (s) => {
+      s.status = event.status!;
+    });
   }
   if (event.type === "finding" && event.finding) {
-    state.findings.push(event.finding);
-  }
-
-  state.logs.push(full);
-  if (state.logs.length > MAX_LOGS_KEPT) {
-    state.logs.splice(0, state.logs.length - MAX_LOGS_KEPT);
-  }
-
-  const subs = subscribers.get(id);
-  if (subs) {
-    for (const cb of subs) cb(full);
+    await updateMeta(id, (s) => {
+      s.findings.push(event.finding!);
+    });
   }
 }
 
-export function subscribe(id: string, cb: (event: ScanLogEvent) => void): () => void {
-  if (!subscribers.has(id)) subscribers.set(id, new Set());
-  subscribers.get(id)!.add(cb);
-  return () => {
-    subscribers.get(id)?.delete(cb);
-  };
+export async function setStatus(id: string, status: ScanStatus): Promise<void> {
+  await emit(id, { type: "status", status });
 }
 
-export function setStatus(id: string, status: ScanStatus) {
-  emit(id, { type: "status", status });
+export async function log(id: string, message: string): Promise<void> {
+  await emit(id, { type: "log", message });
 }
 
-export function log(id: string, message: string) {
-  emit(id, { type: "log", message });
+export async function addFinding(id: string, finding: Finding): Promise<void> {
+  await emit(id, { type: "finding", finding });
 }
 
-export function addFinding(id: string, finding: Finding) {
-  emit(id, { type: "finding", finding });
+export async function markDone(id: string): Promise<void> {
+  await emit(id, { type: "done", message: "Scan selesai." });
 }
 
-export function markDone(id: string) {
-  emit(id, { type: "done", message: "Scan selesai." });
+export async function markError(id: string, message: string): Promise<void> {
+  await emit(id, { type: "error", message });
 }
 
-export function markError(id: string, message: string) {
-  emit(id, { type: "error", message });
+export async function markBlocked(id: string, reason: string): Promise<void> {
+  await updateMeta(id, (s) => {
+    s.blockedReason = reason;
+  });
+  await emit(id, { type: "blocked", message: reason, status: "blocked_cloudflare" });
 }
 
-export function markBlocked(id: string, reason: string) {
-  const state = scans.get(id);
-  if (state) state.blockedReason = reason;
-  emit(id, { type: "blocked", message: reason, status: "blocked_cloudflare" });
+export async function bumpRequestCount(id: string, n = 1): Promise<void> {
+  await updateMeta(id, (s) => {
+    s.requestsMade += n;
+  });
 }
 
-export function bumpRequestCount(id: string, n = 1) {
-  const state = scans.get(id);
-  if (state) state.requestsMade += n;
-}
-
-export function setEndpointsDiscovered(id: string, n: number) {
-  const state = scans.get(id);
-  if (state) state.endpointsDiscovered = n;
+export async function setEndpointsDiscovered(id: string, n: number): Promise<void> {
+  await updateMeta(id, (s) => {
+    s.endpointsDiscovered = n;
+  });
 }
 
 /**
- * Simpan daftar lengkap link/endpoint yang ditemukan (crawler + form +
- * JS analyzer, method GET/POST asli beserta payload field kalau ada) dan
- * broadcast ke client lewat SSE supaya tampil di dashboard, bukan cuma
- * angka jumlahnya.
+ * Simpan daftar lengkap link/endpoint yang ditemukan dan broadcast ke client
+ * lewat SSE supaya tampil di dashboard, bukan cuma angka jumlahnya.
  */
-export function setDiscoveredEndpoints(id: string, endpoints: DiscoveredEndpoint[]) {
-  const state = scans.get(id);
-  if (state) state.endpoints = endpoints;
-  emit(id, { type: "endpoints", endpoints });
+export async function setDiscoveredEndpoints(id: string, endpoints: DiscoveredEndpoint[]): Promise<void> {
+  await updateMeta(id, (s) => {
+    s.endpoints = endpoints;
+  });
+  await emit(id, { type: "endpoints", endpoints });
 }
 
 /**
@@ -146,22 +204,26 @@ export function setDiscoveredEndpoints(id: string, endpoints: DiscoveredEndpoint
  * di-broadcast lewat SSE (graph bisa besar) — client mengambilnya lewat
  * GET /api/scan/[id]/graph setelah scan selesai/berjalan.
  */
-export function setGraph(id: string, graph: import("./types").GraphData) {
-  const state = scans.get(id);
-  if (state) state.graph = graph;
+export async function setGraph(id: string, graph: GraphData): Promise<void> {
+  await updateMeta(id, (s) => {
+    s.graph = graph;
+  });
 }
 
-export function setPagesCrawled(id: string, n: number) {
-  const state = scans.get(id);
-  if (state) state.pagesCrawled = n;
+export async function setPagesCrawled(id: string, n: number): Promise<void> {
+  await updateMeta(id, (s) => {
+    s.pagesCrawled = n;
+  });
 }
 
-export function bumpJsFilesScanned(id: string, n = 1) {
-  const state = scans.get(id);
-  if (state) state.jsFilesScanned += n;
+export async function bumpJsFilesScanned(id: string, n = 1): Promise<void> {
+  await updateMeta(id, (s) => {
+    s.jsFilesScanned += n;
+  });
 }
 
-export function setLibrariesDetected(id: string, libs: import("./types").LibraryDetection[]) {
-  const state = scans.get(id);
-  if (state) state.librariesDetected = libs;
+export async function setLibrariesDetected(id: string, libs: LibraryDetection[]): Promise<void> {
+  await updateMeta(id, (s) => {
+    s.librariesDetected = libs;
+  });
 }

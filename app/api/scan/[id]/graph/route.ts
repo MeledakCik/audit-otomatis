@@ -5,7 +5,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const scan = getScan(id);
+  const scan = await getScan(id);
 
   if (!scan) {
     return new Response(JSON.stringify({ error: "Scan tidak ditemukan." }), {
