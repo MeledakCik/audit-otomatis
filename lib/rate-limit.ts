@@ -1,8 +1,10 @@
-import { getRedis, REDIS_CONFIGURED } from "./redis";
+import { getKv, REDIS_CONFIGURED } from "./redis";
 
 /**
- * Cooldown per (user, hostname) — SEKARANG berbasis Redis (SET ... NX EX),
- * yang atomik dan konsisten di semua serverless instance Vercel.
+ * Cooldown per (user, hostname) — berbasis Redis (SET ... NX EX lewat
+ * abstraksi `Kv` di lib/redis.ts, yang otomatis mendukung Upstash REST
+ * ATAU koneksi TCP biasa lewat `REDIS_URL`), atomik dan konsisten di semua
+ * serverless instance Vercel.
  *
  * Sebelumnya ini cuma `Map` in-memory: tiap instance serverless punya map
  * kosong sendiri-sendiri, jadi limit "1 scan/domain/5 menit" praktis TIDAK
@@ -24,13 +26,13 @@ export async function checkAndRegisterCooldown(
   const key = `trout:cooldown:${userKey}:${hostname.toLowerCase()}`;
 
   if (REDIS_CONFIGURED) {
-    const redis = getRedis();
+    const kv = getKv();
     // SET dengan NX (cuma set kalau belum ada) + EX (auto-expire) = klaim
     // cooldown yang atomik, tanpa race condition antar request paralel.
-    const claimed = await redis.set(key, Date.now(), { nx: true, ex: COOLDOWN_SECONDS });
+    const claimed = await kv.setNX(key, COOLDOWN_SECONDS);
     if (claimed) return { allowed: true };
 
-    const ttl = await redis.ttl(key);
+    const ttl = await kv.ttl(key);
     return { allowed: false, retryAfterMs: Math.max(0, ttl) * 1000 };
   }
 

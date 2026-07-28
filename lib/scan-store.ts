@@ -7,12 +7,13 @@ import type {
   ScanState,
   ScanStatus,
 } from "./types";
-import { getRedis, REDIS_CONFIGURED } from "./redis";
+import { getKv, REDIS_CONFIGURED } from "./redis";
 
 /**
- * Store untuk state scan — SEKARANG berbasis Redis (Upstash) supaya konsisten
- * di semua serverless instance Vercel. Lihat lib/redis.ts untuk penjelasan
- * kenapa ini perlu.
+ * Store untuk state scan — berbasis Redis (lewat abstraksi `Kv` di
+ * lib/redis.ts, yang otomatis mendukung Upstash REST ATAU koneksi TCP biasa
+ * lewat `REDIS_URL`) supaya konsisten di semua serverless instance Vercel.
+ * Lihat lib/redis.ts untuk penjelasan lengkap & kenapa ini perlu.
  *
  * Data tetap tidak permanen: semua key di-set dengan TTL (SCAN_TTL_SECONDS),
  * sama seperti behavior lama ("jangan di log permanen").
@@ -22,7 +23,7 @@ import { getRedis, REDIS_CONFIGURED } from "./redis";
  * `next dev`, TAPI TIDAK aman dipakai di Vercel production (lihat warning di
  * lib/redis.ts).
  *
- * Semua fungsi publik sekarang async (network round-trip ke Redis), jadi
+ * Semua fungsi publik di file ini async (network round-trip ke Redis), jadi
  * semua pemanggilnya (scan-runner.ts, route handlers) HARUS di-await.
  */
 
@@ -70,9 +71,8 @@ export async function createScan(id: string, domain: string, origin: string): Pr
   const state = freshState(id, domain, origin);
 
   if (REDIS_CONFIGURED) {
-    const redis = getRedis();
     const { logs: _logs, ...meta } = state;
-    await redis.set(metaKey(id), meta, { ex: SCAN_TTL_SECONDS });
+    await getKv().setJSON(metaKey(id), meta, SCAN_TTL_SECONDS);
   } else {
     memScans.set(id, state);
     scheduleMemCleanup(id);
@@ -83,8 +83,7 @@ export async function createScan(id: string, domain: string, origin: string): Pr
 
 export async function getScan(id: string): Promise<ScanState | undefined> {
   if (REDIS_CONFIGURED) {
-    const redis = getRedis();
-    const meta = await redis.get<ScanMeta>(metaKey(id));
+    const meta = await getKv().getJSON<ScanMeta>(metaKey(id));
     if (!meta) return undefined;
     const logs = await getLogsSince(id, 0);
     return { ...meta, logs };
@@ -95,9 +94,7 @@ export async function getScan(id: string): Promise<ScanState | undefined> {
 /** Ambil log dari index tertentu (dipakai SSE stream buat resume via Last-Event-ID). */
 export async function getLogsSince(id: string, fromIndex: number): Promise<ScanLogEvent[]> {
   if (REDIS_CONFIGURED) {
-    const redis = getRedis();
-    const raw = await redis.lrange<ScanLogEvent>(logsKey(id), fromIndex, -1);
-    return raw ?? [];
+    return await getKv().lrangeJSON<ScanLogEvent>(logsKey(id), fromIndex, -1);
   }
   const state = memScans.get(id);
   if (!state) return [];
@@ -106,11 +103,11 @@ export async function getLogsSince(id: string, fromIndex: number): Promise<ScanL
 
 async function updateMeta(id: string, mutate: (state: ScanMeta) => void): Promise<void> {
   if (REDIS_CONFIGURED) {
-    const redis = getRedis();
-    const meta = await redis.get<ScanMeta>(metaKey(id));
+    const kv = getKv();
+    const meta = await kv.getJSON<ScanMeta>(metaKey(id));
     if (!meta) return;
     mutate(meta);
-    await redis.set(metaKey(id), meta, { ex: SCAN_TTL_SECONDS });
+    await kv.setJSON(metaKey(id), meta, SCAN_TTL_SECONDS);
   } else {
     const state = memScans.get(id);
     if (!state) return;
@@ -122,12 +119,7 @@ export async function emit(id: string, event: Omit<ScanLogEvent, "timestamp">): 
   const full: ScanLogEvent = { ...event, timestamp: Date.now() };
 
   if (REDIS_CONFIGURED) {
-    const redis = getRedis();
-    const pipeline = redis.pipeline();
-    pipeline.rpush(logsKey(id), full);
-    pipeline.ltrim(logsKey(id), -MAX_LOGS_KEPT, -1);
-    pipeline.expire(logsKey(id), SCAN_TTL_SECONDS);
-    await pipeline.exec();
+    await getKv().rpushJSON(logsKey(id), full, SCAN_TTL_SECONDS, MAX_LOGS_KEPT);
   } else {
     const state = memScans.get(id);
     if (!state) return;
