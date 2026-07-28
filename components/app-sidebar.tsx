@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutGrid,
-  Activity,
+  ClipboardCheck,
   History,
   BookOpen,
   Code2,
@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 
 const MAIN = [
   { label: "Overview", icon: LayoutGrid, href: "/" },
-  { label: "Active Scans", icon: Activity, href: "/active" },
+  { label: "QC Otomatis", icon: ClipboardCheck, href: "/qc" },
   { label: "Scan History", icon: History, href: "/history" },
 ];
 
