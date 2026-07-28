@@ -127,12 +127,10 @@ export default function NodeExplorerPage() {
 
   return (
     <div className="min-h-screen bg-[#05070d] text-zinc-100 font-sans p-4 md:p-8 lg:p-10 selection:bg-emerald-500/30 selection:text-emerald-300 relative overflow-hidden">
-      {/* Background Cyberpunk Glow Effects */}
       <div className="absolute top-0 left-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none animate-pulse" />
       <div className="absolute bottom-1/3 right-10 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
 
       <div className="max-w-7xl mx-auto space-y-6 relative z-10">
-        {/* Top Navigation & Header Banner */}
         <div className="flex flex-col gap-6 bg-gradient-to-br from-[#0b0f19]/90 to-[#070a12]/90 border border-zinc-800/80 p-6 md:p-8 rounded-3xl shadow-2xl backdrop-blur-xl relative overflow-hidden group">
           <div className="absolute top-0 right-0 w-64 h-32 bg-gradient-to-l from-emerald-500/5 to-transparent pointer-events-none" />
 
@@ -265,15 +263,12 @@ export default function NodeExplorerPage() {
           </div>
         </div>
 
-        {/* State Error Banner */}
         {error && (
           <div className="p-4 text-xs text-red-400 bg-red-950/30 rounded-2xl border border-red-900/50 flex items-center gap-3 animate-shake">
             <AlertCircle className="w-5 h-5 text-red-500 shrink-0" />
             <span>{error}</span>
           </div>
         )}
-
-        {/* Grid Kartu Nodes dengan Transisi Halus */}
         {loading ? (
           <div className="flex flex-col items-center justify-center p-24 bg-[#0b0f19]/40 border border-zinc-800/80 rounded-3xl text-center space-y-4">
             <div className="relative">

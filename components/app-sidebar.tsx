@@ -42,9 +42,7 @@ export function AppSidebar() {
         </div>
       </div>
 
-      {/* Navigation Links */}
       <div className="flex-1 px-3 py-6 space-y-6 overflow-y-auto">
-        {/* MAIN MENU */}
         <div className="space-y-1.5">
           <div className="px-3 pb-2 text-[11px] font-mono font-semibold tracking-wider text-white/30 uppercase">
             Main Menu
@@ -76,7 +74,6 @@ export function AppSidebar() {
           })}
         </div>
 
-        {/* RESOURCES */}
         <div className="space-y-1.5">
           <div className="px-3 pb-2 text-[11px] font-mono font-semibold tracking-wider text-white/30 uppercase">
             Resources

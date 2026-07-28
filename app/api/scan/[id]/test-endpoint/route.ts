@@ -7,7 +7,6 @@ export const runtime = "nodejs";
 const TIMEOUT_MS = 8000;
 const MAX_BODY_PREVIEW = 4000;
 
-// Header response yang aman ditampilkan ke client (skip Set-Cookie & sejenisnya).
 const SAFE_RESPONSE_HEADERS = [
   "content-type",
   "content-length",
@@ -26,15 +25,6 @@ const SAFE_RESPONSE_HEADERS = [
   "cf-mitigated",
 ];
 
-/**
- * Proxy uji-coba endpoint SATU ARAH: GET-only, same-origin dengan target
- * scan saja. Ini bukan proxy umum — tujuannya cuma supaya user bisa
- * "kirim" request langsung dari dashboard (gaya Postman) untuk endpoint
- * yang ditemukan scanner, tanpa membuka celah SSRF / dipakai nyerang situs
- * lain. Method selain GET SENGAJA tidak dieksekusi otomatis (sejalan
- * dengan kebijakan pasif di README) — untuk POST/PUT/DELETE/PATCH, user
- * dikasih perintah cURL untuk dijalankan manual di terminal sendiri.
- */
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const scan = await getScan(id);

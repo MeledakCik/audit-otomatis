@@ -1,12 +1,5 @@
 import type { Finding, Severity } from "./types";
 
-/**
- * Deteksi secret/API key/token yang ke-hardcode di JS. PASIF MURNI:
- * hanya regex + entropy check terhadap source text yang sudah diunduh oleh
- * js-analyzer/site-crawler, tidak ada request tambahan, tidak ada percobaan
- * memakai key yang ditemukan.
- */
-
 interface SecretRule {
   id: string;
   label: string;

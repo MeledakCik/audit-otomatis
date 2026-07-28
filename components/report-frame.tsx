@@ -3,28 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
-
-/**
- * Kenapa komponen ini butuh JS buat ngatur tinggi iframe (bukan cuma
- * `className="h-full"` doang):
- *
- * iframe itu "replaced element" — tinggi persentase (100%/h-full) padanya
- * cuma valid kalau containing block-nya punya tinggi yang eksplisit
- * (bukan hasil `flex-grow`). Di banyak browser, tinggi flex item yang
- * didapat dari flex-grow TIDAK dihitung sebagai "definite height" buat
- * resolusi persentase anak yang replaced element — jadi `h-full` di
- * iframe diam-diam gagal dan iframe balik ke tinggi default browser
- * (150px), walau parent-nya (`<main>`) sendiri sudah punya tinggi yang
- * benar. Ini yang bikin report keliatan "kepotong jadi hitam": iframe
- * cuma setinggi 150px, sisa area `<main>` yang jauh lebih tinggi cuma
- * nampilin background gelap app-nya doang.
- *
- * Fix paling reliable lintas-browser & lintas-context-embed (termasuk
- * kalau halaman ini sendiri di-embed di iframe platform lain) adalah
- * ukur tinggi header secara langsung lewat ResizeObserver, lalu set
- * tinggi iframe eksplisit dalam px lewat inline style — nggak
- * bergantung sama resolusi persentase CSS sama sekali.
- */
 export function ReportFrame({ id, domain }: { id: string; domain: string }) {
   const headerRef = useRef<HTMLElement>(null);
   const [iframeHeight, setIframeHeight] = useState<number | null>(null);
@@ -97,18 +75,6 @@ export function ReportFrame({ id, domain }: { id: string; domain: string }) {
           </div>
         </div>
       </header>
-
-      {/* report.html sudah berupa dokumen lengkap (punya <html>/<head> sendiri
-          dengan styling gelap khusus pentest report), jadi ditampilkan lewat
-          iframe ke route yang sama persis dengan yang diunduh — supaya yang
-          dilihat di preview identik dengan file yang di-export, tidak ada
-          versi ganda yang bisa beda.
-
-          Tinggi diset eksplisit dalam px lewat state di atas (bukan
-          className h-full) supaya nggak kena masalah resolusi persentase
-          tinggi pada iframe di dalam flex container — lihat komentar di
-          atas komponen ini. Sebelum ResizeObserver sempat jalan, fallback
-          minHeight 70dvh dipakai supaya nggak kelihatan kosong sama sekali. */}
       <iframe
         src={`/api/scan/${id}/report`}
         title={`Pentest report — ${domain}`}

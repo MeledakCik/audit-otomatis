@@ -9,24 +9,6 @@ import type {
 } from "./types";
 import { getKv, REDIS_CONFIGURED } from "./redis";
 
-/**
- * Store untuk state scan — berbasis Redis (lewat abstraksi `Kv` di
- * lib/redis.ts, yang otomatis mendukung Upstash REST ATAU koneksi TCP biasa
- * lewat `REDIS_URL`) supaya konsisten di semua serverless instance Vercel.
- * Lihat lib/redis.ts untuk penjelasan lengkap & kenapa ini perlu.
- *
- * Data tetap tidak permanen: semua key di-set dengan TTL (SCAN_TTL_SECONDS),
- * sama seperti behavior lama ("jangan di log permanen").
- *
- * Kalau Redis belum dikonfigurasi (mis. dev lokal tanpa setup), semua fungsi
- * di file ini otomatis jatuh ke in-memory Map per-proses — cukup untuk
- * `next dev`, TAPI TIDAK aman dipakai di Vercel production (lihat warning di
- * lib/redis.ts).
- *
- * Semua fungsi publik di file ini async (network round-trip ke Redis), jadi
- * semua pemanggilnya (scan-runner.ts, route handlers) HARUS di-await.
- */
-
 const MAX_LOGS_KEPT = 500;
 const SCAN_TTL_SECONDS = 30 * 60; // auto-bersih 30 menit setelah dibuat, sama seperti sebelumnya
 
@@ -90,8 +72,6 @@ export async function getScan(id: string): Promise<ScanState | undefined> {
   }
   return memScans.get(id);
 }
-
-/** Ambil log dari index tertentu (dipakai SSE stream buat resume via Last-Event-ID). */
 export async function getLogsSince(id: string, fromIndex: number): Promise<ScanLogEvent[]> {
   if (REDIS_CONFIGURED) {
     return await getKv().lrangeJSON<ScanLogEvent>(logsKey(id), fromIndex, -1);
@@ -179,23 +159,12 @@ export async function setEndpointsDiscovered(id: string, n: number): Promise<voi
     s.endpointsDiscovered = n;
   });
 }
-
-/**
- * Simpan daftar lengkap link/endpoint yang ditemukan dan broadcast ke client
- * lewat SSE supaya tampil di dashboard, bukan cuma angka jumlahnya.
- */
 export async function setDiscoveredEndpoints(id: string, endpoints: DiscoveredEndpoint[]): Promise<void> {
   await updateMeta(id, (s) => {
     s.endpoints = endpoints;
   });
   await emit(id, { type: "endpoints", endpoints });
 }
-
-/**
- * Simpan peta relasi page -> js -> endpoint hasil crawl mendalam. Tidak
- * di-broadcast lewat SSE (graph bisa besar) — client mengambilnya lewat
- * GET /api/scan/[id]/graph setelah scan selesai/berjalan.
- */
 export async function setGraph(id: string, graph: GraphData): Promise<void> {
   await updateMeta(id, (s) => {
     s.graph = graph;

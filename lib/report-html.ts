@@ -35,10 +35,6 @@ function esc(s: string | undefined | null): string {
 function isoDate(ts: number): string {
   return new Date(ts).toISOString().slice(0, 19).replace("T", " ") + " UTC";
 }
-
-/** Estimasi CVSS kalau finding tidak sudah membawa nilai eksplisit
- * (mis. temuan dari tester.ts lama yang belum di-tag cvss). Estimasi kasar
- * berbasis severity, bukan perhitungan CVSS vector penuh. */
 function estimateCvss(f: Finding): number {
   if (typeof f.cvss === "number") return f.cvss;
   const bySeverity: Record<Severity, number> = {
@@ -54,20 +50,10 @@ function estimateCvss(f: Finding): number {
 function vulnId(index: number): string {
   return `VULN-${String(index + 1).padStart(3, "0")}`;
 }
-
-// Ikon mata (buka/tutup) buat toggle detail finding. Inline SVG biar report
-// tetap satu file mandiri, tanpa dependensi icon font/CDN eksternal.
 const EYE_OPEN_SVG =
   '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>';
 const EYE_CLOSED_SVG =
   '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a21.6 21.6 0 0 1 5.06-5.94M9.9 4.24A10.94 10.94 0 0 1 12 4c7 0 11 7 11 7a21.6 21.6 0 0 1-2.29 3.22M14.12 14.12a3 3 0 1 1-4.24-4.24"/><path d="M1 1l22 22"/></svg>';
-
-/**
- * Render laporan gaya pentest lengkap: header bar + executive summary +
- * finding inventory + temuan terurut CRITICAL -> LOW, masing-masing dengan
- * format [VULN-XXX] [SEVERITY] Title, Location, Severity+CVSS, Evidence,
- * Impact, PoC non-destruktif, Remediation.
- */
 export function renderPentestReportHtml(scan: ScanState): string {
   const sorted = [...scan.findings].sort(
     (a, b) => SEVERITY_ORDER.indexOf(a.severity) - SEVERITY_ORDER.indexOf(b.severity)

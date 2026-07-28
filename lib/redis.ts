@@ -1,43 +1,11 @@
 import { Redis as UpstashRedis } from "@upstash/redis";
 import { createClient, type RedisClientType } from "redis";
 
-/**
- * PENTING — kenapa file ini ada:
- *
- * Di Vercel, tiap request (Server Action maupun Route Handler) bisa
- * dieksekusi di instance serverless yang BERBEDA. Data yang cuma disimpan
- * di memory proses Node (module-level `Map`, `globalThis`, dst) TIDAK
- * dijamin sama antar instance — ini penyebab endpoint seperti
- * `/api/scan/[id]/stream` mengembalikan 404 "Scan tidak ditemukan" padahal
- * scan-nya baru saja dibuat di instance lain.
- *
- * File ini menyediakan satu abstraksi `Kv` kecil yang dipakai oleh
- * scan-store.ts & rate-limit.ts, dengan DUA kemungkinan backend nyata
- * (dipilih otomatis dari env var yang tersedia) + 1 fallback dev:
- *
- *   1. Upstash Redis via REST API — kalau env `UPSTASH_REDIS_REST_URL` +
- *      `UPSTASH_REDIS_REST_TOKEN` (atau alias lama `KV_REST_API_URL` /
- *      `KV_REST_API_TOKEN`) ada. Ini didapat kalau integrasi yang dipasang
- *      di Vercel Marketplace adalah produk "Upstash Redis".
- *
- *   2. Redis biasa via koneksi TCP (`redis` / node-redis) — kalau env
- *      `REDIS_URL` (atau alias `KV_URL`) ada. Ini yang dipakai kalau
- *      integrasi yang dipasang adalah produk "Redis" native Vercel
- *      Marketplace (yang cuma expose `REDIS_URL`, bukan REST API).
- *
- *   3. In-memory Map — fallback KHUSUS dev lokal (`next dev`) tanpa Redis
- *      sama sekali. TIDAK dipakai kalau salah satu dari dua env di atas
- *      ada, dan sengaja bikin warning keras di production kalau keduanya
- *      tidak ada supaya tidak diam-diam balik ke bug 404 yang lama.
- */
-
 export interface Kv {
   getJSON<T>(key: string): Promise<T | null>;
   setJSON(key: string, value: unknown, ttlSeconds: number): Promise<void>;
-  /** SET ... NX EX — return true kalau berhasil di-set (key belum ada sebelumnya). */
   setNX(key: string, ttlSeconds: number): Promise<boolean>;
   ttl(key: string): Promise<number>;
-  /** RPUSH + LTRIM (batasi panjang list) + EXPIRE, idealnya 1 round-trip. */
   rpushJSON(key: string, value: unknown, ttlSeconds: number, maxLen: number): Promise<void>;
   lrangeJSON<T>(key: string, start: number, stop: number): Promise<T[]>;
 }
@@ -128,14 +96,6 @@ const globalForNodeRedis = globalThis as unknown as {
   __troutNodeRedisClient?: RedisClientType;
   __troutNodeRedisConnecting?: Promise<RedisClientType>;
 };
-
-/**
- * node-redis butuh koneksi TCP persisten (bukan REST seperti Upstash), jadi
- * di lingkungan serverless kita cache client di globalThis supaya instance
- * yang "warm" (dipakai ulang oleh Fluid Compute) tidak buka koneksi baru
- * tiap request. WAJIB pasang listener 'error' — kalau tidak, error koneksi
- * yang tidak tertangani bisa mematikan proses Node.
- */
 async function getNodeRedisClient(): Promise<RedisClientType> {
   if (globalForNodeRedis.__troutNodeRedisClient?.isOpen) {
     return globalForNodeRedis.__troutNodeRedisClient;

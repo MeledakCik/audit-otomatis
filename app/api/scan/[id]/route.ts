@@ -1,11 +1,6 @@
 import { getScan } from "@/lib/scan-store";
 
-/**
- * Endpoint status ringkas untuk satu scan. Dibutuhkan oleh
- * app/scan/[id]/nodes/page.tsx (poll tiap beberapa detik untuk badge status)
- * — sebelumnya route ini belum pernah dibuat sama sekali sehingga selalu
- * 404, terpisah dari masalah 404 di /stream.
- */
+
 export async function GET(
   _req: Request,
   { params }: { params: Promise<{ id: string }> }

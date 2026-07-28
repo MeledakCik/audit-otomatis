@@ -1,11 +1,5 @@
 import type { Finding, LibraryDetection, Severity } from "./types";
 
-/**
- * Deteksi versi library JS jadul secara PASIF (regex fingerprint terhadap
- * HTML/JS yang sudah diunduh) dan cocokkan ke daftar CVE publik yang
- * di-hardcode di bawah. TIDAK melakukan exploit apapun — hanya fingerprint
- * + referensi.
- */
 
 interface CveEntry {
   library: string;
@@ -129,12 +123,6 @@ const FINGERPRINT_RULES: FingerprintRule[] = [
     patterns: [/React\s+v?([0-9]+\.[0-9]+\.[0-9]+)/],
   },
 ];
-
-/**
- * Fingerprint versi library dari satu sumber teks (HTML atau isi file JS).
- * Murni pattern-matching terhadap string literal versi yang sering
- * ditinggalkan library non-minified/dev build atau komentar header bundle.
- */
 export function fingerprintLibraries(source: string, sourceLabel: string): LibraryDetection[] {
   const detections: LibraryDetection[] = [];
   const seen = new Set<string>();
@@ -164,10 +152,6 @@ export function fingerprintLibraries(source: string, sourceLabel: string): Libra
 
   return detections;
 }
-
-/** Deteksi Next.js dari nama chunk file (`_next/static/chunks/...`) — hanya
- * sinyal "pakai Next.js", bukan versi presisi (versi presisi Next.js tidak
- * bocor lewat nama chunk, jadi kita tidak menebak-nebak nomor versi). */
 export function detectNextJs(scriptUrls: string[]): boolean {
   return scriptUrls.some((u) => u.includes("/_next/static/"));
 }
@@ -175,12 +159,6 @@ export function detectNextJs(scriptUrls: string[]): boolean {
 function newId(): string {
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
 }
-
-/**
- * Ubah LibraryDetection yang punya CVE jadi Finding gaya pentest, dedup
- * berdasarkan (library, cve) supaya CVE yang sama tidak berulang untuk
- * setiap file JS yang me-load library itu.
- */
 export function libraryDetectionsToFindings(detections: LibraryDetection[]): Finding[] {
   const findings: Finding[] = [];
   const seen = new Set<string>();

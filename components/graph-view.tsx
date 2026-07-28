@@ -138,8 +138,6 @@ export function GraphView({
           </Link>
         </div>
       </div>
-
-      {/* Tampilan SVG Graph Utama di Dashboard */}
       <div className="flex flex-col rounded-xl border border-zinc-800/80 bg-zinc-950/60 shadow-xl overflow-hidden backdrop-blur-md">
         <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-3.5 border-b border-zinc-800/80 bg-zinc-900/40">
           <div className="flex items-center gap-5 text-xs font-medium text-zinc-400">

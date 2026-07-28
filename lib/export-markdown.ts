@@ -11,12 +11,6 @@ const SEVERITY_EMOJI: Record<string, string> = {
 function isoDate(ts: number): string {
   return new Date(ts).toISOString().slice(0, 19).replace("T", " ");
 }
-
-/**
- * Export hasil scan ke format markdown ala Obsidian, mengikuti struktur
- * "08 - Cara Audit": frontmatter + ringkasan + tabel temuan + detail per
- * temuan + tag untuk linking antar note.
- */
 export function exportScanToObsidianMarkdown(scan: ScanState): string {
   const severityOrder = ["CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"];
   const sorted = [...scan.findings].sort(

@@ -1,9 +1,5 @@
 @import "tailwindcss";
 
-/* Light adalah base (:root) — dark meng-override lewat class "dark" yang
-   diatur next-themes di <html>. Palet terang sengaja bukan putih polos
-   (off-white hangat) biar tetap terasa "instrumented / terminal", bukan
-   dokumen kantoran generik. */
 :root {
   --background: #f4f1f9;
   --surface: #ffffff;
@@ -109,8 +105,6 @@ body {
   font-feature-settings: "liga" 0;
 }
 
-/* Wordmark / hero gradient text — dipakai buat logo AUTO-SEC-AUDITOR &
-   angka-angka besar yang perlu terasa "neon". */
 .text-gradient-accent {
   background: linear-gradient(90deg, var(--accent), var(--accent-2));
   -webkit-background-clip: text;
@@ -131,11 +125,6 @@ body {
   color: var(--accent-fg);
 }
 
-/* Transisi halus lintas tema: cuma properti "murah" (warna, bukan layout)
-   supaya toggle gelap/terang berasa mulus tanpa bikin jank di elemen yang
-   punya animasi/transition sendiri (misal cursor-blink, accordion). Class
-   Tailwind eksplisit (mis. transition-transform) tetap menang karena
-   selector class (.x) lebih spesifik daripada universal selector (*). */
 *,
 *::before,
 *::after {
@@ -155,7 +144,6 @@ body {
   }
 }
 
-/* thin scrollbars for the terminal log */
 .thin-scroll::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -176,9 +164,6 @@ body {
   animation: blink 1s step-start infinite;
 }
 
-/* Entrance halus buat konten utama tiap halaman — sekali jalan saat mount,
-   sedikit stagger lewat --delay biar terasa "disusun", bukan cuma nge-fade
-   bareng-bareng sekaligus. */
 @keyframes fade-up {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
@@ -194,9 +179,6 @@ body {
   }
 }
 
-/* Accordion halus (finding rows, endpoint cards) lewat trik grid-rows
-   0fr -> 1fr, supaya height bisa animasi walau konten di dalamnya dinamis
-   (tanpa perlu tahu tinggi pasti lewat JS). */
 .accordion-rows {
   display: grid;
   grid-template-rows: 0fr;

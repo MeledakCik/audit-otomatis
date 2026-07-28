@@ -1,20 +1,8 @@
 import { getKv, REDIS_CONFIGURED } from "./redis";
 
-/**
- * Cooldown per (user, hostname) — berbasis Redis (SET ... NX EX lewat
- * abstraksi `Kv` di lib/redis.ts, yang otomatis mendukung Upstash REST
- * ATAU koneksi TCP biasa lewat `REDIS_URL`), atomik dan konsisten di semua
- * serverless instance Vercel.
- *
- * Sebelumnya ini cuma `Map` in-memory: tiap instance serverless punya map
- * kosong sendiri-sendiri, jadi limit "1 scan/domain/5 menit" praktis TIDAK
- * pernah kena di Vercel (bisa dipakai spam scan ke domain yang sama dari
- * banyak invocation berbeda) — celah keamanan, bukan cuma bug UX.
- *
- * Fallback in-memory tetap ada untuk dev lokal tanpa Redis.
- */
+const IS_DEV = process.env.NODE_ENV === "development";
 
-const COOLDOWN_SECONDS = 5 * 60; // 5 menit
+const COOLDOWN_SECONDS = IS_DEV ? 10 : 5 * 60;
 const COOLDOWN_MS = COOLDOWN_SECONDS * 1000;
 
 const memCooldowns = new Map<string, number>();
@@ -27,8 +15,6 @@ export async function checkAndRegisterCooldown(
 
   if (REDIS_CONFIGURED) {
     const kv = getKv();
-    // SET dengan NX (cuma set kalau belum ada) + EX (auto-expire) = klaim
-    // cooldown yang atomik, tanpa race condition antar request paralel.
     const claimed = await kv.setNX(key, COOLDOWN_SECONDS);
     if (claimed) return { allowed: true };
 
@@ -45,32 +31,12 @@ export async function checkAndRegisterCooldown(
   return { allowed: true };
 }
 
-/**
- * Budget request per scan: hard cap total request + delay antar request
- * supaya scanner tidak jadi alat DDoS. Ini SENGAJA tetap in-memory (class
- * biasa, bukan module-level singleton) karena scope-nya cuma satu eksekusi
- * runScan() yang berjalan sekuensial dalam satu invocation — tidak perlu
- * dibagi antar instance seperti scan-store/rate-limit di atas.
- */
 export class RequestBudget {
   private used = 0;
-  constructor(
-    private readonly max = 100,
-    private readonly delayMs = 500
-  ) {}
-
-  get remaining() {
-    return Math.max(0, this.max - this.used);
-  }
-
-  get count() {
-    return this.used;
-  }
-
-  canSpend(n = 1): boolean {
-    return this.used + n <= this.max;
-  }
-
+  constructor(private readonly max = 100, private readonly delayMs = 500) {}
+  get remaining() { return Math.max(0, this.max - this.used); }
+  get count() { return this.used; }
+  canSpend(n = 1): boolean { return this.used + n <= this.max; }
   async spend<T>(fn: () => Promise<T>): Promise<T | null> {
     if (!this.canSpend()) return null;
     this.used++;

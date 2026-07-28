@@ -5,14 +5,7 @@ import { chromeHeaders } from "./crawler";
 
 export const MAX_JS_FILES = 20;
 export const MAX_JS_FILE_BYTES = 500 * 1024; // 500kb
-
-// Cakupan lebih luas: query string (?, =, &, %, ~, +, ,), plus prefix umum
-// selain /api — biar sejajar dengan apa yang kelihatan kalau orang search
-// manual "/api" di DevTools Network/Sources tab.
 const API_PATH_RE = /^\/(api|_api|graphql|rest|v[0-9]+)(\/[a-zA-Z0-9_\-/{}.:?=&%~+,]*)?$/;
-// Versi "cari di mana saja dalam string" (tidak anchored) — dipakai buat
-// scan teks mentah, termasuk substring di dalam absolute URL
-// ("https://host/api/x") atau string yang lolos dari AST walk.
 const API_PATH_SCAN_RE = /\/(?:api|_api|graphql|rest|v[0-9]+)\/[a-zA-Z0-9_\-/{}.:?=&%~+,]*/;
 
 interface AnalyzeOutput {
@@ -20,8 +13,6 @@ interface AnalyzeOutput {
   usesLocalStorage: boolean;
   parseError?: string;
 }
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- acorn AST nodes aren't strongly typed upstream
 function templateLiteralToPattern(node: any): string | null {
   if (!node || node.type !== "TemplateLiteral") return null;
   let out = "";
@@ -39,23 +30,10 @@ function methodFromCalleeName(name: string): "GET" | "POST" {
 
 const HTTP_METHODS = new Set(["GET", "POST", "PUT", "DELETE", "PATCH"]);
 type HttpMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
-
-// Cocokkan literal string "PUT"/"delete"/dst jadi method HTTP kalau persis
-// salah satu dari 5 verb yang dikenal — dipakai buat pola wrapper generik di
-// bawah (bukan fetch/axios.method langsung), mis. `t(e => i(url, "PUT", {...}))`.
 function methodFromLiteral(value: string): HttpMethod | null {
   const upper = value.toUpperCase();
   return HTTP_METHODS.has(upper) ? (upper as HttpMethod) : null;
 }
-
-// Versi longgar buat NAMA FUNGSI/METHOD (bukan literal method persis) — cocok
-// kalau string verb-nya jadi bagian dari nama yang lebih panjang hasil
-// wrapper, mis. "apiPost", "httpGet", "postJSON". Prioritas urutan cek
-// penting: "delete"/"patch" dicek duluan karena beberapa nama umum (mis.
-// "dispatch") kebetulan mengandung "patch" sebagai substring — risiko salah
-// label method itu diterima di sini karena node ini cuma jalan kalau arg
-// pertamanya sudah lolos cek API_PATH_RE (jadi bukan pemicu utama, cuma
-// pelabelan method-nya yang bisa meleset di kasus langka).
 function methodHintFromName(name: string): HttpMethod | null {
   const lower = name.toLowerCase();
   if (lower.includes("delete")) return "DELETE";
@@ -65,30 +43,17 @@ function methodHintFromName(name: string): HttpMethod | null {
   if (lower.includes("get")) return "GET";
   return null;
 }
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- acorn AST nodes aren't strongly typed upstream
 function urlFromArg(node: any): string | null {
   if (!node) return null;
   if (node.type === "Literal" && typeof node.value === "string") return node.value;
   if (node.type === "TemplateLiteral") return templateLiteralToPattern(node);
   return null;
 }
-
-/**
- * Coba ekstrak nama field payload/body secara statis dari AST node, tanpa
- * eksekusi. Cuma berhasil kalau body-nya object literal langsung, mis.:
- *   fetch(url, { method: "POST", body: JSON.stringify({ user, pass }) })
- *   axios.post(url, { user, pass })
- * Kalau body berupa variable/expression dinamis, return undefined (tidak
- * bisa dideteksi statis, bukan bug).
- */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- acorn AST nodes aren't strongly typed upstream
 function extractPayloadKeys(node: any): string[] | undefined {
   if (!node) return undefined;
 
   if (node.type === "ObjectExpression") {
     const keys: string[] = [];
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     for (const prop of node.properties as any[]) {
       if (prop.type === "Property") {
         if (prop.key.type === "Identifier") keys.push(prop.key.name);
@@ -102,7 +67,6 @@ function extractPayloadKeys(node: any): string[] | undefined {
     return keys.length > 0 ? keys : undefined;
   }
 
-  // body: JSON.stringify({ ... })
   if (
     node.type === "CallExpression" &&
     node.callee.type === "MemberExpression" &&
@@ -116,10 +80,6 @@ function extractPayloadKeys(node: any): string[] | undefined {
 
   return undefined;
 }
-
-/**
- * Parse satu file JS (source text) dan cari pattern endpoint.
- */
 export function analyzeJsSource(source: string, sourceLabel: string): AnalyzeOutput {
   const endpoints: DiscoveredEndpoint[] = [];
   let usesLocalStorage = false;
@@ -135,9 +95,6 @@ export function analyzeJsSource(source: string, sourceLabel: string): AnalyzeOut
       allowReturnOutsideFunction: true,
     });
   } catch {
-    // Banyak bundle production di-minify secara agresif dan kadang
-    // memakai sintaks yang belum didukung acorn versi ini; kalau gagal
-    // parse penuh, kita fallback ke regex ringan supaya tetap dapat sinyal.
     const textEndpoints = scanTextForEndpoints(source, sourceLabel);
     return {
       endpoints: dedupe(textEndpoints),
@@ -158,33 +115,19 @@ export function analyzeJsSource(source: string, sourceLabel: string): AnalyzeOut
       ...(payload && payload.length > 0 ? { payload } : {}),
     });
   }
-
-  // --- Constant propagation ringan buat pola base-URL ---
-  // Contoh nyata yang kelewat tanpa ini: `const BASE = "/api/v1/"; ...;
-  // axios.get(BASE + "web/fxcal/ig_sso_login/")`. Kita cuma resolve pola
-  // paling umum: identifier yang di-assign SEKALI ke string literal, lalu
-  // dipakai dalam concat "+" (boleh berantai) dengan literal/identifier lain
-  // yang juga resolvable. Bukan evaluator ekspresi penuh — kalau nilainya
-  // dari function call, template dinamis, atau reassignment, kita nggak
-  // maksa nebak (return null, biar nggak ada false info).
   const stringConsts = new Map<string, string>();
   walk.simple(ast, {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     VariableDeclarator(node: any) {
       if (
         node.id?.type === "Identifier" &&
         node.init?.type === "Literal" &&
         typeof node.init.value === "string"
       ) {
-        // Kalau nama yang sama dideklarasi lebih dari sekali (re-declare di
-        // scope beda), timpa apa adanya — cukup buat sinyal tambahan, bukan
-        // sumber kebenaran mutlak.
         stringConsts.set(node.id.name, node.init.value);
       }
     },
   });
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   function resolveUrl(node: any): string | null {
     const direct = urlFromArg(node);
     if (direct !== null) return direct;
@@ -199,13 +142,9 @@ export function analyzeJsSource(source: string, sourceLabel: string): AnalyzeOut
   }
 
   walk.simple(ast, {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- acorn-walk's simple() visitor nodes aren't strongly typed upstream
     CallExpression(node: any) {
       const callee = node.callee;
       const line = lineOf(node);
-
-      // fetch("/api/x", { method: "POST", body: JSON.stringify({...}) })
-      // fetch(`/api/x/${id}`) juga ditangkap lewat template literal.
       if (callee.type === "Identifier" && callee.name === "fetch") {
         const arg0 = node.arguments[0];
         let method: "GET" | "POST" = "GET";
@@ -231,19 +170,12 @@ export function analyzeJsSource(source: string, sourceLabel: string): AnalyzeOut
           pushEndpoint(url, method, line, method === "POST" ? payload : undefined);
         }
       }
-
-      // axios.get("/api/x") / axios.post("/api/x", { ...payload }) / api.get(...) /
-      // olarisInstapi.apiPost("/api/x", {...}) dst. Match longgar: nama property
-      // cukup MENGANDUNG salah satu verb (bukan harus persis "post"), karena
-      // banyak API client custom bungkus jadi nama kayak "apiPost"/"httpGet".
       let memberMethodHandled = false;
       if (callee.type === "MemberExpression" && callee.property.type === "Identifier") {
         const hint = methodHintFromName(callee.property.name);
         if (hint) {
           memberMethodHandled = true;
           const arg0 = node.arguments[0];
-          // *.post/put/patch(url, data, config) — argumen kedua adalah body-nya
-          // langsung. *.delete(url, config) biasanya tidak punya body di posisi ini.
           const payload =
             hint !== "GET" && hint !== "DELETE" ? extractPayloadKeys(node.arguments[1]) : undefined;
           const url = resolveUrl(arg0);
@@ -253,7 +185,6 @@ export function analyzeJsSource(source: string, sourceLabel: string): AnalyzeOut
         }
       }
 
-      // localStorage.getItem / setItem
       if (
         callee.type === "MemberExpression" &&
         callee.object.type === "Identifier" &&
@@ -263,19 +194,6 @@ export function analyzeJsSource(source: string, sourceLabel: string): AnalyzeOut
       ) {
         usesLocalStorage = true;
       }
-
-      // Generic wrapper/hook call: banyak bundle production (React Query,
-      // SWR, custom API client hasil minify) manggil helper request lewat
-      // nama variable/method pendek yang sudah di-mangle atau nggak
-      // mengandung verb HTTP sama sekali (mis. `client.request(url, {...})`,
-      // `service.call(url, ...)`), bukan literal "fetch" atau nama yang
-      // mengandung "get/post/put/delete/patch" yang sudah ketangkep dua
-      // cabang di atas. Kita nggak bisa andalkan nama fungsi di sini, jadi
-      // triggernya murni dari bentuk argumen: arg pertama harus resolve ke
-      // path yang cocok API_PATH_RE — baik itu Identifier call (`i(url,...)`)
-      // maupun MemberExpression call yang belum di-handle branch axios-like
-      // di atas (memberMethodHandled === false). Endpoint yang sama nanti
-      // dirapikan oleh dedupe()/cleanup di bawah, bukan di sini.
       const isGenericIdentifierCall = callee.type === "Identifier" && callee.name !== "fetch";
       const isGenericMemberCall = callee.type === "MemberExpression" && !memberMethodHandled;
       if (isGenericIdentifierCall || isGenericMemberCall) {
@@ -288,10 +206,8 @@ export function analyzeJsSource(source: string, sourceLabel: string): AnalyzeOut
               const fromLiteral = methodFromLiteral(arg.value);
               if (fromLiteral) method = fromLiteral;
             } else if (arg.type === "ObjectExpression") {
-              // { method: "PUT", body: {...} } style config object
               let methodFromConfig: HttpMethod | null = null;
               let bodyNode: unknown = null;
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               for (const prop of arg.properties as any[]) {
                 if (prop.type !== "Property") continue;
                 const keyName =
@@ -310,9 +226,6 @@ export function analyzeJsSource(source: string, sourceLabel: string): AnalyzeOut
                 if (keyName === "body" || keyName === "data") bodyNode = prop.value;
               }
               if (methodFromConfig) method = methodFromConfig;
-              // Kalau nggak ada { body: ... } eksplisit, object literal itu
-              // sendiri kemungkinan besar payload-nya (pola axios.post(url, data)
-              // yang di-wrap: mutateAsync({ ...fields })).
               payload = extractPayloadKeys(bodyNode ?? arg) ?? payload;
             }
           }
@@ -383,18 +296,8 @@ function dedupe(list: DiscoveredEndpoint[]): DiscoveredEndpoint[] {
   }
   return Array.from(byKey.values());
 }
-
-/**
- * Scan teks mentah (bukan AST) buat cari string "/api/...", "/graphql/..."
- * dst di manapun letaknya — dipakai baik sebagai fallback (kalau AST gagal
- * parse) MAUPUN selalu dijalankan sebagai pelengkap AST walk, karena banyak
- * pola (string concat, computed property, endpoint di-assign ke variable
- * dulu baru dipakai) yang AST walk di atas nggak nangkep tapi tetap
- * kelihatan kalau di-search manual di source.
- */
 function scanTextForEndpoints(source: string, sourceLabel: string): DiscoveredEndpoint[] {
   const endpoints: DiscoveredEndpoint[] = [];
-  // Kutip bisa " ' atau ` (template literal statis, tanpa interpolasi).
   const re = new RegExp(`["'\`](${API_PATH_SCAN_RE.source})["'\`]`, "g");
   let match: RegExpExecArray | null;
   const lines = source.split("\n");
@@ -429,11 +332,6 @@ function scanTextForEndpoints(source: string, sourceLabel: string): DiscoveredEn
   return endpoints;
 }
 
-/**
- * Analisis kumpulan inline <script> body yang sudah diekstrak (via linkedom
- * di crawler.ts) — tidak perlu fetch tambahan karena sudah didapat dari HTML
- * homepage yang sama.
- */
 export function analyzeInlineScripts(
   inlineScripts: string[],
   onLog?: (msg: string) => void
@@ -460,11 +358,6 @@ export interface FetchedJsFile {
   text: string;
 }
 
-/**
- * Fetch mentah kumpulan file JS (max MAX_JS_FILES, max MAX_JS_FILE_BYTES/file)
- * TANPA analisis — dipakai supaya secret-scanner & library-fingerprint bisa
- * jalan di source text yang sama tanpa fetch ulang per keperluan.
- */
 export async function fetchJsFiles(
   scriptUrls: string[],
   onLog?: (msg: string) => void
@@ -502,9 +395,6 @@ export async function fetchJsFiles(
   return out;
 }
 
-/**
- * Fetch dan analisis kumpulan file JS (max MAX_JS_FILES, max MAX_JS_FILE_BYTES/file)
- */
 export async function analyzeJsFiles(
   scriptUrls: string[],
   onLog?: (msg: string) => void

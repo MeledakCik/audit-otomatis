@@ -19,17 +19,6 @@ function sseFrame(id: number, event: ScanLogEvent): string {
   return `id: ${id}\ndata: ${JSON.stringify(event)}\n\n`;
 }
 
-/**
- * Server-Sent Events endpoint untuk progress scan realtime.
- *
- * PENTING: implementasi ini poll ke store (Redis) tiap 1 detik, BUKAN
- * subscribe ke event-emitter in-process seperti sebelumnya — karena di
- * Vercel, request yang membuat scan (Server Action) dan request stream ini
- * bisa (dan sering) dieksekusi di instance serverless yang berbeda, jadi
- * event-emitter in-memory tidak akan pernah ke-trigger dari instance lain.
- * Polling ke storage eksternal adalah pendekatan yang aktual bisa jalan di
- * lingkungan serverless/multi-instance seperti ini.
- */
 export async function GET(
   req: Request,
   { params }: { params: Promise<{ id: string }> }

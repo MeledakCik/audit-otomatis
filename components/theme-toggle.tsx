@@ -4,24 +4,9 @@ import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
 import { Moon, Sun } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-/**
- * Toggle gelap/terang. Render awal (server + first client paint) selalu
- * anggap dark dulu (samain sama `defaultTheme="dark"` di ThemeProvider)
- * supaya nggak ada hydration mismatch — baru setelah mount, `resolvedTheme`
- * asli dari next-themes (localStorage) dipakai.
- */
 export function ThemeToggle({ className }: { className?: string }) {
   const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
-
-  // Pattern standar dari next-themes buat menghindari hydration mismatch:
-  // render pertama (server + client sebelum mount) selalu anggap "dark"
-  // (samain sama defaultTheme), baru setelah mount pakai resolvedTheme
-  // asli. Ini bukan derived-state anti-pattern yang biasa ditangkap rule
-  // react-hooks/set-state-in-effect — di sini emang perlu nunggu satu
-  // commit ekstra biar konsisten sama apa yang di-render server.
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => setMounted(true), []);
 
   const isDark = mounted ? resolvedTheme === "dark" : true;

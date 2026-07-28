@@ -9,12 +9,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex h-dvh w-full overflow-hidden bg-[#0a0710] text-slate-100">
-      {/* Desktop Sidebar */}
       <aside className="hidden lg:flex w-64 shrink-0 flex-col border-r border-white/[0.06] bg-[#0f0b16]">
         <AppSidebar />
       </aside>
 
-      {/* Mobile Drawer Sidebar */}
       {open && (
         <div className="fixed inset-0 z-50 flex lg:hidden">
           <div className="relative flex w-64 flex-col bg-[#0f0b16] border-r border-white/[0.06] shadow-2xl">
@@ -33,9 +31,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       )}
 
-      {/* Main Content Area */}
       <div className="flex flex-1 flex-col min-w-0 overflow-hidden">
-        {/* Mobile Header Bar */}
         <header className="flex lg:hidden h-14 items-center px-4 border-b border-white/[0.06] bg-[#0f0b16] shrink-0">
           <button
             onClick={() => setOpen(true)}
@@ -47,8 +43,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             AUTO-SEC AUDITOR
           </span>
         </header>
-
-        {/* Scrollable Viewport */}
         <main className="flex-1 overflow-y-auto bg-[#0a0710]">{children}</main>
       </div>
     </div>

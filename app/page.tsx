@@ -1,22 +1,14 @@
 import { ScanForm } from "@/components/scan-form";
 import { Search, Code2, ShieldCheck, FileText } from "lucide-react";
-
-// startScanAction() dipanggil dari halaman ini, lalu lanjut jalan di
-// background lewat next/server `after()`. Vercel membatasi durasi tiap
-// function invocation (termasuk after()-nya) — default 300s dengan Fluid
-// Compute di semua plan (per pertengahan 2026). Scan bisa makan waktu lebih
-// dari beberapa puluh detik (budget 100 request x delay 500ms + crawling),
-// jadi durasi di-set eksplisit ke batas aman 300s. Kalau butuh lebih lama,
-// perlu plan Pro/Enterprise (bisa sampai 800s).
 export const maxDuration = 300;
 
 export default function Home() {
   return (
     <div className="w-full min-h-full">
       <div className="mx-auto max-w-6xl px-6 lg:px-8 py-10">
-        {/* TOP SECTION */}
+
         <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_0.85fr] gap-10 items-start">
-          {/* Left Hero Content */}
+   
           <div className="pt-2 space-y-6">
             <div className="inline-flex items-center px-3 py-1 rounded-md bg-purple-500/10 border border-purple-500/20 text-xs font-mono tracking-[0.2em] uppercase text-purple-400">
               $ AUDIT --DOMAIN
@@ -48,7 +40,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Right Form Card */}
           <div className="rounded-2xl border border-white/10 bg-[#130f1d] p-6 shadow-xl shadow-purple-950/20">
             <div className="mb-4">
               <div className="text-xs font-mono tracking-widest uppercase text-purple-300/80 font-semibold">
@@ -59,10 +50,8 @@ export default function Home() {
           </div>
         </div>
 
-        {/* DIVIDER */}
         <div className="my-10 border-t border-white/[0.06]" />
 
-        {/* BOTTOM CARDS */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {[
             {
@@ -110,7 +99,6 @@ export default function Home() {
           ))}
         </div>
 
-        {/* FOOTER NOTE */}
         <div className="mt-6 flex items-center gap-2 text-xs font-mono text-slate-400 bg-white/[0.02] border border-white/[0.04] p-3 rounded-lg">
           <span className="inline-block w-1.5 h-1.5 rounded-full bg-purple-400" />
           <span>

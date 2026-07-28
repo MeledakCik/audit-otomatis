@@ -46,11 +46,6 @@ function hostOf(url: string): string {
     return "";
   }
 }
-
-/** Bangun contoh perintah cURL dari endpoint yang ditemukan. Untuk method
- * selain GET, body cuma placeholder dari nama field yang terdeteksi statis
- * di JS/form — bukan hasil eksekusi asli, murni bantuan copy-paste supaya
- * user bisa uji manual dari terminal sendiri. */
 function buildCurl(ep: DiscoveredEndpoint): string {
   if (ep.method === "GET") {
     return `curl -sS -i \\\n  -X GET '${ep.url}' \\\n  -H 'User-Agent: Mozilla/5.0'`;
