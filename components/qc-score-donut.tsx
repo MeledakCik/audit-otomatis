@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { PieChart, Pie, Cell } from "recharts";
 
 function colorForScore(score: number): string {
@@ -17,6 +18,21 @@ export function QcScoreDonut({
   score: number | null;
   loading?: boolean;
 }) {
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  if (!isMounted) {
+    return (
+      <div className="flex flex-col items-center gap-2">
+        <div className="h-[132px] w-[132px]" />
+        <span className="text-[11px] font-mono uppercase tracking-widest text-muted">{label}</span>
+      </div>
+    );
+  }
+
   const value = score ?? 0;
   const color = score === null ? "#453264" : colorForScore(value);
   const data = [
