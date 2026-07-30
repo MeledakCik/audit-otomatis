@@ -1,4 +1,14 @@
-import type { QcLogEvent, QcModulesSelection, QcModuleKey, QcResult, QcState, QcStatus } from "./qc-types";
+import type {
+  QcContentResult,
+  QcLogEvent,
+  QcModulesSelection,
+  QcModuleKey,
+  QcPerfResult,
+  QcResult,
+  QcSeoResult,
+  QcState,
+  QcStatus,
+} from "./qc-types";
 import { getKv, REDIS_CONFIGURED } from "./redis";
 
 const MAX_LOGS_KEPT = 300;
@@ -6,8 +16,18 @@ const QC_TTL_SECONDS = 30 * 60; // sama seperti scan: auto-bersih 30 menit
 
 const metaKey = (id: string) => `trout:qc:${id}:meta`;
 const logsKey = (id: string) => `trout:qc:${id}:logs`;
+// Setiap modul QC (seo/perf/content) punya key hasil sendiri-sendiri —
+// SENGAJA dipisah dari meta, karena 3 modul dijalankan PARALEL
+// (Promise.all di lib/qc-runner.ts). Kalau hasilnya ditulis ke satu field
+// gabungan di meta lewat pola get->mutate->set (updateMeta), tulisan yang
+// selesai lebih dulu bisa hilang tertimpa tulisan modul lain yang baca
+// meta versi lama sebelum tulisan pertama ke-persist (lost update / race
+// condition) — ini kejadian nyata di Redis (Upstash REST, ada latensi
+// network antar get/set), meski di fallback in-memory nyaris tak terlihat
+// karena mutasi objek JS instan tanpa round-trip.
+const resultKey = (id: string, module: QcModuleKey) => `trout:qc:${id}:result:${module}`;
 
-type QcMeta = Omit<QcState, "logs">;
+type QcMeta = Omit<QcState, "logs" | "result"> & { result: Omit<QcResult, QcModuleKey> };
 
 // --- Fallback in-memory (HANYA dev lokal tanpa Redis) ---
 const globalForQcStore = globalThis as unknown as {
@@ -57,10 +77,25 @@ export async function createQc(
 
 export async function getQc(id: string): Promise<QcState | undefined> {
   if (REDIS_CONFIGURED) {
-    const meta = await getKv().getJSON<QcMeta>(metaKey(id));
+    const kv = getKv();
+    const meta = await kv.getJSON<QcMeta>(metaKey(id));
     if (!meta) return undefined;
-    const logs = await getQcLogsSince(id, 0);
-    return { ...meta, logs };
+
+    const [logs, seo, perf, content] = await Promise.all([
+      getQcLogsSince(id, 0),
+      kv.getJSON<QcSeoResult>(resultKey(id, "seo")),
+      kv.getJSON<QcPerfResult>(resultKey(id, "perf")),
+      kv.getJSON<QcContentResult>(resultKey(id, "content")),
+    ]);
+
+    const result: QcResult = {
+      ...meta.result,
+      ...(seo ? { seo } : {}),
+      ...(perf ? { perf } : {}),
+      ...(content ? { content } : {}),
+    };
+
+    return { ...meta, logs, result };
   }
   return memQc.get(id);
 }
@@ -84,7 +119,7 @@ async function updateMeta(id: string, mutate: (state: QcMeta) => void): Promise<
   } else {
     const state = memQc.get(id);
     if (!state) return;
-    mutate(state);
+    mutate(state as unknown as QcMeta);
   }
 }
 
@@ -117,18 +152,29 @@ export async function logQc(id: string, message: string): Promise<void> {
   await emitQc(id, { type: "log", message });
 }
 
+/**
+ * Simpan hasil satu modul QC ke key Redis-nya sendiri (BUKAN read-modify-write
+ * ke meta gabungan) — aman dipanggil bersamaan (concurrent) dari 3 modul
+ * QC yang jalan paralel tanpa saling menimpa. Lihat komentar `resultKey`.
+ */
 export async function setModuleResult<K extends QcModuleKey>(
   id: string,
   module: K,
   result: NonNullable<QcResult[K]>
 ): Promise<void> {
-  await updateMeta(id, (s) => {
-    s.result = { ...s.result, [module]: result };
-  });
+  if (REDIS_CONFIGURED) {
+    await getKv().setJSON(resultKey(id, module), result, QC_TTL_SECONDS);
+  } else {
+    const state = memQc.get(id);
+    if (state) state.result = { ...state.result, [module]: result };
+  }
   await emitQc(id, { type: "module_done", module });
 }
 
 export async function setOverallScore(id: string, overallScore: number): Promise<void> {
+  // Dipanggil sekali saja, setelah Promise.all semua modul selesai (lihat
+  // lib/qc-runner.ts) — tidak concurrent, jadi read-modify-write di sini
+  // aman dan tidak butuh key terpisah seperti setModuleResult.
   await updateMeta(id, (s) => {
     s.result = { ...s.result, overallScore };
   });
