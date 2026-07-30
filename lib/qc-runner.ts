@@ -107,7 +107,9 @@ export async function runQc(qcId: string, origin: string, modules: QcModulesSele
         (async () => {
           await setQcStatus(qcId, "running_perf");
           await logQc(qcId, "Menjalankan QC Performance (PageSpeed Insights)...");
-          const result = await analyzePerformance(origin, home.html, home.contentLength);
+          const result = await analyzePerformance(origin, home.html, home.contentLength, (msg) =>
+            logQc(qcId, msg)
+          );
           await setModuleResult(qcId, "perf", result);
           await logQc(
             qcId,

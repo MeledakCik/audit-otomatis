@@ -23,7 +23,9 @@ function withTimeout(ms: number): { signal: AbortSignal; cancel: () => void } {
   return { signal: controller.signal, cancel: () => clearTimeout(t) };
 }
 
-async function fetchPageSpeedInsights(targetUrl: string): Promise<PsiResponse | null> {
+async function fetchPageSpeedInsights(
+  targetUrl: string
+): Promise<{ data: PsiResponse; reason?: undefined } | { data: null; reason: string }> {
   const apiKey = process.env.GOOGLE_PAGESPEED_API_KEY;
   const url = new URL(PSI_ENDPOINT);
   url.searchParams.set("url", targetUrl);
@@ -35,11 +37,39 @@ async function fetchPageSpeedInsights(targetUrl: string): Promise<PsiResponse | 
   try {
     const res = await fetch(url.toString(), { signal });
     cancel();
-    if (!res.ok) return null;
-    return (await res.json()) as PsiResponse;
-  } catch {
+
+    if (!res.ok) {
+      // Coba baca body error dari Google supaya alasan sebenarnya kelihatan
+      // (misal: "API key not valid", "quota exceeded", key dibatasi
+      // referrer, PSI API belum di-enable di project GCP, dst) — bukan
+      // cuma "gagal" tanpa penjelasan.
+      let detail = "";
+      try {
+        const body = await res.json();
+        detail = body?.error?.message ?? "";
+      } catch {
+        // body bukan JSON / kosong, abaikan
+      }
+      return {
+        data: null,
+        reason: `HTTP ${res.status}${detail ? ` — ${detail}` : ""}`,
+      };
+    }
+
+    const json = (await res.json()) as PsiResponse;
+    if (!json.lighthouseResult) {
+      return { data: null, reason: "Response PSI tidak berisi lighthouseResult (kemungkinan URL tidak bisa di-crawl Google)." };
+    }
+    return { data: json };
+  } catch (err) {
     cancel();
-    return null;
+    const isAbort = err instanceof Error && err.name === "AbortError";
+    return {
+      data: null,
+      reason: isAbort
+        ? `Timeout setelah ${PSI_TIMEOUT_MS / 1000}s menunggu PageSpeed Insights.`
+        : `Gagal fetch PSI: ${err instanceof Error ? err.message : "unknown error"}`,
+    };
   }
 }
 
@@ -121,7 +151,7 @@ function scoreFromPsi(psi: PsiResponse): { metrics: QcPerfMetrics; issues: QcIss
  * (>500KB dianggap berat) dan keberadaan loading="lazy" / format gambar modern
  * langsung dari HTML yang sudah di-fetch crawler (tanpa request tambahan).
  */
-function manualFallback(html: string, contentLength: number | null): QcPerfResult {
+function manualFallback(html: string, contentLength: number | null, reason: string): QcPerfResult {
   const $ = cheerio.load(html);
   const issues: QcIssue[] = [];
   let score = 100;
@@ -163,7 +193,7 @@ function manualFallback(html: string, contentLength: number | null): QcPerfResul
 
   issues.push({
     level: "info",
-    msg: "PageSpeed Insights API tidak tersedia/limit — skor dihitung dari cek manual (content-length & atribut HTML), bukan Lighthouse penuh.",
+    msg: `PageSpeed Insights API gagal dipakai (${reason}) — skor dihitung dari cek manual (content-length & atribut HTML), bukan Lighthouse penuh.`,
   });
 
   score = Math.max(0, Math.min(100, Math.round(score)));
@@ -188,14 +218,16 @@ function manualFallback(html: string, contentLength: number | null): QcPerfResul
 export async function analyzePerformance(
   targetUrl: string,
   homepageHtml: string,
-  homepageContentLength: number | null
+  homepageContentLength: number | null,
+  onLog?: (msg: string) => void
 ): Promise<QcPerfResult> {
   const psi = await fetchPageSpeedInsights(targetUrl);
 
-  if (!psi || !psi.lighthouseResult) {
-    return manualFallback(homepageHtml, homepageContentLength);
+  if (!psi.data) {
+    onLog?.(`PageSpeed Insights gagal — ${psi.reason}. Fallback ke cek manual.`);
+    return manualFallback(homepageHtml, homepageContentLength, psi.reason);
   }
 
-  const { metrics, issues, score } = scoreFromPsi(psi);
+  const { metrics, issues, score } = scoreFromPsi(psi.data);
   return { score, issues, metrics };
 }
