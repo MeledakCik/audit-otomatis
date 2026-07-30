@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import Link from "next/link";
 import { useQcStream } from "@/lib/use-qc-stream";
 import { QcStatusPill } from "@/components/qc-status-pill";
@@ -21,11 +21,6 @@ export function QcDashboard({
   modules: QcModulesSelection;
 }) {
   const { connect, status, logs, result, errorMessage } = useQcStream();
-  const [isMounted, setIsMounted] = useState(false);
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
 
   useEffect(() => {
     connect(qcId);
@@ -175,6 +170,29 @@ export function QcDashboard({
                         value={fmtBool(result.perf.metrics.modernImageFormat)}
                       />
                     </div>
+                    {result.perf.metrics.lcpElement && (
+                      <div className="rounded-lg border border-sev-high/30 bg-sev-high/[0.06] px-3 py-2">
+                        <div className="text-[9px] uppercase tracking-widest text-muted-dim mb-1">
+                          Elemen Penyebab LCP
+                        </div>
+                        {result.perf.metrics.lcpElement.selector && (
+                          <div className="text-[11px] font-mono text-sev-high mb-1">
+                            {result.perf.metrics.lcpElement.selector}
+                          </div>
+                        )}
+                        {result.perf.metrics.lcpElement.snippet && (
+                          <code className="block text-[10px] font-mono text-muted break-all whitespace-pre-wrap">
+                            {result.perf.metrics.lcpElement.snippet}
+                          </code>
+                        )}
+                        {result.perf.metrics.lcpElement.isLazyLoaded && (
+                          <div className="mt-1.5 text-[10px] text-sev-high">
+                            ⚠ Elemen ini kena loading=&quot;lazy&quot; —
+                            sebaiknya di-load prioritas tinggi.
+                          </div>
+                        )}
+                      </div>
+                    )}
                     <QcIssueList issues={result.perf.issues} />
                   </>
                 ) : (
@@ -243,7 +261,7 @@ export function QcDashboard({
           )}
 
           <Card
-            className="flex flex-col min-h-0 animate-fade-up"
+            className={`flex flex-col min-h-0 animate-fade-up ${modules.content ? "" : "md:col-span-2"}`}
             style={{ "--delay": "180ms" } as React.CSSProperties}
           >
             <CardHeader>

@@ -33,6 +33,11 @@ export interface QcPerfMetrics {
   cacheHeaders: boolean | null; // true kalau Cache-Control terdeteksi masuk akal
   lazyLoading: boolean | null;
   source: "pagespeed" | "fallback";
+  lcpElement: {
+    snippet: string | null; // cuplikan HTML elemen LCP (mis. <img src="...">)
+    selector: string | null; // CSS selector elemen tsb di halaman
+    isLazyLoaded: boolean | null; // true = gambar LCP-nya kena lazy-load (biasanya kontraproduktif)
+  } | null;
 }
 
 export interface QcPerfResult {

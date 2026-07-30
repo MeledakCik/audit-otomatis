@@ -90,6 +90,17 @@ export function exportQcToObsidianMarkdown(qc: QcState): string {
     lines.push(`- **Format gambar modern (WebP/AVIF)**: ${fmtBool(result.perf.metrics.modernImageFormat)}`);
     lines.push(`- **Cache header**: ${fmtBool(result.perf.metrics.cacheHeaders)}`);
     lines.push(`- **Lazy loading**: ${fmtBool(result.perf.metrics.lazyLoading)}`);
+    if (result.perf.metrics.lcpElement) {
+      lines.push(`- **Elemen penyebab LCP**: \`${result.perf.metrics.lcpElement.selector ?? "-"}\``);
+      if (result.perf.metrics.lcpElement.snippet) {
+        lines.push("  ```html");
+        lines.push(`  ${result.perf.metrics.lcpElement.snippet}`);
+        lines.push("  ```");
+      }
+      if (result.perf.metrics.lcpElement.isLazyLoaded) {
+        lines.push("  - ⚠ Elemen ini kena `loading=\"lazy\"` (kontraproduktif untuk LCP).");
+      }
+    }
     lines.push("");
     if (result.perf.issues.length > 0) {
       lines.push("| Level | Issue |");

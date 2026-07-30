@@ -5,15 +5,52 @@ const PSI_ENDPOINT = "https://www.googleapis.com/pagespeedonline/v5/runPagespeed
 const PSI_TIMEOUT_MS = 25_000;
 const MODERN_IMAGE_EXT = /\.(webp|avif)(\?|$)/i;
 
+interface PsiNode {
+  nodeLabel?: string;
+  snippet?: string;
+  selector?: string;
+}
+interface PsiAuditDetailItem {
+  node?: PsiNode;
+  items?: PsiAuditDetailItem[];
+}
 interface PsiAudit {
   score?: number | null;
   numericValue?: number;
   displayValue?: string;
+  details?: { items?: PsiAuditDetailItem[] };
 }
 interface PsiResponse {
   lighthouseResult?: {
     categories?: { performance?: { score?: number } };
     audits?: Record<string, PsiAudit>;
+  };
+}
+
+/**
+ * Ambil elemen penyebab LCP dari audit "largest-contentful-paint-element" —
+ * PSI menaruh node-nya di details.items[0].node (versi lama) ATAU
+ * ternested di details.items[0].items[].node (versi dengan breakdown
+ * subItems), jadi dicoba dua-duanya. Dikombinasikan dengan audit
+ * "lcp-lazy-loaded" untuk tahu apakah elemen LCP-nya kena
+ * loading="lazy" (kontraproduktif — elemen paling penting harusnya
+ * di-load duluan, bukan ditunda).
+ */
+function extractLcpElement(audits: Record<string, PsiAudit>): QcPerfMetrics["lcpElement"] {
+  const lcpElAudit = audits["largest-contentful-paint-element"];
+  const firstItem = lcpElAudit?.details?.items?.[0];
+  const node = firstItem?.node ?? firstItem?.items?.[0]?.node;
+  if (!node) return null;
+
+  const lazyAudit = audits["lcp-lazy-loaded"];
+  // Audit "lcp-lazy-loaded" score 1 = pass (TIDAK lazy-loaded, bagus),
+  // score 0 = fail (KENA lazy-loaded, ini yang bikin LCP lambat).
+  const isLazyLoaded = lazyAudit && typeof lazyAudit.score === "number" ? lazyAudit.score < 1 : null;
+
+  return {
+    snippet: node.snippet ?? node.nodeLabel ?? null,
+    selector: node.selector ?? null,
+    isLazyLoaded,
   };
 }
 
@@ -88,10 +125,19 @@ function scoreFromPsi(psi: PsiResponse): { metrics: QcPerfMetrics; issues: QcIss
   const cacheAudit = audits["uses-long-cache-ttl"];
   const lazyAudit = audits["offscreen-images"];
 
+  const lcpElement = extractLcpElement(audits);
+
   if (lcpAudit && (lcpAudit.score ?? 1) < 0.9) {
+    const elementNote = lcpElement?.selector ? ` Elemen: \`${lcpElement.selector}\`.` : "";
     issues.push({
       level: (lcpAudit.score ?? 1) < 0.5 ? "critical" : "warning",
-      msg: `LCP lambat: ${lcpAudit.displayValue ?? "N/A"} (target < 2.5s).`,
+      msg: `LCP lambat: ${lcpAudit.displayValue ?? "N/A"} (target < 2.5s).${elementNote}`,
+    });
+  }
+  if (lcpElement?.isLazyLoaded) {
+    issues.push({
+      level: "warning",
+      msg: "Elemen LCP kena loading=\"lazy\" — ini kontraproduktif, elemen paling penting di layar harus di-load duluan (fetchpriority=\"high\"), bukan ditunda.",
     });
   }
   if (clsAudit && (clsAudit.score ?? 1) < 0.9) {
@@ -141,6 +187,7 @@ function scoreFromPsi(psi: PsiResponse): { metrics: QcPerfMetrics; issues: QcIss
     cacheHeaders: cacheAudit ? (cacheAudit.score ?? 1) >= 0.9 : null,
     lazyLoading: lazyAudit ? (lazyAudit.score ?? 1) >= 0.9 : null,
     source: "pagespeed",
+    lcpElement,
   };
 
   return { metrics, issues, score };
@@ -211,6 +258,7 @@ function manualFallback(html: string, contentLength: number | null, reason: stri
       cacheHeaders: null,
       lazyLoading,
       source: "fallback",
+      lcpElement: null,
     },
   };
 }
