@@ -60,6 +60,10 @@ export interface CrawledPage {
   depth: number;
   scripts: string[];
   status: number;
+  contentType?: string;
+  size?: number;
+  headers?: Record<string, string>;
+  html?: string; // dipotong (lihat MAX_STORED_HTML_CHARS di site-crawler.ts) supaya payload Redis wajar
 }
 
 export interface LibraryDetection {
@@ -107,4 +111,5 @@ export interface ScanState {
   pagesCrawled: number;
   jsFilesScanned: number;
   librariesDetected: LibraryDetection[];
+  pages: CrawledPage[]; // snapshot request/response per halaman yang di-crawl, dipakai oleh /requests inspector
 }

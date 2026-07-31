@@ -16,6 +16,7 @@ import {
   setEndpointsDiscovered,
   setGraph,
   setLibrariesDetected,
+  setPages,
   setPagesCrawled,
   setStatus,
 } from "./scan-store";
@@ -34,6 +35,7 @@ export async function runScan(scanId: string, origin: string) {
     const crawl = await crawlSite(origin, budget, (msg) => log(scanId, msg));
     await bumpRequestCount(scanId, crawl.pages.length);
     await setPagesCrawled(scanId, crawl.pages.length);
+    await setPages(scanId, crawl.pages);
 
     if (crawl.pages.length === 0 && crawl.cloudflare) {
       await log(scanId, `Cloudflare challenge terdeteksi: ${crawl.cloudflare.reason}`);

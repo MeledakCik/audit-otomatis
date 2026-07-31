@@ -1,4 +1,5 @@
 import type {
+  CrawledPage,
   DiscoveredEndpoint,
   Finding,
   GraphData,
@@ -14,6 +15,7 @@ const SCAN_TTL_SECONDS = 30 * 60; // auto-bersih 30 menit setelah dibuat, sama s
 
 const metaKey = (id: string) => `trout:scan:${id}:meta`;
 const logsKey = (id: string) => `trout:scan:${id}:logs`;
+const META_KEY_PATTERN = "trout:scan:*:meta";
 
 type ScanMeta = Omit<ScanState, "logs">;
 
@@ -46,6 +48,7 @@ function freshState(id: string, domain: string, origin: string): ScanState {
     pagesCrawled: 0,
     jsFilesScanned: 0,
     librariesDetected: [],
+    pages: [],
   };
 }
 
@@ -175,6 +178,65 @@ export async function setPagesCrawled(id: string, n: number): Promise<void> {
   await updateMeta(id, (s) => {
     s.pagesCrawled = n;
   });
+}
+
+export async function setPages(id: string, pages: CrawledPage[]): Promise<void> {
+  await updateMeta(id, (s) => {
+    s.pages = pages;
+  });
+}
+
+export interface ScanSummary {
+  id: string;
+  domain: string;
+  origin: string;
+  createdAt: number;
+  status: ScanStatus;
+  pagesCount: number;
+  findingsCount: number;
+  severityCounts: Record<Finding["severity"], number>;
+  blockedReason?: string;
+}
+
+const EMPTY_SEVERITY_COUNTS: Record<Finding["severity"], number> = {
+  CRITICAL: 0,
+  HIGH: 0,
+  MEDIUM: 0,
+  LOW: 0,
+  INFO: 0,
+};
+
+/** Daftar semua scan (untuk /requests & /history), terbaru dulu. */
+export async function listScans(limit = 50): Promise<ScanSummary[]> {
+  let metas: ScanMeta[];
+
+  if (REDIS_CONFIGURED) {
+    const kv = getKv();
+    const keys = await kv.keys(META_KEY_PATTERN);
+    const found = await Promise.all(keys.map((k) => kv.getJSON<ScanMeta>(k)));
+    metas = found.filter((m): m is ScanMeta => m !== null);
+  } else {
+    metas = Array.from(memScans.values());
+  }
+
+  return metas
+    .map((m) => {
+      const severityCounts = { ...EMPTY_SEVERITY_COUNTS };
+      for (const f of m.findings ?? []) severityCounts[f.severity]++;
+      return {
+        id: m.id,
+        domain: m.domain,
+        origin: m.origin,
+        createdAt: m.createdAt,
+        status: m.status,
+        pagesCount: m.pages?.length ?? 0,
+        findingsCount: m.findings?.length ?? 0,
+        severityCounts,
+        blockedReason: m.blockedReason,
+      };
+    })
+    .sort((a, b) => b.createdAt - a.createdAt)
+    .slice(0, limit);
 }
 
 export async function bumpJsFilesScanned(id: string, n = 1): Promise<void> {

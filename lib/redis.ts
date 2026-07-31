@@ -8,6 +8,8 @@ export interface Kv {
   ttl(key: string): Promise<number>;
   rpushJSON(key: string, value: unknown, ttlSeconds: number, maxLen: number): Promise<void>;
   lrangeJSON<T>(key: string, start: number, stop: number): Promise<T[]>;
+  /** Cari semua key yang cocok dengan glob pattern (mis. "trout:scan:*:meta"). */
+  keys(pattern: string): Promise<string[]>;
 }
 
 function hasUpstashEnv(): boolean {
@@ -88,6 +90,23 @@ class UpstashKv implements Kv {
     const raw = await redis.lrange<T>(key, start, stop);
     return raw ?? [];
   }
+
+  async keys(pattern: string): Promise<string[]> {
+    const redis = getUpstashClient();
+    // Beberapa database Upstash membatasi/menonaktifkan command KEYS mentah demi
+    // keamanan (full keyspace scan). Pakai SCAN cursor-based supaya lebih aman
+    // & konsisten sama node-redis adapter di bawah.
+    const found: string[] = [];
+    let cursor: string | number = "0";
+    for (;;) {
+      const result: [string, string[]] = await redis.scan(cursor, { match: pattern, count: 100 });
+      const [nextCursor, batch] = result;
+      found.push(...batch);
+      if (nextCursor === "0") break;
+      cursor = nextCursor;
+    }
+    return found;
+  }
 }
 
 // ---------------- node-redis (TCP, REDIS_URL) adapter ----------------
@@ -158,6 +177,18 @@ class NodeRedisKv implements Kv {
     const client = await getNodeRedisClient();
     const raw = await client.lRange(key, start, stop);
     return raw.map((s) => JSON.parse(s) as T);
+  }
+
+  async keys(pattern: string): Promise<string[]> {
+    const client = await getNodeRedisClient();
+    // Pakai SCAN (bukan KEYS) supaya tidak blocking di server Redis TCP.
+    // PENTING: scanIterator() yield BATCH keys (array per iterasi), bukan satu
+    // key sekaligus — makanya di-spread, bukan di-push langsung.
+    const found: string[] = [];
+    for await (const batch of client.scanIterator({ MATCH: pattern, COUNT: 100 })) {
+      found.push(...(batch as unknown as string[]));
+    }
+    return found;
   }
 }
 

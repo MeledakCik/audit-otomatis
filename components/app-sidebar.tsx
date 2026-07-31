@@ -9,6 +9,7 @@ import {
   BookOpen,
   Code2,
   ShieldCheck,
+  Terminal,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -16,6 +17,7 @@ const MAIN = [
   { label: "Overview", icon: LayoutGrid, href: "/" },
   { label: "QC Otomatis", icon: ClipboardCheck, href: "/qc" },
   { label: "Scan History", icon: History, href: "/history" },
+  { label: "Request Inspector", icon: Terminal, href: "/requests" },
 ];
 
 const RESOURCES = [

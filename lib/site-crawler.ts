@@ -6,6 +6,7 @@ import type { RequestBudget } from "./rate-limit";
 
 export const MAX_CRAWL_URLS = 50;
 export const DEFAULT_MAX_DEPTH = 3; // level 0 (homepage) .. level 3
+export const MAX_STORED_HTML_CHARS = 20_000; // batas HTML yang disimpan per halaman ke Redis (preview di UI cuma perlu ~2000 char)
 
 interface PageParseResult {
   internalLinks: string[];
@@ -180,7 +181,24 @@ export async function crawlSite(
     }
 
     const parsed = parsePage(origin, next.url, fetched.body);
-    pages.push({ url: next.url, depth: next.depth, scripts: parsed.scripts, status: fetched.status });
+
+    const headersObj: Record<string, string> = {};
+    fetched.headers.forEach((value, key) => {
+      headersObj[key] = value;
+    });
+    const contentType = headersObj["content-type"] ?? "";
+    const size = Buffer.byteLength(fetched.body, "utf8");
+
+    pages.push({
+      url: next.url,
+      depth: next.depth,
+      scripts: parsed.scripts,
+      status: fetched.status,
+      headers: headersObj,
+      contentType,
+      size,
+      html: fetched.body.slice(0, MAX_STORED_HTML_CHARS),
+    });
     onLog(
       `[depth ${next.depth}] ${next.url} — ${parsed.internalLinks.length} link, ${parsed.scripts.length} JS, ${parsed.forms.length} form`
     );
