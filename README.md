@@ -1,6 +1,6 @@
 # Sentinel-ID.net — Passive-Only Security Auditor
 
-[[EN](https://img.shields.io/badge/lang-EN-blue.svg)](#) [[ID](https://img.shields.io/badge/lang-ID-red.svg)](./README_ID.md)
+**Language:** [English](./README.md) | [Indonesia](./README_ID.md)
 
 > ⚠️ For your own domain only. 100% passive, GET-only, no exploit, no payload.
 
