@@ -4,6 +4,26 @@ import { scanSecrets } from "./secret-scanner";
 import { fingerprintLibraries, libraryDetectionsToFindings, detectNextJs } from "./library-fingerprint";
 import { testResponseLeakage, testAntiAutomation, testExposedFiles, testSecurityHeaders } from "./tester";
 import { RequestBudget, sleep } from "./rate-limit";
+import { discoverFilesDetailed } from "./discovery/passiveDiscovery";
+import { checkVulnerableLibs } from "./vuln/jsLibChecker";
+import { findDomSinks } from "./vuln/domSink";
+import { detectRedirectParams } from "./vuln/redirectChecker";
+import { generateIdorCases } from "./vuln/idorDetector";
+import { checkAuthBypass } from "./vuln/authChecker";
+import {
+  vulnLibsToFindings,
+  domSinksToFindings,
+  redirectCasesToFindings,
+  idorCasesToFindings,
+  authCheckToFindings,
+  passiveDiscoveryToFindings,
+} from "./vuln/toFindings";
+
+// Cap findings per-file untuk sink/lib check: modul deteksi berbasis regex
+// bisa menghasilkan ratusan match di bundle vendor besar/minified — cap ini
+// menjaga log & Finding list tetap berguna (bukan flood), sesuai semangat
+// "quick win, bukan bukti exploitability" di komentar modul aslinya.
+const MAX_SINK_FINDINGS_PER_FILE = 10;
 import {
   addFinding,
   bumpRequestCount,
@@ -106,6 +126,21 @@ export async function runScan(scanId: string, origin: string) {
 
       const libs = fingerprintLibraries(file.text, file.label);
       allLibraryDetections.push(...libs);
+
+      // --- Passive-audit tambahan: vulnerable library banner + DOM-XSS sink ---
+      const vulnLibFindings = vulnLibsToFindings(checkVulnerableLibs(file.text), file.label);
+      for (const f of vulnLibFindings) {
+        await addFinding(scanId, f);
+        await log(scanId, `[VULN-LIB] ${f.severity} — ${f.title}`);
+      }
+
+      const sinks = findDomSinks(file.text).slice(0, MAX_SINK_FINDINGS_PER_FILE);
+      if (sinks.length > 0) {
+        for (const f of domSinksToFindings(sinks, file.label)) {
+          await addFinding(scanId, f);
+        }
+        await log(scanId, `[DOM-SINK] ${sinks.length} sink pattern ditemukan di ${file.label} (dibatasi ${MAX_SINK_FINDINGS_PER_FILE}/file, review manual).`);
+      }
     }
 
     await setStatus(scanId, "fingerprinting_libraries");
@@ -136,10 +171,43 @@ export async function runScan(scanId: string, origin: string) {
           await addFinding(scanId, f);
           await log(scanId, `[SECRET] ${f.severity} — ${f.title} (${f.endpoint})`);
         }
+
+        const inlineSinks = findDomSinks(src).slice(0, MAX_SINK_FINDINGS_PER_FILE);
+        if (inlineSinks.length > 0) {
+          const label = `inline-script@${p.pageUrl}`;
+          for (const f of domSinksToFindings(inlineSinks, label)) {
+            await addFinding(scanId, f);
+          }
+          await log(scanId, `[DOM-SINK] ${inlineSinks.length} sink pattern ditemukan di ${label}.`);
+        }
       }
     }
 
     await setGraph(scanId, graph);
+
+    // --- Deep passive audit: well-known file discovery + redirect/SSRF & IDOR candidate generation ---
+    await setStatus(scanId, "deep_audit");
+    await log(scanId, "Mencari well-known file (sitemap.xml, robots.txt, swagger/openapi.json)...");
+    const discoveredFiles = await discoverFilesDetailed(origin);
+    await bumpRequestCount(scanId, discoveredFiles.length);
+
+    const discoveryFindings = passiveDiscoveryToFindings(origin, discoveredFiles);
+    for (const f of discoveryFindings) {
+      await addFinding(scanId, f);
+      await log(scanId, `[DISCOVERY] ${f.severity} — ${f.title}`);
+    }
+
+    const extraPaths = new Set<string>();
+    for (const r of discoveredFiles) {
+      if (r.found) extraPaths.add(r.path);
+      for (const p of r.extractedPaths) extraPaths.add(p);
+    }
+    for (const p of extraPaths) {
+      jsEndpoints.push({ url: p, method: "GET", source: "passive-discovery:well-known" });
+    }
+    if (extraPaths.size > 0) {
+      await log(scanId, `Passive discovery menambahkan ${extraPaths.size} path baru ke daftar endpoint.`);
+    }
 
     const discoveredForDisplay = buildDiscoveredList(origin, crawl.allInternalLinks, crawl.allForms, jsEndpoints);
     await setDiscoveredEndpoints(scanId, discoveredForDisplay);
@@ -149,6 +217,21 @@ export async function runScan(scanId: string, origin: string) {
     const testTargets = buildTestTargets(origin, crawl.allInternalLinks, crawl.allForms, jsEndpoints);
     await setEndpointsDiscovered(scanId, testTargets.length);
     await log(scanId, `Total ${testTargets.length} target akan diuji secara pasif (GET only).`);
+
+    await log(scanId, "Generate kandidat Open Redirect/SSRF & IDOR dari pola URL (analisis nama param/path, belum dieksekusi)...");
+    const allTargetUrls = testTargets.map((t) => t.url);
+
+    const redirectFindings = redirectCasesToFindings(allTargetUrls.flatMap((u) => detectRedirectParams(u)));
+    for (const f of redirectFindings) {
+      await addFinding(scanId, f);
+      await log(scanId, `[REDIRECT/SSRF] ${f.severity} — ${f.title}`);
+    }
+
+    const idorFindings = idorCasesToFindings(generateIdorCases(allTargetUrls));
+    for (const f of idorFindings) {
+      await addFinding(scanId, f);
+      await log(scanId, `[IDOR] ${f.severity} — ${f.title}`);
+    }
 
     await setStatus(scanId, "testing");
 
@@ -163,7 +246,7 @@ export async function runScan(scanId: string, origin: string) {
     if (headerFindings) for (const f of headerFindings) addFinding(scanId, f);
 
     for (const target of testTargets) {
-      if (!budget.canSpend(2)) {
+      if (!budget.canSpend(3)) {
         await log(scanId, "Request budget (max 100) tercapai, menghentikan pengujian.");
         break;
       }
@@ -177,6 +260,15 @@ export async function runScan(scanId: string, origin: string) {
       const autoFinding = await budget.spend(() => testAntiAutomation(target.url));
       await bumpRequestCount(scanId);
       if (autoFinding) addFinding(scanId, autoFinding);
+
+      const authResult = await budget.spend(() => checkAuthBypass(target.url));
+      await bumpRequestCount(scanId);
+      if (authResult) {
+        for (const f of authCheckToFindings([authResult])) {
+          await addFinding(scanId, f);
+          await log(scanId, `[AUTH] ${f.severity} — ${f.title} (${f.endpoint})`);
+        }
+      }
 
       await sleep(50);
     }

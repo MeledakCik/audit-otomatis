@@ -8,6 +8,7 @@ const LABELS: Record<ScanStatus | "connecting", string> = {
   analyzing_js: "analyzing js",
   scanning_secrets: "scanning secrets",
   fingerprinting_libraries: "fingerprinting libs",
+  deep_audit: "deep passive audit",
   testing: "testing",
   blocked_cloudflare: "blocked",
   done: "done",
@@ -21,6 +22,7 @@ const STYLES: Record<ScanStatus | "connecting", string> = {
   analyzing_js: "text-accent border-accent/50 bg-accent/10",
   scanning_secrets: "text-accent border-accent/50 bg-accent/10",
   fingerprinting_libraries: "text-accent border-accent/50 bg-accent/10",
+  deep_audit: "text-accent border-accent/50 bg-accent/10",
   testing: "text-accent border-accent/50 bg-accent/10",
   blocked_cloudflare: "text-sev-high border-sev-high/50 bg-sev-high/10",
   done: "text-accent-fg border-transparent bg-gradient-accent shadow-[0_0_16px_-4px_var(--accent)]",
@@ -35,6 +37,7 @@ export function StatusPill({ status }: { status: ScanStatus | "connecting" }) {
     "analyzing_js",
     "scanning_secrets",
     "fingerprinting_libraries",
+    "deep_audit",
     "testing",
   ].includes(status);
   return (

@@ -32,7 +32,17 @@ export interface Finding {
   cvss?: number; // estimasi CVSS 0-10, hanya untuk temuan gaya pentest (secret/CVE)
   cwe?: string; // referensi CWE-xxx kalau relevan
   poc?: string; // contoh request non-destruktif (curl), hanya ilustrasi
-  category?: "secret" | "outdated-library" | "generic";
+  category?:
+    | "secret"
+    | "outdated-library"
+    | "generic"
+    | "dom-xss-sink"
+    | "open-redirect"
+    | "ssrf"
+    | "idor-candidate"
+    | "auth-bypass"
+    | "missing-rate-limit"
+    | "passive-discovery";
 }
 
 // --- Deep crawl: peta relasi page -> js -> endpoint ---
@@ -81,6 +91,7 @@ export type ScanStatus =
   | "analyzing_js"
   | "scanning_secrets"
   | "fingerprinting_libraries"
+  | "deep_audit"
   | "testing"
   | "blocked_cloudflare"
   | "done"

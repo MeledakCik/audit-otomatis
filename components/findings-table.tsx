@@ -1,11 +1,24 @@
 "use client";
 
 import { useState } from "react";
-import { SeverityBadge } from "@/components/ui/badge";
+import { SeverityBadge, Badge } from "@/components/ui/badge";
 import type { Finding, Severity } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const ORDER: Severity[] = ["CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"];
+
+const CATEGORY_LABELS: Record<NonNullable<Finding["category"]>, string> = {
+  secret: "secret",
+  "outdated-library": "outdated lib",
+  generic: "generic",
+  "dom-xss-sink": "dom xss sink",
+  "open-redirect": "open redirect",
+  ssrf: "ssrf",
+  "idor-candidate": "idor candidate",
+  "auth-bypass": "auth bypass",
+  "missing-rate-limit": "no rate limit",
+  "passive-discovery": "discovery",
+};
 
 export function FindingsTable({ findings }: { findings: Finding[] }) {
   const [openId, setOpenId] = useState<string | null>(null);
@@ -34,6 +47,9 @@ export function FindingsTable({ findings }: { findings: Finding[] }) {
               aria-expanded={isOpen}
             >
               <SeverityBadge severity={f.severity} />
+              {f.category && (
+                <Badge className="hidden md:inline-flex shrink-0">{CATEGORY_LABELS[f.category]}</Badge>
+              )}
               <span className="flex-1 min-w-0 text-xs text-foreground truncate">{f.title}</span>
               <span className="text-[11px] text-muted-dim truncate max-w-[30%] hidden sm:block">
                 {f.endpoint}
@@ -46,6 +62,7 @@ export function FindingsTable({ findings }: { findings: Finding[] }) {
               <div className="accordion-inner">
                 <div className="px-4 pb-4 pt-1 bg-surface-raised/40 flex flex-col gap-2 text-xs">
                   <Row label="Endpoint" value={f.endpoint} mono />
+                  {f.category && <Row label="Kategori" value={CATEGORY_LABELS[f.category]} />}
                   <Row label="Bukti" value={f.evidence} mono />
                   {typeof f.cvss === "number" && (
                     <Row label="CVSS" value={`${f.cvss.toFixed(1)}${f.cwe ? ` · ${f.cwe}` : ""}`} mono />

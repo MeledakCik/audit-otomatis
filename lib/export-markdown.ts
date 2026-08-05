@@ -8,6 +8,19 @@ const SEVERITY_EMOJI: Record<string, string> = {
   INFO: "⬜",
 };
 
+const CATEGORY_LABELS: Record<string, string> = {
+  secret: "Secret",
+  "outdated-library": "Outdated Library / CVE",
+  generic: "Generic",
+  "dom-xss-sink": "DOM XSS Sink",
+  "open-redirect": "Open Redirect (kandidat)",
+  ssrf: "SSRF (kandidat)",
+  "idor-candidate": "IDOR (kandidat)",
+  "auth-bypass": "Auth Bypass Potential",
+  "missing-rate-limit": "Missing Rate Limit",
+  "passive-discovery": "Passive Discovery",
+};
+
 function isoDate(ts: number): string {
   return new Date(ts).toISOString().slice(0, 19).replace("T", " ");
 }
@@ -51,6 +64,27 @@ export function exportScanToObsidianMarkdown(scan: ScanState): string {
   }
   lines.push("");
 
+  const categoryCounts = scan.findings.reduce<Record<string, number>>((acc, f) => {
+    const key = f.category ?? "generic";
+    acc[key] = (acc[key] ?? 0) + 1;
+    return acc;
+  }, {});
+  const categoryKeys = Object.keys(categoryCounts);
+  if (categoryKeys.length > 0) {
+    lines.push("## Ringkasan Kategori (termasuk hasil Deep Passive Audit)");
+    lines.push("");
+    lines.push("| Kategori | Jumlah |");
+    lines.push("|---|---|");
+    for (const key of categoryKeys.sort((a, b) => categoryCounts[b] - categoryCounts[a])) {
+      lines.push(`| ${CATEGORY_LABELS[key] ?? key} | ${categoryCounts[key]} |`);
+    }
+    lines.push("");
+    lines.push(
+      "> Kategori kandidat (Open Redirect/SSRF/IDOR) adalah hasil analisis pola URL — belum dieksekusi, perlu verifikasi manual sebelum dianggap kerentanan nyata."
+    );
+    lines.push("");
+  }
+
   if (scan.blockedReason) {
     lines.push("## ⚠️ Scan Diblokir");
     lines.push("");
@@ -90,6 +124,7 @@ export function exportScanToObsidianMarkdown(scan: ScanState): string {
     lines.push(`### ${SEVERITY_EMOJI[f.severity]} [${f.severity}] ${f.title}`);
     lines.push("");
     lines.push(`- **Endpoint**: \`${f.endpoint}\``);
+    if (f.category) lines.push(`- **Kategori**: ${CATEGORY_LABELS[f.category] ?? f.category}`);
     lines.push(`- **Bukti**: ${f.evidence}`);
     if (typeof f.cvss === "number") {
       lines.push(`- **CVSS**: ${f.cvss.toFixed(1)}${f.cwe ? ` (${f.cwe})` : ""}`);
