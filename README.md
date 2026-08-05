@@ -1,45 +1,54 @@
-# auto-sec-auditor
+# Sentinel-ID.net — Passive-Only Security Auditor
 
-Passive-only security auditor untuk domain **milik sendiri** (atau yang sudah ada izin tertulis). Dibangun dengan Next.js 16 App Router, TypeScript, Tailwind v4, dan shadcn-style UI primitives.
+[[EN](https://img.shields.io/badge/lang-EN-blue.svg)](#) [[ID](https://img.shields.io/badge/lang-ID-red.svg)](./README_ID.md)
 
-> ⚠️ **Hanya untuk audit domain sendiri / berizin.** Tool ini tidak melakukan exploit, SQLi/XSS payload, atau bypass proteksi (termasuk Cloudflare). Semua request bersifat pasif (GET only) dan dibatasi rate limit.
+> ⚠️ For your own domain only. 100% passive, GET-only, no exploit, no payload.
 
-## Menjalankan
+**Live:** https://www.sentinel-id.net | Previously: kasyaf-cv.my.id
 
-```bash
-npm install
-npm run dev
-```
+### What is this?
 
-Buka [http://localhost:3000](http://localhost:3000).
+Most security audit tools are too aggressive. They fire payloads, submit forms, and trigger WAF. Sentinel-ID is designed for website owners who want to check basic security hygiene without risking their own site going down.
 
-## Arsitektur
+### Core Principles
 
-- **Server Actions** (`lib/actions.ts`) — memulai scan, bukan REST API lama. Scan dijalankan di background lewat `after()` sehingga user langsung diarahkan ke halaman progres.
-- **Route Handlers** dipakai hanya untuk dua hal yang memang butuh streaming/response biner, bukan mutasi data:
-  - `app/api/scan/[id]/stream/route.ts` — Server-Sent Events untuk progres realtime.
-  - `app/api/scan/[id]/export/route.ts` — download laporan markdown.
-- **`lib/crawler.ts`** — fetch homepage dengan header Chrome asli, parse dengan `cheerio` (link/script/form) dan `linkedom` (isi inline `<script>`). Hanya crawl 1 halaman + link internal, tidak rekursif ke domain lain.
-- **`lib/js-analyzer.ts`** — parse file JS (eksternal & inline) dengan `acorn`/`acorn-walk`, cari pola `fetch()`, `axios.*`, `localStorage`, dan literal `"/api/..."`. Fallback ke regex kalau AST gagal parse (bundle production sering di-minify agresif).
-- **`lib/tester.ts` + `lib/security-headers.ts`** — 4 kelas pengujian pasif (response leakage, anti-automation, exposed file, security headers ala securityheaders.com). Semua GET-only, tanpa payload.
-- **`lib/rate-limit.ts`** — cooldown 1 scan/domain/5 menit (atomik lewat Redis `SET NX EX`, lihat bagian Deploy ke Vercel) + `RequestBudget` (max 100 request/scan, delay 500ms/request).
-- **`lib/scan-store.ts`** — state scan disimpan di Redis (Upstash), auto-terhapus 30 menit setelah dibuat (`EXPIRE`). Tidak permanen, sesuai desain "no permanent logging" — tapi *shared* antar semua serverless instance, bukan in-memory per-proses (lihat `lib/redis.ts`). Dev lokal tanpa Redis otomatis jatuh ke in-memory Map (perilaku lama), tapi ini TIDAK dipakai kalau Redis sudah dikonfigurasi.
-- **Cloudflare handling** — kalau terdeteksi challenge page / `cf-mitigated: challenge`, scan langsung dihentikan dan tidak mencoba bypass apa pun.
+**Same-Origin Only.** The scanner will never leave the target domain. External links are automatically skipped.
 
-## Fitur audit mendalam (baru)
+**GET Only.** No login attempts, no form submissions, no payload injection. POST endpoints found are only displayed for manual cURL testing.
 
-- **`lib/site-crawler.ts`** — crawl BFS same-origin sampai 3 level link internal, max 50 URL (`MAX_CRAWL_URLS`). Setiap halaman baru tetap masuk `RequestBudget` yang sama (tidak menambah total request di luar limit 100/scan). Membangun `GraphData` (`page -> js -> endpoint`) yang disimpan di `ScanState.graph`.
-- **`lib/secret-scanner.ts`** — scan semua file JS (eksternal + inline) yang sudah diunduh untuk pola secret (Stripe/GitHub/AWS/Google key, JWT, Supabase, `NEXT_PUBLIC_*`, generic password/secret literal + entropy check). Key selalu di-redact sebagian sebelum disimpan sebagai `Finding.evidence`, tidak pernah disimpan utuh.
-- **`lib/library-fingerprint.ts`** — fingerprint versi jQuery/lodash/moment/axios/React secara pasif dari string literal versi di HTML/JS, cocokkan ke tabel CVE publik hardcode. Murni pattern-matching, tidak ada exploit yang dijalankan.
-- **`lib/report-html.ts`** — render `report.html` gaya pentest: executive summary (URL crawled, JS scanned, secrets, CVE) + temuan terurut CRITICAL→LOW dengan format `[VULN-XXX] [SEVERITY]`, CVSS estimasi, evidence, impact, PoC non-destruktif, remediation.
-- **`GET /api/scan/[id]/graph`** — `graph.json` (`{ nodes, edges }`) untuk visualisasi; ditampilkan langsung di dashboard (`components/graph-view.tsx`, layout kolom SVG tanpa dependency tambahan).
-- **`GET /api/scan/[id]/report`** — `report.html` siap unduh (`?download=1`) atau dilihat inline.
+**Request Budget.** Every scan is limited to a maximum of 100 requests to stay respectful.
 
-Semua fitur di atas tunduk pada batasan yang sama seperti sebelumnya: same-origin only, GET-only, tidak ada exploit/POST/DELETE/IDOR aktif, hanya deteksi pola.
+**Cloudflare Aware.** If a Cloudflare Challenge is detected, the scan stops gracefully and shows instructions instead of trying to bypass.
 
-## Batasan yang disengaja (bukan bug)
+### New Architecture v2
 
-- Tidak bisa scan `localhost`/IP privat — ini SSRF guard di `lib/validate-domain.ts`.
-- Tidak menampilkan isi file yang ter-expose (`.env`, `.git/HEAD`), hanya status "exposed".
-- Tidak submit form dengan data acak — form action hanya diuji lewat GET.
-- Data hasil scan hilang setelah restart server / 30 menit, sesuai desain "no permanent logging".
+After refactor, the lib folder is now modular:
+
+**discovery** - Responsible for site exploration. Runs a BFS crawl up to 50 pages to map internal pages, JS files, and endpoints. Includes well-known files check (robots.txt, sitemap.xml).
+
+**parsers** - Responsible for unpacking JavaScript. Hidden endpoints and API paths are often found inside JS files that are not visible in HTML.
+
+**fingerprint** - The identification layer. It scans for leaked secrets like API keys or tokens inside JS, and detects library versions to check against known CVEs.
+
+**vuln** - New module from trout-with-passive-audit. It does not exploit, it only detects POTENTIAL patterns such as open-redirect patterns, IDOR patterns in URL parameters, or dangerous DOM sinks (innerHTML, location.search) in JavaScript. All findings are marked as POTENTIAL and require manual review.
+
+**fuzzer** - Module for passive parameter discovery. It only guesses common parameter names without sending any malicious payload to find hidden API params.
+
+**scan-runner** - The main brain. It orchestrates the order: discovery -> parsers -> fingerprint -> vuln -> fuzzer. All findings are collected via addFinding store.
+
+### Scan Logic Flow
+
+Start from the main URL, discovery builds the site map. The map is passed to parsers to extract JS endpoints. Once links and files are collected, fingerprint checks for secrets and libraries. Finally, vuln and fuzzer look for potential patterns. All results are stored in scan-store and displayed as Findings Table, Graph View (14 nodes / 13 edges), and QC Score, and can be exported to Markdown Pentest Report.
+
+### Current Scan Result Example (kasyaf-cv.my.id)
+
+- 1 URL Crawled, 11 JS Scanned, 29 Requests
+- 0 CRITICAL, 0 HIGH, 6 MEDIUM (expected Next.js chunks false-positive), 4 LOW, 2 INFO
+- Note: MEDIUM findings on `/_next/static/chunks/*.js` with `innerHTML` pattern are expected from React/Next.js internal renderer and flagged as POTENTIAL only by regex pattern-matching, not confirmed exploitability.
+
+### Ethical Limitation
+
+This tool is intentionally not usable for aggressive testing of other people's websites. There is no WAF bypass, no brute force, no exploit. Make sure you own the domain you are scanning.
+
+---
+Also available in: [Bahasa Indonesia](./README_ID.md)
