@@ -12,7 +12,7 @@ import {
   Terminal,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-
+import Image from "next/image";
 const MAIN = [
   { label: "Overview", icon: LayoutGrid, href: "/" },
   { label: "QC Otomatis", icon: ClipboardCheck, href: "/qc" },
@@ -32,7 +32,13 @@ export function AppSidebar() {
     <aside className="flex h-full w-64 flex-col bg-[#0f0b16] border-r border-white/[0.06] select-none">
       <div className="flex h-16 items-center gap-3 px-5 border-b border-white/[0.06] shrink-0">
         <div className="h-8 w-8 grid place-items-center rounded-lg bg-gradient-to-br from-[#c084fc] to-[#9333ea] text-black shadow-lg shadow-purple-500/20">
-          <ShieldCheck className="h-5 w-5 text-black" />
+          <Image
+            src="/image/image.png"
+            alt="Logo"
+            width={20}
+            height={20}
+            className="object-contain"
+          />
         </div>
         <div className="leading-tight">
           <div className="text-sm font-extrabold tracking-wider text-white">
