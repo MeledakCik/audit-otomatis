@@ -10,6 +10,7 @@ import {
   Code2,
   Terminal,
   Wrench,
+  ShieldHalf,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
@@ -19,6 +20,7 @@ const MAIN = [
   { label: "Scan History", icon: History, href: "/history" },
   { label: "Request Inspector", icon: Terminal, href: "/requests" },
   { label: "Maintenance Log", icon: Wrench, href: "/maintenance-log" },
+  { label: "Header Armor", icon: ShieldHalf, href: "/scan/headers" },
 ];
 
 const RESOURCES = [
