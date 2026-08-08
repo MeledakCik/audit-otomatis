@@ -11,6 +11,7 @@ import {
   Terminal,
   Wrench,
   ShieldHalf,
+  KeyRound,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
@@ -21,6 +22,7 @@ const MAIN = [
   { label: "Request Inspector", icon: Terminal, href: "/requests" },
   { label: "Maintenance Log", icon: Wrench, href: "/maintenance-log" },
   { label: "Header Armor", icon: ShieldHalf, href: "/scan/headers" },
+  { label: "Secret Hunter", icon: KeyRound, href: "/scan/secrets" },
 ];
 
 const RESOURCES = [
