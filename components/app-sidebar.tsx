@@ -8,8 +8,8 @@ import {
   History,
   BookOpen,
   Code2,
-  ShieldCheck,
   Terminal,
+  Wrench,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
@@ -18,6 +18,7 @@ const MAIN = [
   { label: "QC Otomatis", icon: ClipboardCheck, href: "/qc" },
   { label: "Scan History", icon: History, href: "/history" },
   { label: "Request Inspector", icon: Terminal, href: "/requests" },
+  { label: "Maintenance Log", icon: Wrench, href: "/maintenance-log" },
 ];
 
 const RESOURCES = [

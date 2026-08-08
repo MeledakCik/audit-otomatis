@@ -179,6 +179,32 @@ body {
   }
 }
 
+/* --- Maintenance Log / Sentinel Analyzer --- */
+@keyframes sentinel-scan-line {
+  0% { top: 0%; opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { top: 100%; opacity: 0; }
+}
+.sentinel-scan-line {
+  animation: sentinel-scan-line 1.8s ease-in-out infinite;
+}
+
+@keyframes sentinel-critical-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--sev-critical) 55%, transparent); }
+  50% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--sev-critical) 0%, transparent); }
+}
+.sentinel-critical-pulse {
+  animation: sentinel-critical-pulse 1.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sentinel-scan-line,
+  .sentinel-critical-pulse {
+    animation: none;
+  }
+}
+
 .accordion-rows {
   display: grid;
   grid-template-rows: 0fr;
