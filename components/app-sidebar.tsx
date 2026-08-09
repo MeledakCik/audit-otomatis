@@ -18,6 +18,7 @@ import {
   Globe2,
   ExternalLink,
   UserCircle,
+  Fingerprint,
   LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -39,6 +40,7 @@ const MAIN: NavItem[] = [
   { label: "Attack Surface Map", icon: Map, href: "/scan/map" },
   { label: "Breach Peek", icon: Radar, href: "/scan/breach" },
   { label: "Subdomain Watch", icon: Globe2, href: "/scan/subdomain" },
+  { label: "Tech Stack", icon: Fingerprint, href: "/scan/stack" },
 ];
 
 const RESOURCES: NavItem[] = [
@@ -140,6 +142,7 @@ export function AppSidebar() {
         </a>
       </div>
 
+      {/* System Status & Notes */}
       <div className="p-3 pt-0 mt-auto border-t border-white/[0.04] bg-black/20">
         <div className="mt-3 px-2 text-[11px] font-mono leading-relaxed text-slate-400 bg-white/[0.02] p-2.5 rounded-lg border border-white/[0.04]">
           <span className="text-purple-400 font-semibold block mb-0.5">
