@@ -140,21 +140,7 @@ export function AppSidebar() {
         </a>
       </div>
 
-      {/* System Status & Notes */}
       <div className="p-3 pt-0 mt-auto border-t border-white/[0.04] bg-black/20">
-        <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 space-y-2.5">
-          <div className="text-[10px] font-mono tracking-wider text-white/30 uppercase">
-            System Status
-          </div>
-          <div className="flex items-center gap-2 text-xs text-white/70 font-medium">
-            <span className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_8px_0_#22c55e] animate-pulse" />
-            All systems operational
-          </div>
-          <div className="text-[10px] font-mono text-white/40 pt-1 border-t border-white/[0.04]">
-            API: <span className="text-emerald-400">23ms</span> latency
-          </div>
-        </div>
-
         <div className="mt-3 px-2 text-[11px] font-mono leading-relaxed text-slate-400 bg-white/[0.02] p-2.5 rounded-lg border border-white/[0.04]">
           <span className="text-purple-400 font-semibold block mb-0.5">
             Catatan:
