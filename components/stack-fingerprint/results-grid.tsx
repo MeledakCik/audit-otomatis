@@ -51,7 +51,7 @@ export function ResultsGrid({ report }: { report: StackFingerprintReport | null 
             <h3 className="text-[11px] font-bold uppercase tracking-widest text-muted-dim">
               {g.category} <span className="text-muted-dim/60">({g.stacks.length})</span>
             </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {g.stacks.map((s) => (
                 <StackCard key={s.id} stack={s} />
               ))}
