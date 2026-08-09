@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { HeaderArmorView } from "@/components/header-armor/header-armor-view";
 
 export const dynamic = "force-dynamic";
@@ -8,5 +9,9 @@ export const metadata = {
 };
 
 export default function HeaderArmorPage() {
-  return <HeaderArmorView />;
+  return (
+    <Suspense fallback={null}>
+      <HeaderArmorView />
+    </Suspense>
+  );
 }

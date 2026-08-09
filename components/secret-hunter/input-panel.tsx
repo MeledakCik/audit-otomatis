@@ -10,10 +10,11 @@ interface InputPanelProps {
   onScan: (domain: string) => void;
   loading: boolean;
   liveStatus: string | null;
+  initialDomain?: string;
 }
 
-export function InputPanel({ onScan, loading, liveStatus }: InputPanelProps) {
-  const [domain, setDomain] = useState("");
+export function InputPanel({ onScan, loading, liveStatus, initialDomain }: InputPanelProps) {
+  const [domain, setDomain] = useState(initialDomain ?? "");
 
   return (
     <Card>

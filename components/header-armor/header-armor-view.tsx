@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { ShieldHalf, Lock } from "lucide-react";
 import { InputPanel } from "./input-panel";
 import { OutputPanel } from "./output-panel";
@@ -13,6 +14,9 @@ import {
 import type { HeaderScanLogEntry, HeaderScanReport } from "@/lib/header-scan/types";
 
 export function HeaderArmorView() {
+  const searchParams = useSearchParams();
+  const initialDomain = searchParams.get("domain") ?? undefined;
+
   const [report, setReport] = useState<HeaderScanReport | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -88,7 +92,7 @@ export function HeaderArmorView() {
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
         <div className="space-y-4 xl:sticky xl:top-6">
-          <InputPanel onScan={handleScan} loading={loading} liveStatus={liveStatus} />
+          <InputPanel onScan={handleScan} loading={loading} liveStatus={liveStatus} initialDomain={initialDomain} />
           <HistoryPanel entries={history} activeId={report?.id} onSelect={handleSelectHistory} onClear={handleClearHistory} />
         </div>
         <div>
