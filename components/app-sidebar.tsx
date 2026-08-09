@@ -13,6 +13,7 @@ import {
   ShieldHalf,
   KeyRound,
   Map,
+  Radar,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
@@ -25,6 +26,7 @@ const MAIN = [
   { label: "Header Armor", icon: ShieldHalf, href: "/scan/headers" },
   { label: "Secret Hunter", icon: KeyRound, href: "/scan/secrets" },
   { label: "Attack Surface Map", icon: Map, href: "/scan/map" },
+  { label: "Breach Peek", icon: Radar, href: "/scan/breach" },
 ];
 
 const RESOURCES = [
