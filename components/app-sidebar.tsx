@@ -92,7 +92,7 @@ export function AppSidebar() {
         </div>
         <div className="leading-tight">
           <div className="text-sm font-extrabold tracking-wider text-white">
-            AUTO-SEC
+            AUTO SECURITY
           </div>
           <div className="text-[10px] font-mono tracking-[0.25em] text-purple-400/70">
             AUDITOR
