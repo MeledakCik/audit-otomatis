@@ -15,9 +15,12 @@ import {
   Map,
   Radar,
   Globe2,
+  ExternalLink,
+  UserCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
+
 const MAIN = [
   { label: "Overview", icon: LayoutGrid, href: "/" },
   { label: "QC Otomatis", icon: ClipboardCheck, href: "/qc" },
@@ -55,7 +58,7 @@ export function AppSidebar() {
           <div className="text-sm font-extrabold tracking-wider text-white">
             AUTO-SEC
           </div>
-          <div className="text-[10px] font-mono tracking-[0.25em] text-purple-400/70">
+          <div className="text- font-mono tracking-[0.25em] text-purple-400/70">
             AUDITOR
           </div>
         </div>
@@ -63,7 +66,7 @@ export function AppSidebar() {
 
       <div className="flex-1 px-3 py-6 space-y-6 overflow-y-auto">
         <div className="space-y-1.5">
-          <div className="px-3 pb-2 text-[11px] font-mono font-semibold tracking-wider text-white/30 uppercase">
+          <div className="px-3 pb-2 text- font-mono font-semibold tracking-wider text-white/30 uppercase">
             Main Menu
           </div>
           {MAIN.map((i) => {
@@ -75,7 +78,7 @@ export function AppSidebar() {
                 className={cn(
                   "flex items-center gap-3 rounded-lg px-3 py-2.5 text-xs font-mono transition-all group",
                   active
-                    ? "bg-[#2a1842] text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1)] border border-purple-500/20"
+                   ? "bg-[#2a1842] text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1)] border border-purple-500/20"
                     : "text-white/50 hover:text-white hover:bg-white/[0.04]",
                 )}
               >
@@ -83,7 +86,7 @@ export function AppSidebar() {
                   className={cn(
                     "h-4 w-4 transition-colors",
                     active
-                      ? "text-[#c084fc]"
+                     ? "text-[#c084fc]"
                       : "text-white/40 group-hover:text-white/70",
                   )}
                 />
@@ -94,7 +97,7 @@ export function AppSidebar() {
         </div>
 
         <div className="space-y-1.5">
-          <div className="px-3 pb-2 text-[11px] font-mono font-semibold tracking-wider text-white/30 uppercase">
+          <div className="px-3 pb-2 text- font-mono font-semibold tracking-wider text-white/30 uppercase">
             Resources
           </div>
           {RESOURCES.map((i) => {
@@ -106,7 +109,7 @@ export function AppSidebar() {
                 className={cn(
                   "flex items-center gap-3 rounded-lg px-3 py-2.5 text-xs font-mono transition-all group",
                   active
-                    ? "bg-[#2a1842] text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1)] border border-purple-500/20"
+                   ? "bg-[#2a1842] text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1)] border border-purple-500/20"
                     : "text-white/50 hover:text-white hover:bg-white/[0.04]",
                 )}
               >
@@ -114,7 +117,7 @@ export function AppSidebar() {
                   className={cn(
                     "h-4 w-4 transition-colors",
                     active
-                      ? "text-[#c084fc]"
+                     ? "text-[#c084fc]"
                       : "text-white/40 group-hover:text-white/70",
                   )}
                 />
@@ -125,21 +128,43 @@ export function AppSidebar() {
         </div>
       </div>
 
-      <div className="p-3 mt-auto border-t border-white/[0.04] bg-black/20">
+      <div className="p-3 space-y-3">
+        <a
+          href="https://kasyaf-cv.my.id"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-3 rounded-xl border border-purple-500/20 bg-gradient-to-br from-[#1e1233] to-[#15101f] px-3 py-3 group hover:border-purple-500/40 hover:from-[#261845] hover:to-[#1a142e] transition-all"
+        >
+          <div className="h-8 w-8 grid place-items-center rounded-full bg-white/[0.06] border border-white/[0.08] group-hover:bg-purple-500/20 transition-colors">
+            <UserCircle className="h-4 w-4 text-white/70 group-hover:text-purple-300" />
+          </div>
+          <div className="flex-1 leading-tight">
+            <div className="text- font-mono tracking-wider text-white/40 uppercase">
+              Created By
+            </div>
+            <div className="text-xs font-semibold text-white group-hover:text-purple-200 flex items-center gap-1">
+              Kasyaf - Author
+              <ExternalLink className="h-3 w-3 opacity-50 group-hover:opacity-100" />
+            </div>
+          </div>
+        </a>
+      </div>
+
+      <div className="p-3 pt-0 mt-auto border-t border-white/[0.04] bg-black/20">
         <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 space-y-2.5">
-          <div className="text-[10px] font-mono tracking-wider text-white/30 uppercase">
+          <div className="text- font-mono tracking-wider text-white/30 uppercase">
             System Status
           </div>
           <div className="flex items-center gap-2 text-xs text-white/70 font-medium">
             <span className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_8px_0_#22c55e] animate-pulse" />
             All systems operational
           </div>
-          <div className="text-[11px] font-mono text-white/40 pt-1 border-t border-white/[0.04]">
+          <div className="text- font-mono text-white/40 pt-1 border-t border-white/[0.04]">
             API: <span className="text-emerald-400">23ms</span> latency
           </div>
         </div>
 
-        <div className="mt-3 px-2 text-[11px] font-mono leading-relaxed text-slate-400 bg-white/[0.02] p-2.5 rounded-lg border border-white/[0.04]">
+        <div className="mt-3 px-2 text- font-mono leading-relaxed text-slate-400 bg-white/[0.02] p-2.5 rounded-lg border border-white/[0.04]">
           <span className="text-purple-400 font-semibold block mb-0.5">
             Catatan:
           </span>
