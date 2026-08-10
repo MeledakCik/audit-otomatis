@@ -32,7 +32,7 @@ interface NavItem {
 
 const MAIN: NavItem[] = [
   { label: "Overview", icon: LayoutGrid, href: "/" },
-  { label: "QC Otomatis", icon: ClipboardCheck, href: "/qc" },
+  { label: "QC Otomatis", icon: ClipboardCheck, href: "/learqc" },
   { label: "Scan History", icon: History, href: "/history" },
   { label: "Request Inspector", icon: Terminal, href: "/requests" },
   { label: "Maintenance Log", icon: Wrench, href: "/maintenance-log" },
