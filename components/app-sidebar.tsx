@@ -22,6 +22,7 @@ import {
   Fingerprint,
   LucideIcon,
   ShieldCheck,
+  FileJson,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -46,6 +47,7 @@ const MAIN: NavItem[] = [
   { label: "Shield Status", icon: ShieldCheck, href: "/scan/shield-status" },
   { label: "DNS Checker", icon: TrafficConeIcon, href: "/scan/dns" },
   { label: "Exposure Check", icon: ExternalLink, href: "/scan/exposure" },
+  { label: "JS Supply Chain", icon: FileJson, href: "/scan/js" },
 ];
 
 
