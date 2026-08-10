@@ -20,6 +20,7 @@ import {
   UserCircle,
   Fingerprint,
   LucideIcon,
+  ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -41,7 +42,9 @@ const MAIN: NavItem[] = [
   { label: "Breach Peek", icon: Radar, href: "/scan/breach" },
   { label: "Subdomain Watch", icon: Globe2, href: "/scan/subdomain" },
   { label: "Tech Stack", icon: Fingerprint, href: "/scan/stack" },
+  { label: "Shield Status", icon: ShieldCheck, href: "/scan/shield-status" },
 ];
+
 
 const RESOURCES: NavItem[] = [
   { label: "Documentation", icon: BookOpen, href: "/docs" },
