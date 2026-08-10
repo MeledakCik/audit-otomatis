@@ -170,11 +170,28 @@ export default function ScanExposureClient() {
 
   return (
     <div className="mx-auto max-w-4xl px-6 pb-24">
-      {/* ---- Domain input section like in the image ---- */}
+      {/* ---- Hero Section ---- */}
+      <div className="mb-10">
+        <div className="flex items-center gap-3 mb-3">
+          <span className="font-mono text-xs uppercase tracking-[0.25em] text-[#3FA796]">
+            Sentinel-ID / Passive Recon
+          </span>
+        </div>
+        <h1 className="text-3xl font-semibold leading-tight tracking-tight text-[#EAF0FA] sm:text-4xl">
+          Tech Stack Fingerprint
+        </h1>
+        <p className="mt-2 text-[#A9B4CC]">
+          Passive homepage fingerprint – headers + HTML markers only. Educational
+          asset inventory, no CVE lookup.
+        </p>
+      </div>
+
+      {/* ---- Main Card ---- */}
       <div className="rounded-2xl border border-[#232B3D] bg-[#141B2A] p-8">
+        {/* Target Domain Section */}
         <div className="flex items-center gap-3 mb-2">
           <span className="font-mono text-xs uppercase tracking-widest text-[#3FA796]">
-            Domain
+            Target Domain
           </span>
           <span className="h-px flex-1 bg-[#232B3D]" />
         </div>
@@ -191,11 +208,14 @@ export default function ScanExposureClient() {
             />
           </div>
 
-          <p className="mt-2 text-xs text-[#7C89A6]">
-            For educational asset inventory purposes. Detects public tech
-            markers only, from one plain GET request to the homepage (headers +
-            HTML). No CVE lookup, no vulnerability database, no bruteforce.
-          </p>
+          <div className="mt-3 flex items-start gap-2 rounded-lg border border-[#F2A93C]/20 bg-[#F2A93C]/5 px-3 py-2">
+            <span className="text-[#F2A93C] text-sm">⚠️</span>
+            <p className="text-xs text-[#C9D2E3]">
+              For educational asset inventory purposes. Detects public tech
+              markers only, from one plain GET request to the homepage (headers +
+              HTML). No CVE lookup, no vulnerability database, no bruteforce.
+            </p>
+          </div>
         </div>
 
         <div className="mt-6 flex flex-wrap items-center gap-4">
@@ -212,7 +232,7 @@ export default function ScanExposureClient() {
           <button
             onClick={handleScanClick}
             disabled={loading}
-            className="ml-auto rounded-md bg-[#3FA796] px-6 py-2.5 font-mono text-sm font-semibold uppercase tracking-wide text-[#0E1420] transition hover:bg-[#57C4B2] disabled:cursor-not-allowed disabled:opacity-50"
+            className="ml-auto rounded-md bg-[#3FA796] px-8 py-2.5 font-mono text-sm font-semibold uppercase tracking-wide text-[#0E1420] transition hover:bg-[#57C4B2] disabled:cursor-not-allowed disabled:opacity-50"
           >
             {loading ? "Scanning…" : "Fingerprint"}
           </button>
