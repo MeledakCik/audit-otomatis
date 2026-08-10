@@ -18,6 +18,7 @@ import {
   Globe2,
   ExternalLink,
   UserCircle,
+  TrafficConeIcon,
   Fingerprint,
   LucideIcon,
   ShieldCheck,
@@ -43,6 +44,7 @@ const MAIN: NavItem[] = [
   { label: "Subdomain Watch", icon: Globe2, href: "/scan/subdomain" },
   { label: "Tech Stack", icon: Fingerprint, href: "/scan/stack" },
   { label: "Shield Status", icon: ShieldCheck, href: "/scan/shield-status" },
+  { label: "DNS Checker", icon: TrafficConeIcon, href: "/scan/dns" },
 ];
 
 
