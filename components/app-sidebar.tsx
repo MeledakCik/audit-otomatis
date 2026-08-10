@@ -45,6 +45,7 @@ const MAIN: NavItem[] = [
   { label: "Tech Stack", icon: Fingerprint, href: "/scan/stack" },
   { label: "Shield Status", icon: ShieldCheck, href: "/scan/shield-status" },
   { label: "DNS Checker", icon: TrafficConeIcon, href: "/scan/dns" },
+  { label: "Exposure Check", icon: ExternalLink, href: "/scan/exposure" },
 ];
 
 
