@@ -2,23 +2,32 @@ import { NextRequest, NextResponse } from "next/server";
 import { assertPublicHttpsTarget, isSameOrigin, SsrfBlockedError } from "@/lib/ssrf-guard";
 import { findHeaderLeaks, findSourcePatterns, Finding, severityRank } from "@/lib/findings";
 
-export const runtime = "nodejs"; // needs dns.lookup, not available on edge
+export const runtime = "nodejs";
 
-const USER_AGENT = "Sentinel-ID Scanner/1.0 (+https://sentinel-id.net/scan/exposure)";
-const FETCH_TIMEOUT_MS = 8000;
-const MAX_BODY_BYTES = 2_000_000; // 2MB cap when reading homepage HTML
+const USER_AGENT = "Sentinel-ID Scanner/2.0 (+https://sentinel-id.net/scan/exposure)";
+const FETCH_TIMEOUT_MS = 10000;
+const MAX_BODY_BYTES = 3_000_000;
+const MAX_REDIRECTS = 3;
 
-// Secret-looking key=value patterns we check for INSIDE a confirmed
-// sensitive-path response. We only ever return whether these patterns
-// matched (boolean) plus a short truncated preview — never the file body.
 const SECRET_PATTERNS: RegExp[] = [
-  /\bDB_PASSWORD\s*=/i,
-  /\bAPP_KEY\s*=/i,
-  /\bDATABASE_URL\s*=/i,
-  /\bSECRET_KEY\s*=/i,
-  /\bAWS_SECRET_ACCESS_KEY\s*=/i,
-  /\bAPI_KEY\s*=/i,
-  /\bcore\.repositoryformatversion/i, // .git/config signature
+  /\bDB_PASSWORD\s*[:=]\s*\S+/i,
+  /\bAPP_KEY\s*[:=]\s*\S+/i,
+  /\bDATABASE_URL\s*[:=]\s*\S+/i,
+  /\bSECRET_KEY\s*[:=]\s*\S+/i,
+  /\bAWS_SECRET_ACCESS_KEY\s*[:=]\s*\S+/i,
+  /\bAPI_KEY\s*[:=]\s*\S+/i,
+  /\bcore\.repositoryformatversion/i,
+  /\bPASSWORD\s*[:=]\s*\S+/i,
+  /\bTOKEN\s*[:=]\s*\S+/i,
+  /\bJWT_SECRET\s*[:=]\s*\S+/i,
+  /\bREDIS_PASSWORD\s*[:=]\s*\S+/i,
+  /\bMONGODB_URI\s*[:=]\s*\S+/i,
+  /\bPOSTGRES_PASSWORD\s*[:=]\s*\S+/i,
+  /\bMYSQL_PASSWORD\s*[:=]\s*\S+/i,
+  /\bSTRIPE_SECRET\s*[:=]\s*\S+/i,
+  /\bGITHUB_TOKEN\s*[:=]\s*\S+/i,
+  /\bSLACK_WEBHOOK\s*[:=]\s*\S+/i,
+  /\bSENDGRID_API_KEY\s*[:=]\s*\S+/i,
 ];
 
 interface ScanRequestBody {
@@ -37,11 +46,14 @@ async function timedFetch(url: string, init: RequestInit = {}) {
   try {
     return await fetch(url, {
       ...init,
-      redirect: "manual", // we handle redirects ourselves, capped at 1
+      redirect: "manual",
       signal: controller.signal,
       headers: {
         "User-Agent": USER_AGENT,
-        Accept: "text/html,application/json,*/*",
+        Accept: "text/html,application/json,text/plain,*/*",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Cache-Control": "no-cache",
+        "Pragma": "no-cache",
         ...(init.headers ?? {}),
       },
     });
@@ -61,9 +73,42 @@ async function readCappedText(res: Response): Promise<string> {
     if (done) break;
     bytes += value.byteLength;
     out += decoder.decode(value, { stream: true });
+    if (bytes >= MAX_BODY_BYTES) break;
   }
   reader.cancel().catch(() => {});
   return out;
+}
+
+async function followRedirects(url: URL, maxRedirects: number = MAX_REDIRECTS): Promise<{ finalUrl: string; redirected: boolean; redirectChain: string[] }> {
+  let currentUrl = url;
+  let redirectCount = 0;
+  const redirectChain: string[] = [currentUrl.toString()];
+  let redirected = false;
+
+  while (redirectCount < maxRedirects) {
+    const res = await timedFetch(currentUrl.toString(), { method: "GET" });
+    
+    if ([301, 302, 303, 307, 308].includes(res.status)) {
+      const location = res.headers.get("location");
+      if (!location) break;
+      
+      const redirectTarget = new URL(location, currentUrl);
+      const revalidated = await assertPublicHttpsTarget(redirectTarget.toString());
+      
+      if (!isSameOrigin(revalidated.url, currentUrl)) {
+        break;
+      }
+      
+      currentUrl = revalidated.url;
+      redirectChain.push(currentUrl.toString());
+      redirectCount++;
+      redirected = true;
+    } else {
+      return { finalUrl: currentUrl.toString(), redirected, redirectChain };
+    }
+  }
+
+  return { finalUrl: currentUrl.toString(), redirected, redirectChain };
 }
 
 export async function POST(req: NextRequest) {
@@ -78,7 +123,6 @@ export async function POST(req: NextRequest) {
     return jsonError("`url` is required.");
   }
 
-  // ---- Rule 1: validate + resolve the homepage target (SSRF-safe) ----
   let target;
   try {
     target = await assertPublicHttpsTarget(body.url);
@@ -89,76 +133,120 @@ export async function POST(req: NextRequest) {
   const originUrl = target.url;
 
   const findings: Finding[] = [];
-  let finalUrl = originUrl.toString();
-  let redirected = false;
   let headersOut: Record<string, string> = {};
   let homepageHtml = "";
+  let finalUrl = originUrl.toString();
+  let redirected = false;
 
-  // ---- Rule 1: single GET to homepage, follow at most 1 redirect ----
   try {
-    let res = await timedFetch(originUrl.toString(), { method: "GET" });
+    const { finalUrl: final, redirected: redir, redirectChain } = await followRedirects(originUrl);
+    finalUrl = final;
+    redirected = redir;
 
-    if ([301, 302, 303, 307, 308].includes(res.status)) {
-      const location = res.headers.get("location");
-      if (location) {
-        const redirectTarget = new URL(location, originUrl);
-        // Re-validate the redirect target through the same SSRF guard,
-        // and refuse to hop to a different origin — this scanner reports
-        // on the origin the user gave us, not wherever it redirects to.
-        const revalidated = await assertPublicHttpsTarget(redirectTarget.toString());
-        if (!isSameOrigin(revalidated.url, originUrl)) {
-          findings.push({
-            type: "CROSS_ORIGIN_REDIRECT",
-            severity: "info",
-            evidence: `Homepage redirected off-origin to ${revalidated.url.origin} — not followed`,
-            location: originUrl.toString(),
-            recommendation:
-              "Informational only. If this redirect is unexpected, confirm it's intentional (e.g. a canonical domain move) and not a misconfigured DNS/CDN entry.",
-          });
-        } else {
-          redirected = true;
-          finalUrl = revalidated.url.toString();
-          res = await timedFetch(finalUrl, { method: "GET" });
-        }
-      }
-    }
-
-    finalUrl = res.url || finalUrl;
+    const res = await timedFetch(finalUrl, { method: "GET" });
+    
     res.headers.forEach((value, key) => {
       headersOut[key] = value;
     });
     homepageHtml = await readCappedText(res);
+
+    if (redirectChain.length > 1) {
+      findings.push({
+        type: "REDIRECT_CHAIN",
+        severity: "info",
+        evidence: `Redirect chain: ${redirectChain.join(" -> ")}`,
+        location: originUrl.toString(),
+        recommendation: "Review redirect chain for security implications and performance impact.",
+      });
+    }
+
+    if (homepageHtml.includes('http://') && finalUrl.startsWith('https://')) {
+      findings.push({
+        type: "MIXED_CONTENT",
+        severity: "medium",
+        evidence: "Mixed content detected (HTTP resources on HTTPS page)",
+        location: finalUrl,
+        recommendation: "Update all resources to use HTTPS to prevent mixed content warnings.",
+      });
+    }
+
   } catch (err) {
     const aborted = err instanceof Error && err.name === "AbortError";
     return jsonError(
-      aborted ? "Homepage request timed out after 8s." : "Couldn't fetch the homepage.",
+      aborted ? "Homepage request timed out after 10s." : "Couldn't fetch the homepage.",
       502
     );
   }
 
-  // ---- Rule 2: passive header + source analysis (no extra requests) ----
   findings.push(...findHeaderLeaks(new Headers(headersOut)));
   findings.push(...findSourcePatterns(homepageHtml, finalUrl));
 
-  // ---- Rule 2: /.well-known/security.txt is standard + explicitly allowed ----
+  if (!headersOut['strict-transport-security']) {
+    findings.push({
+      type: "MISSING_HSTS",
+      severity: "medium",
+      evidence: "Strict-Transport-Security header not found",
+      location: finalUrl,
+      recommendation: "Implement HSTS to enforce HTTPS connections.",
+    });
+  }
+
+  if (!headersOut['content-security-policy']) {
+    findings.push({
+      type: "MISSING_CSP",
+      severity: "medium",
+      evidence: "Content-Security-Policy header not found",
+      location: finalUrl,
+      recommendation: "Implement CSP to prevent XSS attacks.",
+    });
+  }
+
+  if (!headersOut['x-frame-options']) {
+    findings.push({
+      type: "MISSING_XFO",
+      severity: "low",
+      evidence: "X-Frame-Options header not found",
+      location: finalUrl,
+      recommendation: "Add X-Frame-Options to prevent clickjacking.",
+    });
+  }
+
   try {
     const securityTxtUrl = new URL("/.well-known/security.txt", originUrl);
     const res = await timedFetch(securityTxtUrl.toString(), { method: "GET" });
     if (res.status === 200) {
+      const content = await readCappedText(res);
       findings.push({
         type: "SECURITY_TXT_PRESENT",
         severity: "info",
-        evidence: "security.txt found at /.well-known/security.txt",
+        evidence: `security.txt found with ${content.length} bytes`,
         location: securityTxtUrl.toString(),
-        recommendation:
-          "Good practice — no action needed. Keep the contact/expiry fields current.",
+        recommendation: "Keep the contact/expiry fields current.",
       });
     }
   } catch {
-    // best-effort, non-fatal
+    // Silent fail
   }
 
-  // ---- Rule 3: optional single sensitive-path check, gated hard ----
+  try {
+    const robotsUrl = new URL("/robots.txt", originUrl);
+    const res = await timedFetch(robotsUrl.toString(), { method: "GET" });
+    if (res.status === 200) {
+      const content = await readCappedText(res);
+      if (content.includes('Disallow: /')) {
+        findings.push({
+          type: "ROBOTS_TXT_PRESENT",
+          severity: "info",
+          evidence: "robots.txt found with disallow rules",
+          location: robotsUrl.toString(),
+          recommendation: "Review robots.txt to ensure sensitive paths are properly disallowed.",
+        });
+      }
+    }
+  } catch {
+    // Silent fail
+  }
+
   let sensitivePathResult: {
     checked: string;
     allowed: boolean;
@@ -167,6 +255,7 @@ export async function POST(req: NextRequest) {
     contentType?: string;
     preview?: string;
     reason?: string;
+    matchedPatterns?: string[];
   } | null = null;
 
   if (body.sensitivePath) {
@@ -190,31 +279,54 @@ export async function POST(req: NextRequest) {
             reason: "The path must be on the same origin as the scanned URL.",
           };
         } else {
-          const res = await timedFetch(revalidated.url.toString(), { method: "GET" });
+          const res = await timedFetch(revalidated.url.toString(), { 
+            method: "GET",
+            headers: {
+              "Cache-Control": "no-cache",
+              "Pragma": "no-cache"
+            }
+          });
           const contentType = res.headers.get("content-type") ?? "";
           const text = res.status === 200 ? await readCappedText(res) : "";
-          const matched = SECRET_PATTERNS.some((p) => p.test(text));
+          
+          const matchedPatterns: string[] = [];
+          SECRET_PATTERNS.forEach((pattern) => {
+            if (pattern.test(text)) {
+              matchedPatterns.push(pattern.source);
+            }
+          });
+
+          const exposed = res.status === 200 && matchedPatterns.length > 0;
 
           sensitivePathResult = {
             checked: revalidated.url.toString(),
             allowed: true,
-            exposed: res.status === 200 && matched,
+            exposed,
             statusCode: res.status,
             contentType,
-            // Never store/return the full body — 100-char preview only,
-            // and only when something actually matched.
-            preview: res.status === 200 && matched ? text.slice(0, 100) : undefined,
+            matchedPatterns: matchedPatterns.length > 0 ? matchedPatterns : undefined,
+            preview: exposed ? text.slice(0, 200) : undefined,
           };
 
-          if (sensitivePathResult.exposed) {
+          if (exposed) {
             findings.push({
               type: "SENSITIVE_PATH_EXPOSED",
               severity: "critical",
-              evidence: `${revalidated.url.pathname} returned 200 with credential-shaped content`,
+              evidence: `${revalidated.url.pathname} returned 200 with ${matchedPatterns.length} credential pattern(s)`,
               location: revalidated.url.toString(),
               recommendation:
-                "Take this offline immediately: remove the file from the public web root (e.g. public_html), rotate any credentials it contained, and block the path at the web server (nginx: `location ~ /\\.(env|git) { deny all; }`).",
+                "Immediately remove this file from public access, rotate ALL exposed credentials, and implement proper access controls.",
             });
+
+            if (matchedPatterns.length >= 3) {
+              findings.push({
+                type: "MULTIPLE_CREDENTIALS_EXPOSED",
+                severity: "critical",
+                evidence: `Multiple credential patterns (${matchedPatterns.length}) found in single file`,
+                location: revalidated.url.toString(),
+                recommendation: "This indicates a comprehensive configuration file exposure - audit all configuration files immediately.",
+              });
+            }
           }
         }
       } catch (err) {
@@ -228,6 +340,12 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // Group findings by severity for summary
+  const criticalFindings = findings.filter(f => f.severity === "critical");
+  const mediumFindings = findings.filter(f => f.severity === "medium");
+  const lowFindings = findings.filter(f => f.severity === "low");
+  const infoFindings = findings.filter(f => f.severity === "info");
+
   findings.sort((a, b) => severityRank(b.severity) - severityRank(a.severity));
 
   return NextResponse.json({
@@ -237,6 +355,16 @@ export async function POST(req: NextRequest) {
     headers: headersOut,
     findings,
     sensitivePathCheck: sensitivePathResult,
+    summary: {
+      totalFindings: findings.length,
+      critical: criticalFindings.length,
+      medium: mediumFindings.length,
+      low: lowFindings.length,
+      info: infoFindings.length,
+      secure: findings.length === 0,
+      hasExposedCredentials: criticalFindings.some(f => f.type === "SENSITIVE_PATH_EXPOSED"),
+    },
     disclaimer: "Passive check only. No exploitation performed.",
+    timestamp: new Date().toISOString(),
   });
 }
