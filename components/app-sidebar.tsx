@@ -24,6 +24,7 @@ import {
   ShieldCheck,
   FileJson,
   ShellIcon,
+  ScanSearch,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -50,6 +51,7 @@ const MAIN: NavItem[] = [
   { label: "Exposure Check", icon: ExternalLink, href: "/scan/exposure" },
   { label: "JS Supply Chain", icon: FileJson, href: "/scan/js" },
   { label: "SSL Checker", icon: ShellIcon, href: "/scan/ssl" },
+  { label: "OSINT Lookup", icon: ScanSearch, href: "/scan/osint" },
 
 ];
 

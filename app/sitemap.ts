@@ -24,6 +24,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/scan/exposure",
     "/scan/js",
     "/scan/ssl",
+    "/scan/osint",
   ];
 
   return routes.map((route) => ({

@@ -50,5 +50,9 @@ Start from the main URL, discovery builds the site map. The map is passed to par
 
 This tool is intentionally not usable for aggressive testing of other people's websites. There is no WAF bypass, no brute force, no exploit. Make sure you own the domain you are scanning.
 
+### OSINT Lookup (`/scan/osint`)
+
+Public-data-only lookup by **username** (Instagram, TikTok, Facebook, X, GitHub, etc.), **email** (MX, disposable check, Gravatar), **domain** (DNS, RDAP, crt.sh subdomains) and **name** (public search links). No login, no scraping behind auth, rate-limited to 10 req/min. API: `GET /api/osint?type=username|email|domain|name&q=...`
+
 ---
 Also available in: [Bahasa Indonesia](./README_ID.md)
