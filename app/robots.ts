@@ -10,6 +10,7 @@ export default function robots(): MetadataRoute.Robots {
         allow: "/",
         disallow: [
           "/api/",      // Blokir endpoint API internal dari crawling
+          "/admin/",
           "/scan/",    // Blokir panel admin jika ada
           "/requests/", // Blokir halaman permintaan jika ada
           "/_next/",   // Blokir file internal Next.js
