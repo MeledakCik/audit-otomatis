@@ -1,5 +1,6 @@
 import { validateDomainInput } from "@/lib/validate-domain";
 import { runHeaderChecks, scoreFromChecks, gradeFromScore } from "@/lib/header-scan/checks";
+import { logUserActivity } from "@/lib/activity-store";
 
 const FETCH_TIMEOUT_MS = 10_000;
 
@@ -25,9 +26,6 @@ export async function POST(req: Request) {
   const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
 
   try {
-    // 100% pasif: satu request GET, tidak ada payload/body, tidak ada follow-up
-    // request lain. Ini murni membaca response header, sama seperti browser
-    // biasa membuka halaman tersebut.
     const res = await fetch(validation.normalizedUrl, {
       method: "GET",
       redirect: "follow",
@@ -46,12 +44,13 @@ export async function POST(req: Request) {
     const checks = runHeaderChecks(rawHeaders);
     const score = scoreFromChecks(checks);
     const grade = gradeFromScore(score);
+    const hostname = validation.hostname ?? new URL(validation.normalizedUrl).hostname;
 
     const report = {
       id: cryptoRandomId(),
       createdAt: Date.now(),
       targetUrl: validation.normalizedUrl,
-      hostname: validation.hostname ?? new URL(validation.normalizedUrl).hostname,
+      hostname,
       finalUrl: res.url || validation.normalizedUrl,
       statusCode: res.status,
       score,
@@ -60,10 +59,28 @@ export async function POST(req: Request) {
       rawHeaders,
     };
 
+    await logUserActivity({
+      req,
+      module: "HEADER_ARMOR",
+      action: "Audit HTTP Security Headers",
+      target: hostname,
+      status: score < 50 ? "WARNING" : "SUCCESS",
+      summary: `Skor Header: ${score}/100 (Grade ${grade}) · HTTP ${res.status}`,
+      meta: { score, grade, statusCode: res.status },
+    });
+
     return Response.json({ ok: true, report });
   } catch (err) {
     clearTimeout(timeout);
     const aborted = err instanceof Error && err.name === "AbortError";
+    await logUserActivity({
+      req,
+      module: "HEADER_ARMOR",
+      action: "Audit HTTP Security Headers Gagal",
+      target: validation.hostname ?? raw,
+      status: "ERROR",
+      summary: aborted ? "Timeout 10s" : "Gagal menghubungi target",
+    });
     return Response.json(
       {
         ok: false,

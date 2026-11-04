@@ -2,21 +2,55 @@ import type { Finding, Severity } from "./types";
 import { chromeHeaders, detectCloudflareChallenge } from "./crawler";
 import { analyzeSecurityHeaders } from "./security-headers";
 import type { RequestBudget } from "./rate-limit";
-import { CRITICAL_CHECKS, evaluateCritical, toPublicFinding, type PublicFinding, type RawEvidence } from "./sentinel/audit";
+import {
+  CRITICAL_CHECKS,
+  evaluateCritical,
+  toPublicFinding,
+  type PublicFinding,
+  type RawEvidence,
+} from "./sentinel/audit";
 
-// Hanya pola yang benar-benar khas pesan error internal. Kata generik ("SQL", "expected…got",
-// "token is missing") DIBUANG karena muncul di HTML/JS/artikel biasa → false positive.
 const LEAK_PATTERNS: Array<{ pattern: RegExp; label: string }> = [
-  { pattern: /You have an error in your SQL syntax|SQLSTATE\[\w+\]|Unclosed quotation mark after the character string|pg_query\(\)|mysqli?_(?:fetch|query)\w*\(\)|SQLite3?::|sqlite3\.OperationalError|PSQLException/i, label: "pesan error SQL" },
-  { pattern: /\bat\s+\/(?:var\/www|home|usr|app|srv)\/[^\s<]+\.(?:php|js|py|rb|java):\d+|\bat\s+[A-Za-z]:\\[^\s<]+\.(?:cs|php|js):/i, label: "stack trace dengan path server" },
-  { pattern: /(?:\n|^)\s+at\s+[\w$.<>]+\s+\((?:\/|file:|[A-Za-z]:\\)[^)\s]+:\d+:\d+\)(?:\s*\n\s+at\s+[^\n]+){2,}/, label: "stack trace Node.js" },
-  { pattern: /(?:Warning|Fatal error|Parse error):\s+[^<\n]{3,}\s+in\s+\/[^\s<]+\.php\s+on line\s+\d+/i, label: "PHP error dengan path file" },
+  {
+    pattern:
+      /You have an error in your SQL syntax|SQLSTATE\[\w+\]|Unclosed quotation mark after the character string|pg_query\(\)|mysqli?_(?:fetch|query)\w*\(\)|SQLite3?::|sqlite3\.OperationalError|PSLException/i,
+    label: "pesan error SQL",
+  },
+  {
+    pattern:
+      /\bat\s+\/(?:var\/www|home|usr|app|srv)\/[^\s<]+\.(?:php|js|py|rb|java):\d+|\bat\s+[A-Za-z]:\\[^\s<]+\.(?:cs|php|js):/i,
+    label: "stack trace dengan path server",
+  },
+  {
+    pattern:
+      /(?:\n|^)\s+at\s+[\w$.<>]+\s+\((?:\/|file:|[A-Za-z]:\\)[^)\s]+:\d+:\d+\)(?:\s*\n\s+at\s+[^\n]+){2,}/,
+    label: "stack trace Node.js",
+  },
+  {
+    pattern: /(?:Warning|Fatal error|Parse error):\s+[^<\n]{3,}\s+in\s+\/[^\s<]+\.php\s+on line\s+\d+/i,
+    label: "PHP error dengan path file",
+  },
   { pattern: /\bORA-\d{5}\b/, label: "Oracle error code" },
   { pattern: /Traceback \(most recent call last\)/, label: "Python traceback" },
-  { pattern: /Server Error in '\/[^']*' Application|System\.(?:Data|NullReference)\w*Exception/, label: "ASP.NET error page" },
+  {
+    pattern: /Server Error in '\/[^']*' Application|System\.(?:Data|NullReference)\w*Exception/,
+    label: "ASP.NET error page",
+  },
 ];
 
-const SENSITIVE_FILES = ["/robots.txt", "/.env", "/.git/HEAD"];
+const SENSITIVE_FILES = [
+  "/robots.txt",
+  "/.env",
+  "/.git/HEAD",
+  "/.git/config",
+  "/.git/config/.git",
+  "/.git/logs/HEAD",
+  "/logs/HEAD",
+  "/.git/refs/heads/main",
+  "/.git/refs/heads/master",
+  "/.git/packed-refs",
+  "/.git/COMMIT_EDITMSG",
+];
 
 function snippet(text: string, max = 100): string {
   const clean = text.replace(/\s+/g, " ").trim();
@@ -43,10 +77,6 @@ export interface CloudflareStop {
   reason: string;
 }
 
-/**
- * Test 1: Response leakage — fetch tanpa cookie/header khusus, cek apakah
- * body mengandung pola bocoran error internal.
- */
 export async function testResponseLeakage(url: string): Promise<Finding | null> {
   try {
     const headers = chromeHeaders() as Record<string, string>;
@@ -56,7 +86,7 @@ export async function testResponseLeakage(url: string): Promise<Finding | null> 
     if (cf) return null;
 
     const ct = (res.headers.get("content-type") ?? "").toLowerCase();
-    if (/image|font|video|audio|javascript|css|octet-stream/.test(ct)) return null; // bundle/aset ≠ halaman error
+    if (/image|font|video|audio|javascript|css|octet-stream/.test(ct)) return null;
     const body = text.replace(/<script[\s\S]*?<\/script>/gi, " ").replace(/<style[\s\S]*?<\/style>/gi, " ");
 
     for (const { pattern, label } of LEAK_PATTERNS) {
@@ -79,10 +109,6 @@ export async function testResponseLeakage(url: string): Promise<Finding | null> 
   }
 }
 
-/**
- * Test 2: Anti-automation — fetch tanpa Sec-Fetch-Site, cek apakah tetap 200.
- * (indikasi tidak ada proteksi terhadap request otomatis/non-browser)
- */
 export async function testAntiAutomation(url: string): Promise<Finding | null> {
   try {
     const res = await fetch(url, {
@@ -111,11 +137,10 @@ export async function testAntiAutomation(url: string): Promise<Finding | null> {
   }
 }
 
-/**
- * Test 3: Open file exposure — /robots.txt, /.env, /.git/HEAD.
- * Kalau 200 -> CRITICAL untuk .env dan .git/HEAD, tapi TIDAK menampilkan isi.
- */
-export interface ExposedHit { finding: PublicFinding; raw: RawEvidence }
+export interface ExposedHit {
+  finding: PublicFinding;
+  raw: RawEvidence;
+}
 
 export async function testExposedFiles(
   origin: string,
@@ -131,7 +156,12 @@ export async function testExposedFiles(
       try {
         const res = await fetch(url, { method: "GET", headers: chromeHeaders(), redirect: "manual" });
         const text = (await res.text()).slice(0, 64 * 1024);
-        return { status: res.status, headers: res.headers, text, contentType: (res.headers.get("content-type") ?? "").toLowerCase() };
+        return {
+          status: res.status,
+          headers: res.headers,
+          text,
+          contentType: (res.headers.get("content-type") ?? "").toLowerCase(),
+        };
       } catch {
         return null;
       }
@@ -142,13 +172,24 @@ export async function testExposedFiles(
     if (cf) continue;
 
     if (path === "/robots.txt") {
-      // INFO hanya kalau benar-benar file robots (bukan halaman HTML catch-all)
-      if (result.status === 200 && /^\s*(user-agent|disallow|allow|sitemap)\s*:/im.test(result.text) && !result.contentType.includes("html"))
-        findings.push(mkFinding("INFO", "robots.txt ditemukan", url, "HTTP 200 — file robots valid", "robots.txt bersifat publik secara normal, ini hanya info tambahan.", "Tidak ada aksi wajib."));
+      if (
+        result.status === 200 &&
+        /^\s*(user-agent|disallow|allow|sitemap)\s*:/im.test(result.text) &&
+        !result.contentType.includes("html")
+      )
+        findings.push(
+          mkFinding(
+            "INFO",
+            "robots.txt ditemukan",
+            url,
+            "HTTP 200 — file robots valid",
+            "robots.txt bersifat publik secara normal, ini hanya info tambahan.",
+            "Tidak ada aksi wajib."
+          )
+        );
       continue;
     }
 
-    // CRITICAL hanya jika TRUE POSITIVE: status 200 + isi cocok marker nyata (bukan SPA/soft-404)
     const check = CRITICAL_CHECKS.find((c) => c.path === path);
     if (!check) continue;
     const hit = evaluateCritical(check, { ...result, head: new Uint8Array(8) });
@@ -159,24 +200,28 @@ export async function testExposedFiles(
         "CRITICAL",
         `File sensitif ter-expose & terverifikasi: ${path}`,
         url,
-        `HTTP 200 — body berisi marker "${hit.marker}" (isi tidak ditampilkan, tersimpan terenkripsi di vault)`,
+        `HTTP 200 — body berisi marker "${hit.marker}" (detail & JSON repo tersimpan terenkripsi di Admin Vault)`,
         path === "/.env"
           ? "File .env berisi kredensial/API key/secret — dampak kompromi penuh bila bocor."
-          : "Folder .git ter-expose berarti riwayat source code berpotensi diunduh penyerang.",
+          : "Metadata Git (.git/config, logs/HEAD, refs/heads) ter-expose sehingga URL repository GitHub/GitLab, riwayat commit, dan source code berpotensi bocor.",
         check.fix
       )
     );
     onHit?.({
       finding: toPublicFinding(domain, check, hit.marker),
-      raw: { domain, path, status: result.status, contentType: result.contentType, marker: hit.marker, snippet: hit.snippet },
+      raw: {
+        domain,
+        path,
+        status: result.status,
+        contentType: result.contentType,
+        marker: hit.marker,
+        snippet: hit.snippet,
+      },
     });
   }
   return findings;
 }
 
-/**
- * Test 4: Security headers, logic ala securityheaders.com
- */
 export async function testSecurityHeaders(origin: string): Promise<Finding[]> {
   try {
     const res = await fetch(origin, { method: "GET", headers: chromeHeaders() });

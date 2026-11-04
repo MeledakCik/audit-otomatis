@@ -4,6 +4,7 @@ import { validateDomainInput } from "@/lib/validate-domain";
 import { checkAndRegisterCooldown } from "@/lib/rate-limit";
 import { createQc } from "@/lib/qc-store";
 import { runQc } from "@/lib/qc-runner";
+import { logUserActivity } from "@/lib/activity-store";
 import type { QcModulesSelection } from "@/lib/qc-types";
 
 interface ScanBody {
@@ -58,6 +59,16 @@ export async function POST(req: Request) {
   // client, karena client langsung connect ke /api/qc/[id]/stream begitu
   // dapat id.
   await createQc(qcId, validation.hostname, validation.normalizedUrl, modules);
+
+  await logUserActivity({
+    req,
+    module: "QC_SCAN",
+    action: "Memulai QC Otomatis (SEO · Perf · Content)",
+    target: validation.hostname,
+    status: "RUNNING",
+    summary: `QC ID: ${qcId} (SEO: ${modules.seo ? "Ya" : "Tidak"}, Perf: ${modules.perf ? "Ya" : "Tidak"}, Content: ${modules.content ? "Ya" : "Tidak"})`,
+    meta: { scanId: qcId },
+  });
 
   after(async () => {
     await runQc(qcId, validation.normalizedUrl!, modules);

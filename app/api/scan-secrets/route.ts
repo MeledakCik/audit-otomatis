@@ -4,6 +4,7 @@ import { chromeHeaders } from "@/lib/crawler";
 import { RequestBudget } from "@/lib/rate-limit";
 import { scanSourceForSecrets, riskLevelFromFindings } from "@/lib/secret-hunter/rules";
 import type { SecretFinding } from "@/lib/secret-hunter/types";
+import { logUserActivity } from "@/lib/activity-store";
 
 const MAX_JS_FILES = 20;
 const MAX_FILE_BYTES = 3 * 1024 * 1024; // 3MB per file, cukup untuk bundle JS pada umumnya
@@ -141,6 +142,16 @@ export async function POST(req: Request) {
     riskLevel: riskLevelFromFindings(findings),
     envVarNamesFound,
   };
+
+  await logUserActivity({
+    req,
+    module: "SECRET_HUNTER",
+    action: "Pemindaian Secret & API Key di Bundle JS",
+    target: hostname,
+    status: findings.some((f) => f.severity === "CRITICAL") ? "CRITICAL" : findings.length > 0 ? "WARNING" : "SUCCESS",
+    summary: `${scannedFiles.length} file JS dipindai · ${findings.length} potensi secret (${report.riskLevel})`,
+    meta: { filesScanned: scannedFiles.length, findingsCount: findings.length, riskLevel: report.riskLevel },
+  });
 
   return Response.json({ ok: true, report });
 }

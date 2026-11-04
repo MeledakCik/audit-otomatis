@@ -1,4 +1,5 @@
 import { validateDomainInput } from "@/lib/validate-domain";
+import { logUserActivity } from "@/lib/activity-store";
 
 const FETCH_TIMEOUT_MS = 10_000;
 const HTML_SNIPPET_LIMIT = 10_000;
@@ -38,6 +39,16 @@ export async function GET(req: Request) {
 
     const fullHtml = await res.text();
     const htmlSnippet = fullHtml.slice(0, HTML_SNIPPET_LIMIT);
+
+    await logUserActivity({
+      req,
+      module: "TECH_STACK",
+      action: "Deteksi Tech Stack & Framework",
+      target: validation.hostname ?? raw,
+      status: "SUCCESS",
+      summary: `HTTP ${res.status} · Fingerprinting HTML & Headers`,
+      meta: { statusCode: res.status },
+    });
 
     return Response.json({
       ok: true,

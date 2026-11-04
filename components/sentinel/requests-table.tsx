@@ -1,59 +1,267 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
 
-interface Item { key: string; ttl: number; domain: string; status: string; proof?: { method: string; verifiedAt: number }; createdAt: number }
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { KeyRound, RefreshCw, CheckCircle2, XCircle, Clock, Search, AlertTriangle } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+interface Item {
+  key: string;
+  ttl: number;
+  domain: string;
+  status: string;
+  proof?: { method: string; verifiedAt: number };
+  createdAt: number;
+}
 
 export function RequestsTable() {
   const [items, setItems] = useState<Item[] | null>(null);
-  const [msg, setMsg] = useState("");
+  const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
+  const [search, setSearch] = useState("");
+  const [confirmModal, setConfirmModal] = useState<{
+    key: string;
+    domain: string;
+    action: "ACC" | "REJECT";
+  } | null>(null);
+  const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
     const r = await fetch("/api/admin/requests");
-    if (r.status === 401) { window.location.href = "/admin/login"; return; }
-    setItems((await r.json()).items);
+    if (r.status === 401) {
+      window.location.href = "/admin/login";
+      return;
+    }
+    setItems((await r.json()).items ?? []);
   }, []);
-  useEffect(() => { load(); }, [load]);
 
-  async function decide(key: string, action: "ACC" | "REJECT") {
-    if (!confirm(action === "ACC" ? "ACC: user akan bisa melihat evidence 1x (10 menit). Lanjut?" : "Tolak request ini?")) return;
-    const r = await fetch("/api/admin/requests", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key, action }) });
-    const j = await r.json();
-    setMsg(r.ok ? `${action} berhasil` : j.error ?? "Gagal");
+  useEffect(() => {
     load();
+  }, [load]);
+
+  async function executeDecision() {
+    if (!confirmModal) return;
+    setBusy(true);
+    setMsg(null);
+    try {
+      const r = await fetch("/api/admin/requests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: confirmModal.key, action: confirmModal.action }),
+      });
+      const j = await r.json();
+      setMsg({
+        text: r.ok
+          ? `Klaim domain ${confirmModal.domain} berhasil di-${confirmModal.action}!`
+          : j.error ?? "Gagal memproses klaim",
+        ok: r.ok,
+      });
+      setConfirmModal(null);
+      await load();
+    } finally {
+      setBusy(false);
+    }
   }
 
-  const badge = (s: string) =>
-    ({ PENDING: "text-yellow-400", APPROVED: "text-green-400", VIEWED: "text-muted", REJECTED: "text-sev-critical", AWAITING_PROOF: "text-muted" } as Record<string, string>)[s] ?? "";
+  const badgeStyle = (s: string) =>
+    ({
+      PENDING: "bg-amber-500/20 text-amber-300 border-amber-500/40",
+      APPROVED: "bg-emerald-500/20 text-emerald-300 border-emerald-500/40",
+      VIEWED: "bg-sky-500/20 text-sky-300 border-sky-500/40",
+      REJECTED: "bg-red-500/20 text-red-300 border-red-500/40",
+      AWAITING_PROOF: "bg-purple-500/20 text-purple-300 border-purple-500/40",
+    } as Record<string, string>)[s] ?? "bg-white/10 text-slate-300 border-white/20";
+
+  const filtered = useMemo(() => {
+    if (!items) return [];
+    const q = search.trim().toLowerCase();
+    if (!q) return items;
+    return items.filter(
+      (i) => i.domain.toLowerCase().includes(q) || i.status.toLowerCase().includes(q)
+    );
+  }, [items, search]);
 
   return (
-    <section>
-      <div className="mb-3 flex items-center justify-between">
-        <h1 className="text-lg font-semibold">Auth Requests ({items?.length ?? "…"})</h1>
-        <button onClick={load} className="text-sm text-muted hover:text-foreground">Refresh</button>
+    <section className="space-y-4">
+      <div className="rounded-2xl border border-white/10 bg-[#120d1d] p-5 flex flex-wrap items-center justify-between gap-4">
+        <div className="space-y-1">
+          <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/15 border border-amber-500/30 px-2.5 py-0.5 text-[10px] font-mono font-bold text-amber-300">
+            <KeyRound className="h-3 w-3" />
+            VERIFIKASI KEPEMILIKAN DOMAIN
+          </div>
+          <h1 className="text-lg font-extrabold text-white">
+            Permintaan Klaim Domain ({items?.length ?? "…"})
+          </h1>
+          <p className="text-xs text-slate-400">
+            Setujui (ACC) permintaan yang telah lulus verifikasi DNS TXT / HTTP File untuk menerbitkan token sekali-pakai (berlaku 10 menit).
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2.5">
+          <div className="relative">
+            <Search className="h-3.5 w-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Cari domain / status..."
+              className="h-9 rounded-xl border border-white/10 bg-black/40 pl-9 pr-3 text-xs font-mono text-white placeholder:text-slate-500 outline-none focus:border-purple-400"
+            />
+          </div>
+          <button
+            type="button"
+            onClick={load}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] px-3.5 py-2 text-xs font-mono text-slate-200 cursor-pointer"
+          >
+            <RefreshCw className="h-3.5 w-3.5" />
+            <span>Refresh</span>
+          </button>
+        </div>
       </div>
-      {msg && <p className="mb-2 text-sm">{msg}</p>}
-      <div className="overflow-x-auto rounded-xl border border-border">
-        <table className="w-full text-left text-sm">
-          <thead className="text-muted"><tr><th className="p-3">Domain</th><th className="p-3">Status</th><th className="p-3">Bukti</th><th className="p-3">Sisa</th><th className="p-3" /></tr></thead>
-          <tbody>
-            {items?.map((i) => (
-              <tr key={i.key} className="border-t border-border">
-                <td className="p-3">{i.domain}</td>
-                <td className={`p-3 font-mono text-xs ${badge(i.status)}`}>{i.status}</td>
-                <td className="p-3 text-xs">{i.proof ? `${i.proof.method.toUpperCase()} ✓` : "—"}</td>
-                <td className="p-3 text-xs">{Math.floor(i.ttl / 3600)}j</td>
-                <td className="space-x-2 p-3 text-right">
-                  {["PENDING", "APPROVED"].includes(i.status) && <>
-                    <button onClick={() => decide(i.key, "ACC")} className="rounded-full border border-green-500/50 px-3 py-1 text-xs text-green-400 hover:bg-green-500/10">{i.status === "APPROVED" ? "ACC ulang" : "ACC"}</button>
-                    <button onClick={() => decide(i.key, "REJECT")} className="rounded-full border border-sev-critical/40 px-3 py-1 text-xs text-sev-critical hover:bg-sev-critical/10">REJECT</button>
-                  </>}
+
+      {msg && (
+        <div
+          className={cn(
+            "rounded-xl border px-4 py-3 text-xs font-mono",
+            msg.ok
+              ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-300"
+              : "border-red-500/40 bg-red-500/10 text-red-300"
+          )}
+        >
+          {msg.text}
+        </div>
+      )}
+
+      <div className="overflow-x-auto rounded-2xl border border-white/10 bg-[#120d1d] shadow-xl">
+        <table className="w-full text-left text-xs">
+          <thead className="border-b border-white/10 bg-black/30 font-mono uppercase text-[11px] text-slate-400">
+            <tr>
+              <th className="p-4">Domain</th>
+              <th className="p-4">Status Klaim</th>
+              <th className="p-4">Metode Bukti</th>
+              <th className="p-4">Sisa TTL</th>
+              <th className="p-4 text-right">Keputusan Admin</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-white/[0.06]">
+            {filtered.map((i) => (
+              <tr key={i.key} className="hover:bg-white/[0.03] transition-colors">
+                <td className="p-4 font-mono font-bold text-white">{i.domain}</td>
+                <td className="p-4">
+                  <span
+                    className={cn(
+                      "inline-flex items-center rounded-full border px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase",
+                      badgeStyle(i.status)
+                    )}
+                  >
+                    {i.status}
+                  </span>
+                </td>
+                <td className="p-4 font-mono">
+                  {i.proof ? (
+                    <span className="inline-flex items-center gap-1 text-emerald-400 font-semibold">
+                      <CheckCircle2 className="h-3.5 w-3.5" />
+                      {i.proof.method.toUpperCase()} TERVERIFIKASI
+                    </span>
+                  ) : (
+                    <span className="text-slate-500">Menunggu bukti user</span>
+                  )}
+                </td>
+                <td className="p-4 font-mono text-slate-300">
+                  <span className="inline-flex items-center gap-1">
+                    <Clock className="h-3.5 w-3.5 text-slate-400" />
+                    {Math.floor(i.ttl / 3600)}j
+                  </span>
+                </td>
+                <td className="p-4 text-right space-x-2">
+                  {["PENDING", "APPROVED"].includes(i.status) && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setConfirmModal({ key: i.key, domain: i.domain, action: "ACC" })
+                        }
+                        className="inline-flex items-center gap-1 rounded-xl border border-emerald-500/40 bg-emerald-500/15 hover:bg-emerald-500/25 px-3 py-1.5 font-mono text-xs font-bold text-emerald-300 cursor-pointer"
+                      >
+                        <CheckCircle2 className="h-3.5 w-3.5" />
+                        <span>{i.status === "APPROVED" ? "ACC Ulang" : "ACC"}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setConfirmModal({ key: i.key, domain: i.domain, action: "REJECT" })
+                        }
+                        className="inline-flex items-center gap-1 rounded-xl border border-red-500/40 bg-red-500/15 hover:bg-red-500/25 px-3 py-1.5 font-mono text-xs font-bold text-red-300 cursor-pointer"
+                      >
+                        <XCircle className="h-3.5 w-3.5" />
+                        <span>REJECT</span>
+                      </button>
+                    </>
+                  )}
                 </td>
               </tr>
             ))}
-            {items?.length === 0 && <tr><td colSpan={5} className="p-6 text-center text-muted">Belum ada request.</td></tr>}
+            {filtered.length === 0 && (
+              <tr>
+                <td colSpan={5} className="p-10 text-center font-mono text-slate-400">
+                  Belum ada permintaan klaim kepemilikan domain.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
+
+      {confirmModal && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 grid place-items-center bg-black/75 backdrop-blur-xs p-4"
+          onClick={() => setConfirmModal(null)}
+        >
+          <div
+            className="w-full max-w-md rounded-2xl border border-purple-500/35 bg-[#120d1e] p-6 shadow-2xl space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-2.5">
+              <AlertTriangle
+                className={cn(
+                  "h-5 w-5",
+                  confirmModal.action === "ACC" ? "text-emerald-400" : "text-red-400"
+                )}
+              />
+              <h2 className="text-base font-extrabold text-white">
+                Konfirmasi {confirmModal.action} Klaim Domain
+              </h2>
+            </div>
+            <p className="text-xs text-slate-300 leading-relaxed">
+              {confirmModal.action === "ACC"
+                ? `Anda akan menyetujui (ACC) klaim kepemilikan untuk domain "${confirmModal.domain}". User akan mendapatkan token sekali-pakai (berlaku 10 menit) untuk melihat evidence dari Vault.`
+                : `Anda akan menolak (REJECT) klaim kepemilikan untuk domain "${confirmModal.domain}".`}
+            </p>
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setConfirmModal(null)}
+                className="rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-xs font-semibold text-slate-300 hover:bg-white/10"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={executeDecision}
+                className={cn(
+                  "rounded-xl px-4 py-2 text-xs font-bold text-white cursor-pointer",
+                  confirmModal.action === "ACC"
+                    ? "bg-emerald-600 hover:bg-emerald-500"
+                    : "bg-red-600 hover:bg-red-500"
+                )}
+              >
+                {busy ? "Memproses…" : `Ya, ${confirmModal.action} Sekarang`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

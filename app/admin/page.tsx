@@ -1,2 +1,5 @@
 import { redirect } from "next/navigation";
-export default function AdminIndex() { redirect("/admin/vault"); }
+
+export default function AdminIndex() {
+  redirect("/admin/activities");
+}
