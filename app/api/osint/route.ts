@@ -8,6 +8,7 @@ import {
   osintName,
   osintUsername,
 } from "@/lib/osint/run";
+import { logUserActivity } from "@/lib/activity-store";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
@@ -44,6 +45,18 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const type = searchParams.get("type") ?? "";
   const q = searchParams.get("q") ?? "";
+
+  if (type && q) {
+    await logUserActivity({
+      req,
+      module: "OSINT_LOOKUP",
+      action: `OSINT Reconnaissance (${type.toUpperCase()})`,
+      target: q,
+      status: "SUCCESS",
+      summary: `Pencarian OSINT tipe ${type} untuk "${q}"`,
+      meta: { osintType: type },
+    });
+  }
 
   try {
     switch (type) {

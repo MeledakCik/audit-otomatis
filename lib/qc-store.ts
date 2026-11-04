@@ -196,3 +196,44 @@ export async function markQcError(id: string, message: string): Promise<void> {
   });
   await emitQc(id, { type: "error", message });
 }
+
+export interface QcSummary {
+  id: string;
+  domain: string;
+  origin: string;
+  createdAt: number;
+  status: QcStatus;
+  overallScore?: number;
+  modules: QcModulesSelection;
+  requestsMade: number;
+}
+
+export async function listQcs(limit = 50): Promise<QcSummary[]> {
+  let metas: QcMeta[] = [];
+  if (REDIS_CONFIGURED) {
+    try {
+      const kv = getKv();
+      const keys = await kv.keys("trout:qc:*:meta");
+      const found = await Promise.all(keys.map((k) => kv.getJSON<QcMeta>(k)));
+      metas = found.filter((m): m is QcMeta => m !== null);
+    } catch {
+      metas = [];
+    }
+  } else {
+    metas = Array.from(memQc.values()) as unknown as QcMeta[];
+  }
+
+  return metas
+    .map((m) => ({
+      id: m.id,
+      domain: m.domain,
+      origin: m.origin,
+      createdAt: m.createdAt,
+      status: m.status,
+      overallScore: m.result?.overallScore,
+      modules: m.modules,
+      requestsMade: m.requestsMade ?? 0,
+    }))
+    .sort((a, b) => b.createdAt - a.createdAt)
+    .slice(0, limit);
+}

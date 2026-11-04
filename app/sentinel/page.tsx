@@ -1,3 +1,9 @@
-import { SentinelAudit } from "@/components/sentinel/sentinel-audit";
-export const metadata = { title: "Passive Security Audit" };
-export default function Page() { return <SentinelAudit />; }
+import { redirect } from "next/navigation";
+
+export const metadata = {
+  title: "Sentinel Vault Audit — Integrated in Scan",
+};
+
+export default function SentinelRedirectPage() {
+  redirect("/?tab=sentinel");
+}

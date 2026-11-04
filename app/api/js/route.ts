@@ -1,5 +1,6 @@
 // app/api/scan/js/route.ts
 import { NextRequest, NextResponse } from "next/server";
+import { logUserActivity } from "@/lib/activity-store";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -712,7 +713,17 @@ export async function POST(request: NextRequest) {
     };
     
     setCache(cacheKey, result);
-    
+
+    await logUserActivity({
+      req: request,
+      module: "JS_SUPPLY_CHAIN",
+      action: "Audit JS Supply Chain & Library CVE",
+      target: targetUrl,
+      status: result.vulnerable_count > 0 ? "CRITICAL" : result.outdated_count > 0 ? "WARNING" : "SUCCESS",
+      summary: `${result.total_scripts} script · ${result.vulnerable_count} rentan CVE · Skor risiko ${result.risk_score}`,
+      meta: { totalScripts: result.total_scripts, vulnerableCount: result.vulnerable_count, riskScore: result.risk_score },
+    });
+
     console.log(`✅ Complete in ${result.scan_duration_ms}ms`);
     return NextResponse.json(result);
     

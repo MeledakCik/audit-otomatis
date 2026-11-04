@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { logUserActivity } from "@/lib/activity-store";
 
 export const dynamic = "force-dynamic";
 
@@ -241,6 +242,16 @@ export async function POST(request: NextRequest) {
       timeout: Number(body.timeout) || 8000,
       useProxy: Boolean(body.useProxy),
     };
+
+    await logUserActivity({
+      req,
+      module: "SHIELD_STATUS",
+      action: "Konfigurasi Monitoring Shield Status",
+      target: parsedTargets.map((t) => t.host).slice(0, 3).join(", "),
+      status: "SUCCESS",
+      summary: `${parsedTargets.length} domain dipantau (${globalConfig.threads} threads)`,
+      meta: { targetCount: parsedTargets.length },
+    });
 
     return NextResponse.json({
       success: true,

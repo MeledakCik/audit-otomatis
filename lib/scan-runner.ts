@@ -4,6 +4,9 @@ import { scanSecrets } from "./secret-scanner";
 import { fingerprintLibraries, libraryDetectionsToFindings, detectNextJs } from "./library-fingerprint";
 import { testResponseLeakage, testAntiAutomation, testExposedFiles, testSecurityHeaders, type ExposedHit } from "./tester";
 import { publishScanCriticals } from "./sentinel/publish";
+import { auditDomain } from "./sentinel/audit";
+import type { GitIntelReport } from "./sentinel/git-intel";
+import { logUserActivity } from "./activity-store";
 import { RequestBudget, sleep } from "./rate-limit";
 import { discoverFilesDetailed } from "./discovery/passiveDiscovery";
 import { checkVulnerableLibs } from "./vuln/jsLibChecker";
@@ -20,15 +23,12 @@ import {
   passiveDiscoveryToFindings,
 } from "./vuln/toFindings";
 
-// Cap findings per-file untuk sink/lib check: modul deteksi berbasis regex
-// bisa menghasilkan ratusan match di bundle vendor besar/minified — cap ini
-// menjaga log & Finding list tetap berguna (bukan flood), sesuai semangat
-// "quick win, bukan bukti exploitability" di komentar modul aslinya.
 const MAX_SINK_FINDINGS_PER_FILE = 10;
 import {
   addFinding,
   bumpRequestCount,
   bumpJsFilesScanned,
+  getScan,
   log,
   markBlocked,
   markDone,
@@ -46,8 +46,13 @@ import type { DiscoveredEndpoint, FormInfo, GraphData, LibraryDetection } from "
 const CF_MESSAGE =
   "Domain dilindungi Cloudflare Challenge. Nonaktifkan Bot Fight Mode sementara untuk audit, atau masukkan CF Clearance Token manual di settings.";
 
-export async function runScan(scanId: string, origin: string) {
+export async function runScan(
+  scanId: string,
+  origin: string,
+  identity?: { ip?: string; userAgent?: string; userId?: string }
+) {
   const budget = new RequestBudget(100, 500);
+  const domainHost = new URL(origin).hostname.toLowerCase();
 
   try {
     await setStatus(scanId, "crawling");
@@ -61,6 +66,17 @@ export async function runScan(scanId: string, origin: string) {
     if (crawl.pages.length === 0 && crawl.cloudflare) {
       await log(scanId, `Cloudflare challenge terdeteksi: ${crawl.cloudflare.reason}`);
       await markBlocked(scanId, CF_MESSAGE);
+      await logUserActivity({
+        ip: identity?.ip,
+        userAgent: identity?.userAgent,
+        userId: identity?.userId,
+        module: "FULL_SCAN",
+        action: "Full Scan Dihentikan (Cloudflare Challenge)",
+        target: domainHost,
+        status: "BLOCKED",
+        summary: `Scan ${scanId} terhenti oleh proteksi Cloudflare`,
+        meta: { scanId },
+      });
       return;
     }
 
@@ -73,14 +89,12 @@ export async function runScan(scanId: string, origin: string) {
       await log(scanId, `Cloudflare challenge terdeteksi di tengah crawl (data sebagian tetap dipakai): ${crawl.cloudflare.reason}`);
     }
 
-    // --- Analisis JS: endpoint + secret + library fingerprint ---
     await setStatus(scanId, "analyzing_js");
     await log(scanId, `Mengunduh hingga ${Math.min(crawl.allScripts.length, 20)} file JS eksternal...`);
     const jsFiles = await fetchJsFiles(crawl.allScripts, (msg) => log(scanId, msg));
     await bumpRequestCount(scanId, jsFiles.length);
     await bumpJsFilesScanned(scanId, jsFiles.length);
 
-    // [PERBAIKAN] Pastikan graph & edges di-generate dengan aman (Fallback otomatis jika crawler kosong)
     const initialNodes: GraphData["nodes"] = crawl.graph?.nodes?.length ? [...crawl.graph.nodes] : [];
     const initialEdges: GraphData["edges"] = crawl.graph?.edges?.length ? [...crawl.graph.edges] : [];
 
@@ -88,10 +102,10 @@ export async function runScan(scanId: string, origin: string) {
       for (const page of crawl.pages) {
         const pageId = `page:${page.url}`;
         initialNodes.push({ id: pageId, type: "page", label: page.url, depth: page.depth });
-        
+
         for (const scriptUrl of page.scripts) {
           const jsId = jsNodeId ? jsNodeId(scriptUrl) : `js:${scriptUrl}`;
-          if (!initialNodes.some(n => n.id === jsId)) {
+          if (!initialNodes.some((n) => n.id === jsId)) {
             initialNodes.push({ id: jsId, type: "js", label: scriptUrl });
           }
           initialEdges.push({ from: pageId, to: jsId });
@@ -109,7 +123,7 @@ export async function runScan(scanId: string, origin: string) {
       jsEndpoints.push(...endpoints);
       for (const ep of endpoints) {
         const epId = endpointNodeId ? endpointNodeId(ep.url) : `endpoint:${ep.url}`;
-        if (!graph.nodes.some(n => n.id === epId)) {
+        if (!graph.nodes.some((n) => n.id === epId)) {
           graph.nodes.push({ id: epId, type: "endpoint", label: ep.url });
         }
         const scriptId = jsNodeId ? jsNodeId(file.url) : `js:${file.url}`;
@@ -128,7 +142,6 @@ export async function runScan(scanId: string, origin: string) {
       const libs = fingerprintLibraries(file.text, file.label);
       allLibraryDetections.push(...libs);
 
-      // --- Passive-audit tambahan: vulnerable library banner + DOM-XSS sink ---
       const vulnLibFindings = vulnLibsToFindings(checkVulnerableLibs(file.text), file.label);
       for (const f of vulnLibFindings) {
         await addFinding(scanId, f);
@@ -158,7 +171,6 @@ export async function runScan(scanId: string, origin: string) {
     await setLibrariesDetected(scanId, allLibraryDetections);
     await log(scanId, `Fingerprint library selesai: ${allLibraryDetections.length} versi terdeteksi, ${libFindings.length} CVE cocok.`);
 
-    // --- Inline scripts ---
     const allInline = crawl.allInlineScripts.flatMap((p) => p.scripts);
     await log(scanId, `Menganalisis ${allInline.length} inline script (semua halaman)...`);
     const inlineResult = analyzeInlineScripts(allInline, (msg) => log(scanId, msg));
@@ -186,9 +198,8 @@ export async function runScan(scanId: string, origin: string) {
 
     await setGraph(scanId, graph);
 
-    // --- Deep passive audit: well-known file discovery + redirect/SSRF & IDOR candidate generation ---
     await setStatus(scanId, "deep_audit");
-    await log(scanId, "Mencari well-known file (sitemap.xml, robots.txt, swagger/openapi.json)...");
+    await log(scanId, "Mencari well-known file & menjalankan Deep Passive Git Intelligence (/.git/config, /.git/config/.git, /logs/HEAD, /.git/refs/heads/main)...");
     const discoveredFiles = await discoverFilesDetailed(origin);
     await bumpRequestCount(scanId, discoveredFiles.length);
 
@@ -236,16 +247,90 @@ export async function runScan(scanId: string, origin: string) {
 
     await setStatus(scanId, "testing");
 
-    await log(scanId, "Mengecek file sensitif (robots.txt, .env, .git/HEAD)...");
+    await log(
+      scanId,
+      "Mengecek file sensitif & Deep Git Exposure (/.env, /.git/HEAD, /.git/config, /.git/config/.git, /.git/logs/HEAD, /logs/HEAD, /.git/refs/heads/main)..."
+    );
     const exposedHits: ExposedHit[] = [];
     const exposedFindings = await testExposedFiles(origin, budget, (h) => exposedHits.push(h));
-    for (const f of exposedFindings) addFinding(scanId, f);
-    await bumpRequestCount(scanId, 3);
+    for (const f of exposedFindings) await addFinding(scanId, f);
+    await bumpRequestCount(scanId, 11);
+
+    let detectedGitIntel: GitIntelReport | undefined;
+
+    try {
+      const sentinelRes = await auditDomain(domainHost);
+      detectedGitIntel = sentinelRes.gitIntel;
+
+      if (detectedGitIntel?.primaryRepository?.detected && detectedGitIntel.primaryRepository.webUrl) {
+        await log(
+          scanId,
+          `[GIT-INTEL] Repository ${detectedGitIntel.primaryRepository.provider.toUpperCase()} ditemukan: ${detectedGitIntel.primaryRepository.webUrl} (branch: ${detectedGitIntel.head.activeBranch ?? "-"}, commit: ${detectedGitIntel.commits.latestSha?.slice(0, 10) ?? "-"})`
+        );
+        await addFinding(scanId, {
+          id: `git_repo_${Date.now()}`,
+          severity: "CRITICAL",
+          title: `Git Remote Repository Teridentifikasi (${detectedGitIntel.primaryRepository.provider.toUpperCase()}: ${detectedGitIntel.primaryRepository.repoFullName})`,
+          endpoint: `${origin}/.git/config`,
+          evidence: `Remote origin mengarah ke ${detectedGitIntel.primaryRepository.provider.toUpperCase()} (${detectedGitIntel.primaryRepository.repoFullName}) · Branch aktif: ${detectedGitIntel.head.activeBranch ?? "main"} · JSON tersimpan di Admin Console`,
+          impact:
+            "Eksposur .git/config dan logs/HEAD mengungkap lokasi repository GitHub/GitLab, riwayat commit, email developer, serta berpotensi membocorkan seluruh source code.",
+          fix: "Blokir akses ke /.git/ dan /logs/HEAD di web server, hapus direktori .git dari folder publik produksi, dan rotasi kredensial/token.",
+        });
+      }
+
+      for (const r of sentinelRes.raw) {
+        if (!exposedHits.some((h) => h.raw.path === r.path)) {
+          const matchingFinding = sentinelRes.findings.find((f) => f.finding.includes(r.path)) ?? {
+            domain: domainHost,
+            severity: "CRITICAL" as const,
+            finding: `Exposed sensitive path (${r.path})`,
+            evidence_public: `200 OK, marker "${r.marker}" terdeteksi`,
+            fix: "Hapus file dari webroot dan rotasi kredensial.",
+          };
+          exposedHits.push({ finding: matchingFinding, raw: r });
+          if (r.path !== "/__git-intelligence.json") {
+            await addFinding(scanId, {
+              id: `sentinel_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+              severity: "CRITICAL",
+              title: `[Sentinel Vault] ${matchingFinding.finding}`,
+              endpoint: new URL(r.path, origin).toString(),
+              evidence: matchingFinding.evidence_public,
+              impact: "File sensitif dapat diakses publik dan berisiko membocorkan kredensial/konfigurasi produksi.",
+              fix: matchingFinding.fix,
+            });
+          }
+        }
+      }
+
+      if (sentinelRes.findings.length > 0 || exposedHits.length > 0) {
+        await publishScanCriticals(
+          domainHost,
+          [...exposedHits.map((h) => h.finding), ...sentinelRes.findings],
+          exposedHits.map((h) => h.raw)
+        );
+      }
+    } catch {
+      if (exposedHits.length) {
+        await publishScanCriticals(
+          domainHost,
+          exposedHits.map((h) => h.finding),
+          exposedHits.map((h) => h.raw)
+        );
+      }
+    }
+
+    if (exposedHits.length) {
+      await log(
+        scanId,
+        `${exposedHits.length} temuan CRITICAL & JSON Git Intel terverifikasi → disimpan terenkripsi (AES-256-GCM) di Sentinel Vault Admin.`
+      );
+    }
 
     await log(scanId, "Mengecek security headers...");
     const headerFindings = await budget.spend(() => testSecurityHeaders(origin));
     await bumpRequestCount(scanId);
-    if (headerFindings) for (const f of headerFindings) addFinding(scanId, f);
+    if (headerFindings) for (const f of headerFindings) await addFinding(scanId, f);
 
     for (const target of testTargets) {
       if (!budget.canSpend(3)) {
@@ -257,11 +342,11 @@ export async function runScan(scanId: string, origin: string) {
 
       const leakFinding = await budget.spend(() => testResponseLeakage(target.url));
       await bumpRequestCount(scanId);
-      if (leakFinding) addFinding(scanId, leakFinding);
+      if (leakFinding) await addFinding(scanId, leakFinding);
 
       const autoFinding = await budget.spend(() => testAntiAutomation(target.url));
       await bumpRequestCount(scanId);
-      if (autoFinding) addFinding(scanId, autoFinding);
+      if (autoFinding) await addFinding(scanId, autoFinding);
 
       const authResult = await budget.spend(() => checkAuthBypass(target.url));
       await bumpRequestCount(scanId);
@@ -275,20 +360,57 @@ export async function runScan(scanId: string, origin: string) {
       await sleep(50);
     }
 
-    if (exposedHits.length) {
-      await publishScanCriticals(
-        new URL(origin).hostname.toLowerCase(),
-        exposedHits.map((h) => h.finding),
-        exposedHits.map((h) => h.raw)
-      );
-      await log(scanId, `${exposedHits.length} temuan CRITICAL terverifikasi → evidence disimpan terenkripsi di vault admin.`);
-    }
-
-    await log(scanId, "Semua pengujian pasif selesai.");
+    await log(scanId, "Semua pengujian pasif & Deep Git Audit selesai.");
     await setStatus(scanId, "done");
     await markDone(scanId);
+
+    const finalScan = await getScan(scanId);
+    const totalFindings = finalScan?.findings?.length ?? 0;
+    const critCount = finalScan?.findings?.filter((f) => f.severity === "CRITICAL").length ?? 0;
+    const highCount = finalScan?.findings?.filter((f) => f.severity === "HIGH").length ?? 0;
+    const repoUrl = detectedGitIntel?.primaryRepository?.webUrl ?? null;
+
+    await logUserActivity({
+      ip: identity?.ip,
+      userAgent: identity?.userAgent,
+      userId: identity?.userId,
+      module: "FULL_SCAN",
+      action: repoUrl
+        ? `Full Scan + Git Repo Terdeteksi (${detectedGitIntel?.primaryRepository?.provider.toUpperCase()})`
+        : "Full Passive Scan + Sentinel Audit Selesai",
+      target: domainHost,
+      status: critCount > 0 ? "CRITICAL" : highCount > 0 ? "WARNING" : "SUCCESS",
+      summary: repoUrl
+        ? `Repo: ${repoUrl} · ${totalFindings} temuan (${critCount} CRITICAL, ${highCount} HIGH)`
+        : `Selesai: ${crawl.pages.length} halaman, ${totalFindings} temuan (${critCount} CRITICAL, ${highCount} HIGH)`,
+      meta: {
+        scanId,
+        pagesCount: crawl.pages.length,
+        findingsCount: totalFindings,
+        criticalCount: critCount,
+        highCount,
+        vaultHits: exposedHits.length,
+        gitExposed: Boolean(detectedGitIntel?.exposed),
+        gitProvider: detectedGitIntel?.primaryRepository?.provider ?? null,
+        gitRepoUrl: repoUrl,
+        gitBranch: detectedGitIntel?.head?.activeBranch ?? null,
+        gitLatestSha: detectedGitIntel?.commits?.latestSha ?? null,
+        gitIntelJson: detectedGitIntel ? JSON.stringify(detectedGitIntel) : null,
+      },
+    });
   } catch (err) {
     await markError(scanId, `Scan gagal: ${(err as Error).message}`);
+    await logUserActivity({
+      ip: identity?.ip,
+      userAgent: identity?.userAgent,
+      userId: identity?.userId,
+      module: "FULL_SCAN",
+      action: "Full Scan Gagal",
+      target: domainHost,
+      status: "ERROR",
+      summary: (err as Error).message,
+      meta: { scanId },
+    });
   }
 }
 

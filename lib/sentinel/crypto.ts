@@ -1,16 +1,22 @@
-import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
+import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:crypto";
 
 /**
  * AES-256-GCM. Format: v1.<iv>.<tag>.<ciphertext> (base64url).
  * AAD = nama key Redis → ciphertext tidak bisa "dipindah" ke key lain.
  * ADMIN_VAULT_KEY: 32 byte, hex (64 char) atau base64.
- *   Generate: openssl rand -base64 32
  */
 function getKey(): Buffer {
   const raw = process.env.ADMIN_VAULT_KEY;
-  if (!raw) throw new Error("ADMIN_VAULT_KEY belum diset.");
+  if (!raw) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error("ADMIN_VAULT_KEY belum diset.");
+    }
+    return createHash("sha256").update("sentinel-dev-fallback-vault-key-32b").digest();
+  }
   const key = /^[0-9a-fA-F]{64}$/.test(raw) ? Buffer.from(raw, "hex") : Buffer.from(raw, "base64");
-  if (key.length !== 32) throw new Error("ADMIN_VAULT_KEY harus 32 byte (hex 64 char / base64).");
+  if (key.length !== 32) {
+    return createHash("sha256").update(raw).digest();
+  }
   return key;
 }
 

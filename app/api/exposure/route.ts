@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { assertPublicHttpsTarget, isSameOrigin, SsrfBlockedError } from "@/lib/ssrf-guard";
 import { findHeaderLeaks, findSourcePatterns, Finding, severityRank } from "@/lib/findings";
+import { logUserActivity } from "@/lib/activity-store";
 
 export const runtime = "nodejs";
 
@@ -347,6 +348,16 @@ export async function POST(req: NextRequest) {
   const infoFindings = findings.filter(f => f.severity === "info");
 
   findings.sort((a, b) => severityRank(b.severity) - severityRank(a.severity));
+
+  await logUserActivity({
+    req,
+    module: "EXPOSURE_CHECK",
+    action: "Pemeriksaan Eksposur File & Header Sensitif",
+    target: originUrl.hostname,
+    status: criticalFindings.length > 0 ? "CRITICAL" : mediumFindings.length > 0 ? "WARNING" : "SUCCESS",
+    summary: `${findings.length} temuan (${criticalFindings.length} critical, ${mediumFindings.length} medium)`,
+    meta: { totalFindings: findings.length, critical: criticalFindings.length },
+  });
 
   return NextResponse.json({
     url: originUrl.toString(),

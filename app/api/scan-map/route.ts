@@ -4,6 +4,7 @@ import { RequestBudget } from "@/lib/rate-limit";
 import { crawlForAttackMap } from "@/lib/attack-map/crawl";
 import { extractApiCallsFromJs } from "@/lib/attack-map/extract-endpoints";
 import { buildAttackMapGraph, type JsFinding } from "@/lib/attack-map/build-graph";
+import { logUserActivity } from "@/lib/activity-store";
 
 const MAX_DEPTH = 2;
 const MAX_PAGES = 18;
@@ -82,6 +83,16 @@ export async function POST(req: Request) {
   }
 
   const report = buildAttackMapGraph({ origin, hostname, pages, jsFindings, maxPages: MAX_PAGES });
+
+  await logUserActivity({
+    req,
+    module: "ATTACK_MAP",
+    action: "Pemetaan Attack Surface & Endpoint Graph",
+    target: hostname,
+    status: "SUCCESS",
+    summary: `${pages.length} halaman & ${uniqueScripts.length} script dipetakan`,
+    meta: { pagesCount: pages.length, scriptsCount: uniqueScripts.length },
+  });
 
   return Response.json({ ok: true, report });
 }

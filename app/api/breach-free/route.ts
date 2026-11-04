@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { logUserActivity } from "@/lib/activity-store";
 
 // Sentinel-ID Breach Peek (Free) — server-side proxy for the XposedOrNot
 // free public OSINT API. Proxying here means the browser never talks to
@@ -154,6 +155,16 @@ export async function GET(req: NextRequest) {
 
   const dataTypesLeaked = Array.from(new Set(breaches.flatMap((b) => b.dataExposed)));
   const passwordExposedCount = breaches.filter((b) => b.dataExposed.some((d) => /password/i.test(d))).length;
+
+  await logUserActivity({
+    req,
+    module: "BREACH_PEEK",
+    action: "Pengecekan Kebocoran Data (Breach Peek)",
+    target: email,
+    status: clean ? "SUCCESS" : passwordExposedCount > 0 ? "CRITICAL" : "WARNING",
+    summary: clean ? "Tidak ditemukan kebocoran data" : `${Math.max(breachNames.length, breaches.length)} insiden kebocoran ditemukan`,
+    meta: { breachCount: clean ? 0 : Math.max(breachNames.length, breaches.length) },
+  });
 
   return Response.json({
     ok: true,
