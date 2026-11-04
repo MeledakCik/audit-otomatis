@@ -1,12 +1,13 @@
 "use server";
 
 import { after } from "next/server";
-import { headers } from "next/headers";
+import { headers, cookies } from "next/headers";
 import { nanoid } from "nanoid";
 import { validateDomainInput } from "./validate-domain";
 import { checkAndRegisterCooldown } from "./rate-limit";
 import { createScan } from "./scan-store";
 import { runScan } from "./scan-runner";
+import { logUserActivity } from "./activity-store";
 
 export interface StartScanResult {
   ok: boolean;
@@ -31,7 +32,10 @@ export async function startScanAction(formData: FormData): Promise<StartScanResu
   }
 
   const h = await headers();
-  const userKey = h.get("x-forwarded-for") || h.get("x-real-ip") || "anonymous";
+  const jar = await cookies();
+  const userKey = (h.get("x-forwarded-for")?.split(",")[0] || h.get("x-real-ip") || "anonymous").trim();
+  const ua = h.get("user-agent") || "Unknown Browser";
+  const uid = jar.get("sentinel_uid")?.value || `usr_${Buffer.from(`${userKey}:${ua.slice(0, 32)}`).toString("base64url").slice(0, 10)}`;
 
   const cooldown = await checkAndRegisterCooldown(userKey, validation.hostname);
   if (!cooldown.allowed) {
@@ -43,12 +47,22 @@ export async function startScanAction(formData: FormData): Promise<StartScanResu
   }
 
   const scanId = nanoid(10);
-  // WAJIB di-await: harus tersimpan di Redis sebelum response balik ke
-  // client, karena client langsung connect ke /api/scan/[id]/stream begitu
-  // dapat scanId — kalau belum ke-persist, stream route akan 404.
   await createScan(scanId, validation.hostname, validation.normalizedUrl);
+
+  await logUserActivity({
+    ip: userKey,
+    userAgent: ua,
+    userId: uid,
+    module: "FULL_SCAN",
+    action: "Memulai Full Passive Audit + Sentinel Vault Scan",
+    target: validation.hostname,
+    status: "RUNNING",
+    summary: `Scan ID: ${scanId} dimulai pada ${validation.normalizedUrl}`,
+    meta: { scanId, origin: validation.normalizedUrl },
+  });
+
   after(async () => {
-    await runScan(scanId, validation.normalizedUrl!);
+    await runScan(scanId, validation.normalizedUrl!, { ip: userKey, userAgent: ua, userId: uid });
   });
 
   return { ok: true, scanId };

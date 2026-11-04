@@ -1,6 +1,7 @@
 import { getScan } from "@/lib/scan-store";
 import { chromeHeaders } from "@/lib/crawler";
 import { isPrivateOrReservedHost } from "@/lib/validate-domain";
+import { logUserActivity } from "@/lib/activity-store";
 
 export const runtime = "nodejs";
 
@@ -100,6 +101,16 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
     const truncated = text.length > MAX_BODY_PREVIEW;
     const bodyPreview = truncated ? text.slice(0, MAX_BODY_PREVIEW) : text;
+
+    await logUserActivity({
+      req,
+      module: "ENDPOINT_TEST",
+      action: "Uji Endpoint API (GET-Only)",
+      target: target.toString(),
+      status: "SUCCESS",
+      summary: `HTTP ${res.status} (${timeMs}ms) pada scan ${id}`,
+      meta: { scanId: id, statusCode: res.status, timeMs },
+    });
 
     return Response.json({
       ok: true,

@@ -1,5 +1,6 @@
 import { analyzeSecurityLog } from "@/lib/maintenance/analyzer";
 import { enrichReportWithGroq } from "@/lib/maintenance/groq-enrich";
+import { logUserActivity } from "@/lib/activity-store";
 
 const MAX_INPUT_CHARS = 10 * 1024 * 1024; // ~10MB, selaras dengan batas upload di UI
 
@@ -27,6 +28,15 @@ export async function POST(req: Request) {
   try {
     let report = analyzeSecurityLog(input, body.filename);
     report = await enrichReportWithGroq(report, input);
+    await logUserActivity({
+      req,
+      module: "MAINTENANCE_LOG",
+      action: "Analisis Log & Kode Keamanan (AI)",
+      target: body.filename || "Log Snippet",
+      status: report.findings.some((f) => f.severity === "CRITICAL") ? "CRITICAL" : report.findings.length > 0 ? "WARNING" : "SUCCESS",
+      summary: `${report.findings.length} temuan dianalisis dari ${body.filename || "teks"}`,
+      meta: { findingsCount: report.findings.length },
+    });
     return Response.json({ ok: true, report });
   } catch (err) {
     console.error("[maintenance-log/analyze] error:", err);

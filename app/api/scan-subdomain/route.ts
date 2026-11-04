@@ -1,5 +1,6 @@
 import { isPrivateOrReservedHost } from "@/lib/validate-domain";
 import { lookupSubdomainsFromCrtSh } from "@/lib/subdomain-watch/crt";
+import { logUserActivity } from "@/lib/activity-store";
 
 interface ScanBody {
   domain?: string;
@@ -36,6 +37,16 @@ export async function POST(req: Request) {
   if (!result.ok) {
     return Response.json({ ok: false, error: result.error }, { status: 502 });
   }
+
+  await logUserActivity({
+    req,
+    module: "SUBDOMAIN_WATCH",
+    action: "Enumerasi Subdomain (CT Logs crt.sh)",
+    target: domain,
+    status: "SUCCESS",
+    summary: `${result.subdomains.length} subdomain ditemukan (total: ${result.totalBeforeLimit})`,
+    meta: { count: result.subdomains.length },
+  });
 
   return Response.json({
     ok: true,

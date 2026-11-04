@@ -1,5 +1,6 @@
 // app/api/scan/ssl/route.ts
 import { NextRequest, NextResponse } from "next/server";
+import { logUserActivity } from "@/lib/activity-store";
 import tls from "tls";
 
 export const runtime = "nodejs";
@@ -537,7 +538,17 @@ export async function POST(request: NextRequest) {
     
     // Cache result
     setCache(cacheKey, result);
-    
+
+    await logUserActivity({
+      req: request,
+      module: "SSL_CHECKER",
+      action: "Inspeksi Sertifikat SSL/TLS",
+      target: `${host}:${port}`,
+      status: grade === "F" || grade === "D" ? "CRITICAL" : grade === "C" ? "WARNING" : "SUCCESS",
+      summary: `Grade ${grade} · TLS ${tlsVersion} · Sisa ${daysLeft} hari (${findings.length} temuan)`,
+      meta: { grade, daysLeft, findingsCount: findings.length },
+    });
+
     console.log(`✅ Complete in ${result.scan_duration_ms}ms`);
     return NextResponse.json(result);
     

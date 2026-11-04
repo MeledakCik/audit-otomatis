@@ -1,6 +1,7 @@
 import { normalizeDnsDomainInput } from "@/lib/dns-intel/validate";
 import { buildDnsIntelReport } from "@/lib/dns-intel/build-report";
 import { checkDnsRateLimit } from "@/lib/dns-intel/rate-limit";
+import { logUserActivity } from "@/lib/activity-store";
 
 export const dynamic = "force-dynamic";
 
@@ -33,6 +34,14 @@ export async function GET(req: Request) {
 
   try {
     const report = await buildDnsIntelReport(v.domain);
+    await logUserActivity({
+      req,
+      module: "DNS_INTEL",
+      action: "Analisis DNS & Email Security (SPF/DMARC/DKIM)",
+      target: v.domain,
+      status: "SUCCESS",
+      summary: `DNS lookup selesai untuk ${v.domain}`,
+    });
     return Response.json({ ok: true, report });
   } catch {
     return Response.json({ ok: false, error: "Gagal melakukan DNS lookup. Coba lagi." }, { status: 502 });
