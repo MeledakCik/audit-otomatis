@@ -47,7 +47,7 @@ export function InputPanel({ onScan, loading }: InputPanelProps) {
           </Button>
         </div>
 
-        <div className="flex items-start gap-2 rounded-lg border border-border-strong/60 bg-surface-raised px-3 py-2.5 text-[11px] font-mono leading-relaxed text-muted-dim">
+        <div className="flex items-start gap-2 rounded-lg border border-border-strong/60 bg-surface-raised px-3 py-2.5 text-xs font-mono leading-relaxed text-muted-dim">
           <AlertTriangle className="h-3.5 w-3.5 text-accent shrink-0 mt-0.5" />
           <span>
             100% pasif — standard DNS query lewat DoH (Cloudflare), tidak ada zone transfer (AXFR), tidak ada bruteforce

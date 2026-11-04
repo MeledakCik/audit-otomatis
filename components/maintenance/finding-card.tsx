@@ -40,7 +40,7 @@ export function FindingCard({ finding, index, onToggleStep }: FindingCardProps) 
         <CardContent className="space-y-5">
           {/* Leak Location Map */}
           <div className="space-y-1.5">
-            <div className="flex items-center gap-1.5 text-[11px] font-mono font-bold uppercase tracking-widest text-muted">
+            <div className="flex items-center gap-1.5 text-xs font-mono font-bold uppercase tracking-widest text-muted">
               <MapPin className="h-3.5 w-3.5 text-accent" /> Leak Location Map
             </div>
             <div className="rounded-lg border border-border bg-surface-raised p-3 space-y-1.5 text-xs font-mono">
@@ -70,7 +70,7 @@ export function FindingCard({ finding, index, onToggleStep }: FindingCardProps) 
 
           {/* Attack Vector */}
           <div className="space-y-1.5">
-            <div className="flex items-center gap-1.5 text-[11px] font-mono font-bold uppercase tracking-widest text-muted">
+            <div className="flex items-center gap-1.5 text-xs font-mono font-bold uppercase tracking-widest text-muted">
               <ShieldAlert className="h-3.5 w-3.5 text-sev-high" /> Attack Vector
             </div>
             <p className="text-[13px] leading-relaxed text-foreground/90">{finding.attackVector}</p>
@@ -84,7 +84,7 @@ export function FindingCard({ finding, index, onToggleStep }: FindingCardProps) 
 
           {/* Remediation Steps */}
           <div className="space-y-1.5">
-            <div className="flex items-center gap-1.5 text-[11px] font-mono font-bold uppercase tracking-widest text-muted">
+            <div className="flex items-center gap-1.5 text-xs font-mono font-bold uppercase tracking-widest text-muted">
               <ListChecks className="h-3.5 w-3.5 text-emerald-400" /> Remediation Steps
             </div>
             <div className="space-y-2.5">
@@ -104,16 +104,16 @@ export function FindingCard({ finding, index, onToggleStep }: FindingCardProps) 
                   {(step.codeBefore || step.codeAfter) && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pl-6">
                       {step.codeBefore && (
-                        <pre className="overflow-x-auto rounded-md bg-sev-critical/10 border border-sev-critical/30 p-2 text-[11px] leading-relaxed text-sev-critical whitespace-pre-wrap">
-                          <span className="block text-[9px] uppercase tracking-wider text-sev-critical/70 mb-1">
+                        <pre className="overflow-x-auto rounded-md bg-sev-critical/10 border border-sev-critical/30 p-2 text-xs leading-relaxed text-sev-critical whitespace-pre-wrap">
+                          <span className="block text-xs uppercase tracking-wider text-sev-critical/70 mb-1">
                             − before
                           </span>
                           {step.codeBefore}
                         </pre>
                       )}
                       {step.codeAfter && (
-                        <pre className="overflow-x-auto rounded-md bg-emerald-500/10 border border-emerald-500/30 p-2 text-[11px] leading-relaxed text-emerald-400 whitespace-pre-wrap">
-                          <span className="block text-[9px] uppercase tracking-wider text-emerald-400/70 mb-1">
+                        <pre className="overflow-x-auto rounded-md bg-emerald-500/10 border border-emerald-500/30 p-2 text-xs leading-relaxed text-emerald-400 whitespace-pre-wrap">
+                          <span className="block text-xs uppercase tracking-wider text-emerald-400/70 mb-1">
                             + after
                           </span>
                           {step.codeAfter}

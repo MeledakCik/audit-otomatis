@@ -127,10 +127,10 @@ function Drawer({
   return (
     <>
       <div className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="fixed top-0 right-0 z-50 h-screen w-full sm:w-[420px] bg-surface border-l border-border shadow-2xl flex flex-col">
+      <div className="fixed top-0 right-0 z-50 h-dvh w-full sm:w-[420px] bg-surface border-l border-border shadow-2xl flex flex-col">
         <div className="flex items-start justify-between gap-3 border-b border-border px-4 py-3.5 shrink-0">
           <div className="min-w-0">
-            <div className="text-[10px] uppercase tracking-widest text-muted-dim mb-1">Request</div>
+            <div className="text-xs uppercase tracking-widest text-muted-dim mb-1">Request</div>
             <div className="text-xs font-mono text-foreground break-all">{page.url}</div>
           </div>
           <button
@@ -147,7 +147,7 @@ function Drawer({
               key={t}
               onClick={() => setTab(t)}
               className={cn(
-                "px-3 py-1.5 text-[11px] font-mono uppercase tracking-wider border-b-2 -mb-px transition-colors",
+                "px-3 py-1.5 text-xs font-mono uppercase tracking-wider border-b-2 -mb-px transition-colors",
                 tab === t
                   ? "border-accent text-accent"
                   : "border-transparent text-muted-dim hover:text-muted"
@@ -160,7 +160,7 @@ function Drawer({
 
         <div className="flex-1 overflow-y-auto thin-scroll p-4">
           {tab === "headers" && (
-            <pre className="text-[11px] font-mono leading-relaxed text-muted whitespace-pre-wrap break-all">
+            <pre className="text-xs font-mono leading-relaxed text-muted whitespace-pre-wrap break-all">
               {JSON.stringify(page.headers ?? {}, null, 2)}
             </pre>
           )}
@@ -170,7 +170,7 @@ function Drawer({
               // eslint-disable-next-line @next/next/no-img-element
               <img src={page.url} alt={page.url} className="max-w-full rounded-lg border border-border" />
             ) : type === "doc" && page.html ? (
-              <pre className="text-[11px] font-mono leading-relaxed text-muted whitespace-pre-wrap break-all">
+              <pre className="text-xs font-mono leading-relaxed text-muted whitespace-pre-wrap break-all">
                 {page.html.slice(0, 2000)}
               </pre>
             ) : (
@@ -180,10 +180,10 @@ function Drawer({
           {tab === "curl" && (
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] uppercase tracking-widest text-muted-dim">cURL</span>
+                <span className="text-xs uppercase tracking-widest text-muted-dim">cURL</span>
                 <CopyIconButton text={curl} />
               </div>
-              <pre className="text-[11px] font-mono leading-relaxed text-foreground whitespace-pre-wrap break-all bg-background border border-border rounded-lg px-3 py-2.5">
+              <pre className="text-xs font-mono leading-relaxed text-foreground whitespace-pre-wrap break-all bg-background border border-border rounded-lg px-3 py-2.5">
                 {curl}
               </pre>
             </div>
@@ -306,19 +306,19 @@ export function RequestInspector({ scanId }: { scanId: string }) {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <Card>
             <CardContent className="p-4 space-y-1">
-              <div className="text-[10px] uppercase tracking-widest text-muted-dim">Total Requests</div>
+              <div className="text-xs uppercase tracking-widest text-muted-dim">Total Requests</div>
               <div className="text-2xl font-bold text-foreground">{stats.total}</div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-4 space-y-1">
-              <div className="text-[10px] uppercase tracking-widest text-muted-dim">Total Size</div>
+              <div className="text-xs uppercase tracking-widest text-muted-dim">Total Size</div>
               <div className="text-2xl font-bold text-foreground">{stats.totalSizeKB.toFixed(1)} KB</div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-4 space-y-1">
-              <div className="text-[10px] uppercase tracking-widest text-muted-dim flex items-center gap-1.5">
+              <div className="text-xs uppercase tracking-widest text-muted-dim flex items-center gap-1.5">
                 <Gauge className="h-3 w-3" /> Avg Status 200
               </div>
               <div className="text-2xl font-bold text-accent">{stats.avg200.toFixed(0)}%</div>
@@ -326,7 +326,7 @@ export function RequestInspector({ scanId }: { scanId: string }) {
           </Card>
           <Card>
             <CardContent className="p-4 space-y-1.5">
-              <div className="text-[10px] uppercase tracking-widest text-muted-dim">Tech Stack</div>
+              <div className="text-xs uppercase tracking-widest text-muted-dim">Tech Stack</div>
               <div className="flex flex-wrap gap-1.5 pt-0.5">
                 {techStack.length === 0 ? (
                   <span className="text-xs text-muted-dim">—</span>
@@ -334,7 +334,7 @@ export function RequestInspector({ scanId }: { scanId: string }) {
                   techStack.map((t) => (
                     <span
                       key={t}
-                      className="inline-flex items-center rounded-full border border-accent/50 text-accent px-2 py-0.5 text-[10px] font-mono"
+                      className="inline-flex items-center rounded-full border border-accent/50 text-accent px-2 py-0.5 text-xs font-mono"
                     >
                       {t}
                     </span>
@@ -368,7 +368,7 @@ export function RequestInspector({ scanId }: { scanId: string }) {
                   setPage(1);
                 }}
                 className={cn(
-                  "rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest border transition-colors",
+                  "rounded-full px-2.5 py-1 text-xs font-bold uppercase tracking-widest border transition-colors",
                   typeFilter === t.key
                     ? "border-accent text-accent bg-accent/10"
                     : "border-border-strong text-muted-dim hover:text-muted"
@@ -395,7 +395,7 @@ export function RequestInspector({ scanId }: { scanId: string }) {
               <div className="overflow-x-auto">
                 <table className="w-full text-xs font-mono">
                   <thead>
-                    <tr className="border-b border-border text-[10px] uppercase tracking-widest text-muted-dim">
+                    <tr className="border-b border-border text-xs uppercase tracking-widest text-muted-dim">
                       <th className="text-left font-semibold px-4 py-2.5 w-10">#</th>
                       <th className="text-left font-semibold px-4 py-2.5">URL</th>
                       <th className="text-left font-semibold px-4 py-2.5">Status</th>
@@ -434,7 +434,7 @@ export function RequestInspector({ scanId }: { scanId: string }) {
             )}
 
             {totalPages > 1 && (
-              <div className="flex items-center justify-between px-4 py-3 border-t border-border text-[11px] font-mono text-muted-dim">
+              <div className="flex items-center justify-between px-4 py-3 border-t border-border text-xs font-mono text-muted-dim">
                 <span>
                   page {page}/{totalPages}
                 </span>

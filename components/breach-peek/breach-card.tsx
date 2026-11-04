@@ -16,7 +16,7 @@ export function BreachCard({ breach }: { breach: BreachDetail }) {
           <div className="flex flex-wrap items-center gap-2">
             <h3 className="text-sm font-bold text-foreground truncate">{breach.name}</h3>
             {breach.verified && (
-              <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-sev-low">
+              <span className="inline-flex items-center gap-1 text-xs font-semibold text-sev-low">
                 <BadgeCheck className="h-3 w-3" /> Verified
               </span>
             )}
@@ -27,7 +27,7 @@ export function BreachCard({ breach }: { breach: BreachDetail }) {
             )}
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 text-[11px] font-mono text-muted-dim">
+          <div className="flex flex-wrap items-center gap-3 text-xs font-mono text-muted-dim">
             <span className="inline-flex items-center gap-1">
               <CalendarDays className="h-3 w-3" /> {breach.date || "Unknown date"}
             </span>
@@ -46,7 +46,7 @@ export function BreachCard({ breach }: { breach: BreachDetail }) {
               {breach.dataExposed.map((d) => (
                 <span
                   key={d}
-                  className="inline-flex items-center gap-1 rounded-full border border-border-strong px-2 py-0.5 text-[10px] font-mono text-muted"
+                  className="inline-flex items-center gap-1 rounded-full border border-border-strong px-2 py-0.5 text-xs font-mono text-muted"
                 >
                   <ShieldAlert className="h-2.5 w-2.5" /> {d}
                 </span>

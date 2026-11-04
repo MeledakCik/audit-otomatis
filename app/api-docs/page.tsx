@@ -176,7 +176,7 @@ function MethodBadge({ method }: { method: Method }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center justify-center rounded-md border px-2 py-0.5 text-[10px] font-bold font-mono tracking-widest shrink-0",
+        "inline-flex items-center justify-center rounded-md border px-2 py-0.5 text-xs font-bold font-mono tracking-widest shrink-0",
         method === "POST"
           ? "border-[#00FF88]/40 text-[#00FF88] bg-[#00FF88]/10"
           : "border-sev-low/40 text-sev-low bg-sev-low/10"
@@ -206,7 +206,7 @@ export default function ApiDocsPage() {
       <div className="mx-auto max-w-6xl px-6 lg:px-8 py-10 space-y-6">
         {/* Breadcrumb */}
         <div>
-          <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest text-muted-dim mb-3">
+          <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-widest text-muted-dim mb-3">
             <span>Resources</span>
             <span className="text-border-strong">/</span>
             <span className="text-accent-2">API Reference</span>
@@ -277,9 +277,9 @@ export default function ApiDocsPage() {
 
                     {e.body && (
                       <div className="rounded-lg border border-border overflow-hidden">
-                        <table className="w-full text-[11px] font-mono">
+                        <table className="w-full text-xs font-mono">
                           <thead>
-                            <tr className="bg-surface-raised text-[10px] uppercase tracking-widest text-muted-dim">
+                            <tr className="bg-surface-raised text-xs uppercase tracking-widest text-muted-dim">
                               <th className="text-left font-semibold px-3 py-2">Field</th>
                               <th className="text-left font-semibold px-3 py-2">Type</th>
                               <th className="text-left font-semibold px-3 py-2">Req.</th>
@@ -310,13 +310,13 @@ export default function ApiDocsPage() {
                   {/* Right: code, sticky */}
                   <div className="space-y-3 lg:sticky lg:top-24 self-start">
                     <div>
-                      <div className="text-[10px] uppercase tracking-widest text-muted-dim mb-1.5">
+                      <div className="text-xs uppercase tracking-widest text-muted-dim mb-1.5">
                         Response
                       </div>
                       <CodeBlock>{e.response}</CodeBlock>
                     </div>
                     <div>
-                      <div className="text-[10px] uppercase tracking-widest text-muted-dim mb-1.5">
+                      <div className="text-xs uppercase tracking-widest text-muted-dim mb-1.5">
                         cURL
                       </div>
                       <CodeBlock>{e.curl}</CodeBlock>

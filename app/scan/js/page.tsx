@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 
 export default function JSScanPage() {
   return (
-    <main className="min-h-screen bg-[#0B0F19] text-[#EAF0FA]">
+    <div className="min-h-dvh bg-[#0B0F19] text-[#EAF0FA]">
       {/* Hero Section - Minimalis seperti gambar kedua */}
       <section className="border-b border-[#232B3D] px-6 pb-12 pt-16">
         <div className="mx-auto max-w-4xl">
@@ -41,6 +41,6 @@ export default function JSScanPage() {
           <JSScannerClient />
         </Suspense>
       </div>
-    </main>
+    </div>
   );
 }

@@ -25,7 +25,7 @@ export function HeaderCheckRow({ check }: { check: HeaderCheckResult }) {
       >
         <span
           className={cn(
-            "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold tracking-widest uppercase shrink-0",
+            "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-bold tracking-widest uppercase shrink-0",
             check.pass
               ? "text-[#38d47a] border-[#38d47a]/40 bg-[#38d47a]/10"
               : "text-sev-critical border-sev-critical/40 bg-sev-critical/10"
@@ -37,12 +37,12 @@ export function HeaderCheckRow({ check }: { check: HeaderCheckResult }) {
 
         <div className="min-w-0 flex-1">
           <div className="text-sm font-semibold font-mono text-foreground truncate">{check.headerName}</div>
-          <div className="text-[11px] font-mono text-muted-dim truncate">
+          <div className="text-xs font-mono text-muted-dim truncate">
             {check.value ? check.value : "Header tidak ditemukan pada response"}
           </div>
         </div>
 
-        <span className="text-[10px] font-mono text-muted-dim shrink-0">{check.weight} pts</span>
+        <span className="text-xs font-mono text-muted-dim shrink-0">{check.weight} pts</span>
         {!check.pass && <SeverityBadge severity={check.severity} />}
 
         {open ? (
@@ -56,7 +56,7 @@ export function HeaderCheckRow({ check }: { check: HeaderCheckResult }) {
         <div className="px-4 pb-4 pt-1 space-y-3 border-t border-border bg-surface-raised/40">
           <p className="text-xs leading-relaxed text-foreground/90">{check.risk}</p>
           <div className="relative">
-            <pre className="rounded-lg bg-[#0a0710] border border-border text-[11px] font-mono text-[#8be9a8] p-3 overflow-x-auto leading-relaxed">
+            <pre className="rounded-lg bg-[#0a0710] border border-border text-xs font-mono text-[#8be9a8] p-3 overflow-x-auto leading-relaxed">
               {check.fixNextConfig}
             </pre>
             <button

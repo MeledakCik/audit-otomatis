@@ -57,7 +57,7 @@ export function QcForm() {
       />
 
       <div className="flex flex-col gap-2.5 rounded-xl border border-border-strong bg-surface-raised px-3.5 py-3">
-        <span className="text-[10px] uppercase tracking-widest text-muted-dim">Modul QC</span>
+        <span className="text-xs uppercase tracking-widest text-muted-dim">Modul QC</span>
         <label className="flex items-center gap-2.5 cursor-pointer group">
           <Checkbox checked={seo} onCheckedChange={(v) => setSeo(v === true)} disabled={pending} />
           <span className="text-xs text-muted group-hover:text-foreground">SEO Otomatis</span>
@@ -82,7 +82,7 @@ export function QcForm() {
         {pending ? "STARTING..." : "RUN QC →"}
       </Button>
 
-      <p className="text-[11px] text-center text-muted-dim">
+      <p className="text-xs text-center text-muted-dim">
         Max 100 request/scan · GET/HEAD-only · 1 QC / domain / 5 menit
       </p>
     </form>

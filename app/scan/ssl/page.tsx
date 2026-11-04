@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 
 export default function SSLScanPage() {
   return (
-    <main className="min-h-screen bg-[#0B0F19] text-[#EAF0FA]">
+    <div className="min-h-dvh bg-[#0B0F19] text-[#EAF0FA]">
       {/* Hero Section */}
       <section className="relative overflow-hidden border-b border-[#232B3D] px-6 pb-12 pt-16">
         <div className="pointer-events-none absolute inset-0 opacity-[0.15]">
@@ -68,6 +68,6 @@ export default function SSLScanPage() {
           .ssl-sweep { animation: none; }
         }
       `}</style>
-    </main>
+    </div>
   );
 }

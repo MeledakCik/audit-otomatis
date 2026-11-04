@@ -50,7 +50,7 @@ export function RiskSummary({ report }: { report: SecretHuntReport }) {
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
-          <div className="text-[11px] font-mono text-muted-dim">
+          <div className="text-xs font-mono text-muted-dim">
             {report.filesScanned} file di-scan
             {report.filesSkipped > 0 && <> · {report.filesSkipped} dilewati (limit ukuran/jumlah)</>}
           </div>

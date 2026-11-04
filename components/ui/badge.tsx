@@ -14,7 +14,7 @@ export function SeverityBadge({ severity }: { severity: Severity }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[10px] font-bold tracking-widest uppercase shrink-0",
+        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-bold tracking-widest uppercase shrink-0",
         SEVERITY_STYLES[severity]
       )}
     >
@@ -34,7 +34,7 @@ export function Badge({
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full border border-border-strong px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-widest text-muted",
+        "inline-flex items-center rounded-full border border-border-strong px-2.5 py-0.5 text-xs font-medium uppercase tracking-widest text-muted",
         className
       )}
     >

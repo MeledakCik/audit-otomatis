@@ -82,7 +82,7 @@ function StatTile({ icon: Icon, label, value, subtitle, accent = "zinc", valueCl
       <div className={`absolute top-0 left-0 h-0.5 w-full bg-gradient-to-r ${accentMap[accent] || accentMap.zinc} opacity-60 group-hover:opacity-100 transition-opacity`} />
 
       <div className="flex items-center justify-between">
-        <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-purple-400 group-hover:text-purple-300">
+        <span className="text-xs font-semibold uppercase tracking-[0.14em] text-purple-400 group-hover:text-purple-300">
           {label}
         </span>
         <div className="flex h-6 w-6 items-center justify-center rounded-full border border-white/[0.06] bg-white/[0.03] text-purple-400 group-hover:text-purple-300 transition-colors">
@@ -95,7 +95,7 @@ function StatTile({ icon: Icon, label, value, subtitle, accent = "zinc", valueCl
           {value}
         </div>
         {subtitle && (
-          <div className="mt-1.5 text-[11px] font-mono text-zinc-500">
+          <div className="mt-1.5 text-xs font-mono text-zinc-500">
             {subtitle}
           </div>
         )}
@@ -287,7 +287,7 @@ export default function ThreatLab() {
   };
 
   return (
-    <div className="min-h-screen bg-[#07050a] text-zinc-200 p-4 md:p-8 font-mono antialiased selection:bg-purple-500/30 selection:text-purple-200">
+    <div className="min-h-dvh bg-[#07050a] text-zinc-200 p-4 md:p-8 font-mono antialiased selection:bg-purple-500/30 selection:text-purple-200">
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Header Title (Diubah ke Threads Labs) */}
         <div className="flex items-start gap-3">
@@ -317,7 +317,7 @@ export default function ThreatLab() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-end">
             {/* Target Domains Input */}
             <div className="lg:col-span-6 space-y-1.5">
-              <label className="text-[11px] font-medium text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
+              <label className="text-xs font-medium text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
                 <Globe className="w-3.5 h-3.5 text-zinc-500" />
                 Target Domain(s)
               </label>
@@ -326,7 +326,7 @@ export default function ThreatLab() {
                 value={domainInput}
                 onChange={(e) => setDomainInput(e.target.value)}
                 placeholder="example.com, target.id"
-                className="w-full bg-[#050308] border border-purple-900/40 rounded-xl px-4 py-2.5 text-xs text-purple-200 placeholder-zinc-600 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 transition-all font-mono disabled:opacity-50"
+                className="w-full bg-[#050308] border border-purple-900/40 rounded-xl px-4 py-2.5 text-xs text-purple-200 placeholder-zinc-600 focus-visible:outline-2 focus-visible:outline-purple-400 focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 transition-all font-mono disabled:opacity-50"
                 disabled={isRunning || isLoading}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !isRunning && domainInput.trim()) {
@@ -339,27 +339,27 @@ export default function ThreatLab() {
             {/* Config Controls */}
             <div className="lg:col-span-4 grid grid-cols-3 gap-2">
               <div className="space-y-1.5">
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+                <label className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
                   Threads
                 </label>
                 <input
                   type="number"
                   value={threadsInput}
                   onChange={(e) => setThreadsInput(e.target.value)}
-                  className="w-full bg-[#050308] border border-purple-900/40 rounded-xl px-3 py-2 text-xs text-purple-200 focus:outline-none focus:border-purple-500 font-mono disabled:opacity-50"
+                  className="w-full bg-[#050308] border border-purple-900/40 rounded-xl px-3 py-2 text-xs text-purple-200 focus-visible:outline-2 focus-visible:outline-purple-400 focus:border-purple-500 font-mono disabled:opacity-50"
                   disabled={isRunning || isLoading}
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+                <label className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
                   Timeout (ms)
                 </label>
                 <input
                   type="number"
                   value={timeoutInput}
                   onChange={(e) => setTimeoutInput(e.target.value)}
-                  className="w-full bg-[#050308] border border-purple-900/40 rounded-xl px-3 py-2 text-xs text-purple-200 focus:outline-none focus:border-purple-500 font-mono disabled:opacity-50"
+                  className="w-full bg-[#050308] border border-purple-900/40 rounded-xl px-3 py-2 text-xs text-purple-200 focus-visible:outline-2 focus-visible:outline-purple-400 focus:border-purple-500 font-mono disabled:opacity-50"
                   disabled={isRunning || isLoading}
                 />
               </div>
@@ -486,7 +486,7 @@ export default function ThreatLab() {
           <div className="overflow-hidden rounded-2xl border border-purple-900/30 bg-[#0d0914]/80 backdrop-blur-xl shadow-xl shadow-purple-950/10">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead className="border-b border-purple-900/20 bg-[#07050a]/60 text-purple-300 uppercase tracking-wider text-[10px]">
+                <thead className="border-b border-purple-900/20 bg-[#07050a]/60 text-purple-300 uppercase tracking-wider text-xs">
                   <tr>
                     <th className="px-5 py-3.5 font-semibold">Domain Target</th>
                     <th className="px-5 py-3.5 font-semibold">Guard Status</th>
@@ -501,11 +501,11 @@ export default function ThreatLab() {
                       <td className="px-5 py-3.5 font-semibold text-white">{res.domain}</td>
                       <td className="px-5 py-3.5">
                         {res.isGuarded ? (
-                          <span className="inline-flex items-center gap-1.5 rounded-md bg-emerald-950/40 px-2.5 py-1 text-[10px] font-bold text-emerald-400 border border-emerald-800/40">
+                          <span className="inline-flex items-center gap-1.5 rounded-md bg-emerald-950/40 px-2.5 py-1 text-xs font-bold text-emerald-400 border border-emerald-800/40">
                             <Zap className="h-3 w-3" /> GUARDED
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1.5 rounded-md bg-amber-950/40 px-2.5 py-1 text-[10px] font-bold text-amber-400 border border-amber-800/40">
+                          <span className="inline-flex items-center gap-1.5 rounded-md bg-amber-950/40 px-2.5 py-1 text-xs font-bold text-amber-400 border border-amber-800/40">
                             <AlertCircle className="h-3 w-3" /> UNGUARDED
                           </span>
                         )}
@@ -536,7 +536,7 @@ export default function ThreatLab() {
               <Terminal className="h-3.5 w-3.5 text-fuchsia-400" />
               <span className="font-semibold text-purple-200 text-xs">Live Execution Console</span>
             </div>
-            <div className="flex items-center gap-4 text-[11px]">
+            <div className="flex items-center gap-4 text-xs">
               <span className="flex items-center gap-1.5">
                 <Server className="h-3 w-3 text-zinc-500" />
                 Status:{" "}

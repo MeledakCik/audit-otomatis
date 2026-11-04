@@ -26,7 +26,7 @@ export function InputPanel({ onScan, loading, liveStatus, initialDomain }: Input
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-1.5">
-          <label className="flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-wider text-muted-dim">
+          <label className="flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider text-muted-dim">
             <Globe2 className="h-3 w-3" /> Domain
           </label>
           <input
@@ -44,7 +44,7 @@ export function InputPanel({ onScan, loading, liveStatus, initialDomain }: Input
           />
         </div>
 
-        <div className="flex items-start gap-2 rounded-lg border border-border-strong/60 bg-surface-raised px-3 py-2.5 text-[11px] font-mono leading-relaxed text-muted-dim">
+        <div className="flex items-start gap-2 rounded-lg border border-border-strong/60 bg-surface-raised px-3 py-2.5 text-xs font-mono leading-relaxed text-muted-dim">
           <AlertTriangle className="h-3.5 w-3.5 text-accent shrink-0 mt-0.5" />
           <span>
             For educational asset inventory purposes. Detects public tech markers only, from one plain GET request to
@@ -65,7 +65,7 @@ export function InputPanel({ onScan, loading, liveStatus, initialDomain }: Input
         </Button>
 
         {liveStatus && (
-          <div className="flex items-center gap-2 text-[11px] font-mono text-accent">
+          <div className="flex items-center gap-2 text-xs font-mono text-accent">
             <span className="h-1.5 w-1.5 rounded-full bg-accent shadow-[0_0_8px_1px_var(--accent)] animate-pulse" />
             {liveStatus}
           </div>

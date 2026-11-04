@@ -51,7 +51,7 @@ export function FindingsTable({ findings }: { findings: Finding[] }) {
                 <Badge className="hidden md:inline-flex shrink-0">{CATEGORY_LABELS[f.category]}</Badge>
               )}
               <span className="flex-1 min-w-0 text-xs text-foreground truncate">{f.title}</span>
-              <span className="text-[11px] text-muted-dim truncate max-w-[30%] hidden sm:block">
+              <span className="text-xs text-muted-dim truncate max-w-[30%] hidden sm:block">
                 {f.endpoint}
               </span>
               <span className={cn("text-muted-dim text-xs transition-transform duration-200 shrink-0", isOpen && "rotate-90")}>
@@ -93,7 +93,7 @@ function Row({
 }) {
   return (
     <div className="flex flex-col gap-0.5">
-      <span className="text-[10px] uppercase tracking-widest text-muted-dim">{label}</span>
+      <span className="text-xs uppercase tracking-widest text-muted-dim">{label}</span>
       <span
         className={cn(
           "leading-relaxed break-words",

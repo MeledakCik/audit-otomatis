@@ -71,7 +71,7 @@ export function ScanDashboard({
         </div>
       </header>
 
-      <main className="flex-1 mx-auto w-full max-w-5xl px-4 sm:px-6 py-5 sm:py-6 flex flex-col gap-4">
+      <div className="flex-1 mx-auto w-full max-w-5xl px-4 sm:px-6 py-5 sm:py-6 flex flex-col gap-4">
         {blockedReason && (
           <div className="rounded-xl border border-sev-high/40 bg-sev-high/10 px-4 py-3 text-xs text-sev-high leading-relaxed animate-fade-up">
             <span className="font-bold uppercase tracking-widest block mb-1">
@@ -88,7 +88,7 @@ export function ScanDashboard({
               className="rounded-2xl border border-border bg-surface px-4 py-3 flex items-center justify-between gap-2"
             >
               <div className="flex flex-col gap-0.5 min-w-0">
-                <span className="text-[10px] uppercase tracking-widest text-muted-dim truncate">
+                <span className="text-xs uppercase tracking-widest text-muted-dim truncate">
                   {sev}
                 </span>
                 <span
@@ -154,7 +154,7 @@ export function ScanDashboard({
           <Card className="lg:col-span-2 flex flex-col min-h-0">
             <CardHeader>
               <CardTitle>Log Aktivitas</CardTitle>
-              <span className="text-[10px] text-muted-dim">
+              <span className="text-xs text-muted-dim">
                 {logs.length} event
               </span>
             </CardHeader>
@@ -172,7 +172,7 @@ export function ScanDashboard({
               <CardTitle>
                 API Explorer — Endpoint Ditemukan ({endpoints.length})
               </CardTitle>
-              <span className="text-[10px] text-muted-dim">
+              <span className="text-xs text-muted-dim">
                 gaya Postman: klik tiap endpoint buat lihat detail, salin cURL,
                 atau kirim langsung (GET-only)
               </span>
@@ -201,7 +201,7 @@ export function ScanDashboard({
             <GraphView scanId={scanId} status={status} />
           </Card>
         </div>
-      </main>
+      </div>
     </div>
   );
 }

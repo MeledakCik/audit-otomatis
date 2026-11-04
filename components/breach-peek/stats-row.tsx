@@ -44,7 +44,7 @@ function StatCard({
 
   return (
     <div className="rounded-2xl border border-border bg-surface p-4 flex flex-col gap-1.5 shadow-[0_12px_32px_-16px_rgba(0,0,0,0.5)]">
-      <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-muted">
+      <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-muted">
         <Icon className="h-3 w-3" />
         {label}
       </div>

@@ -71,7 +71,7 @@ export function RequestsList() {
               <FileSearch className="h-3.5 w-3.5" />
               Scan History
             </CardTitle>
-            {scans && <span className="text-[10px] font-mono text-muted-dim">{scans.length} total</span>}
+            {scans && <span className="text-xs font-mono text-muted-dim">{scans.length} total</span>}
           </CardHeader>
           <CardContent className="p-0">
             {error && (
@@ -102,7 +102,7 @@ export function RequestsList() {
               <div className="overflow-x-auto">
                 <table className="w-full text-xs font-mono">
                   <thead>
-                    <tr className="border-b border-border text-[10px] uppercase tracking-widest text-muted-dim">
+                    <tr className="border-b border-border text-xs uppercase tracking-widest text-muted-dim">
                       <th className="text-left font-semibold px-4 py-2.5">ID</th>
                       <th className="text-left font-semibold px-4 py-2.5">Hostname</th>
                       <th className="text-left font-semibold px-4 py-2.5">Date</th>

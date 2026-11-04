@@ -44,7 +44,7 @@ export function StackCard({ stack }: { stack: DetectedStack }) {
       </div>
 
       {stack.version && (
-        <div className="rounded-lg border border-border-strong/60 bg-surface px-2.5 py-1.5 text-[10px] font-mono leading-relaxed">
+        <div className="rounded-lg border border-border-strong/60 bg-surface px-2.5 py-1.5 text-xs font-mono leading-relaxed">
           <div className="text-foreground">
             Version: <span className="font-bold">{stack.version}</span>
           </div>
@@ -54,7 +54,7 @@ export function StackCard({ stack }: { stack: DetectedStack }) {
 
       <ul className="space-y-1.5">
         {visibleEvidence.map((e, i) => (
-          <li key={i} className="flex items-start gap-1.5 text-[10px] font-mono leading-relaxed">
+          <li key={i} className="flex items-start gap-1.5 text-xs font-mono leading-relaxed">
             <span className={cn("h-1.5 w-1.5 rounded-full mt-1 shrink-0", TIER_META[e.tier].dot)} />
             <span className="min-w-0">
               <span className={cn("font-bold mr-1", TIER_META[e.tier].text)}>{TIER_META[e.tier].label}</span>
@@ -67,7 +67,7 @@ export function StackCard({ stack }: { stack: DetectedStack }) {
       {stack.evidence.length > 2 && (
         <button
           onClick={() => setExpanded((v) => !v)}
-          className="flex items-center gap-1 text-[10px] font-mono uppercase tracking-wider text-accent hover:text-accent/80 transition-colors"
+          className="flex items-center gap-1 text-xs font-mono uppercase tracking-wider text-accent hover:text-accent/80 transition-colors"
         >
           <ChevronDown className={cn("h-3 w-3 transition-transform", expanded && "rotate-180")} />
           {expanded ? "Show less" : `+${hiddenCount} more evidence`}

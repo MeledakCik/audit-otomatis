@@ -36,7 +36,7 @@ export function ScoreCircle({ score, grade }: { score: number; grade: Grade }) {
       <div className="absolute inset-0 grid place-items-center">
         <div className="text-center">
           <div className="text-3xl font-extrabold font-mono tabular-nums text-foreground">{score}</div>
-          <div className="text-[10px] font-mono uppercase tracking-widest text-muted-dim">/ 100</div>
+          <div className="text-xs font-mono uppercase tracking-widest text-muted-dim">/ 100</div>
         </div>
       </div>
     </div>

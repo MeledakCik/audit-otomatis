@@ -18,7 +18,7 @@ export function QcIssueList({ issues }: { issues: QcIssue[] }) {
         <li key={i} className="flex items-start gap-2.5 px-1 py-1">
           <span
             className={cn(
-              "shrink-0 mt-0.5 inline-flex items-center rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest",
+              "shrink-0 mt-0.5 inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-bold uppercase tracking-widest",
               LEVEL_STYLES[issue.level]
             )}
           >

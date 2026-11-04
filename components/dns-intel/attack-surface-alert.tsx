@@ -27,11 +27,11 @@ export function AttackSurfaceAlert({ hints }: { hints: TakeoverHint[] }) {
                   </span>
                   <SeverityBadge severity={h.risk} />
                 </div>
-                <div className="text-[11px] font-mono text-foreground">
+                <div className="text-xs font-mono text-foreground">
                   CNAME → <span className="text-sev-medium break-all">{h.cname}</span>
                 </div>
-                <div className="text-[10px] font-mono text-muted-dim">Pola cocok: {h.matchedService}</div>
-                <p className="text-[11px] font-mono text-muted-dim leading-relaxed">{h.note}</p>
+                <div className="text-xs font-mono text-muted-dim">Pola cocok: {h.matchedService}</div>
+                <p className="text-xs font-mono text-muted-dim leading-relaxed">{h.note}</p>
               </div>
             ))}
           </div>

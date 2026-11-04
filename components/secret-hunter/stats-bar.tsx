@@ -32,7 +32,7 @@ export function StatsBar({
           <CardContent className="py-4 flex flex-col items-center gap-1 text-center">
             <s.icon className="h-4 w-4 text-muted-dim" />
             <div className={cn("text-xl font-extrabold font-mono tabular-nums", s.className)}>{s.value}</div>
-            <div className="text-[10px] font-mono uppercase tracking-widest text-muted-dim">{s.label}</div>
+            <div className="text-xs font-mono uppercase tracking-widest text-muted-dim">{s.label}</div>
           </CardContent>
         </Card>
       ))}

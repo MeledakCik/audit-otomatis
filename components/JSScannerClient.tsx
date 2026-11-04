@@ -172,15 +172,15 @@ export default function JSScannerClient() {
 
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
           <div className="flex-1">
-            <div className="flex items-center gap-2 sm:gap-3 bg-[#0E1420] rounded-lg border border-[#2A3348] px-3 sm:px-4 py-2.5 sm:py-3 focus-within:border-[#3FA796] focus-within:ring-2 focus-within:ring-[#3FA796]/40 transition-all">
-              <span className="text-[#4C5A78] font-mono text-xs sm:text-sm flex-shrink-0">https://</span>
+            <div className="flex items-center gap-2 sm:gap-3 bg-[#0E1420] rounded-lg border border-[#5F6F8F] px-3 sm:px-4 py-2.5 sm:py-3 focus-within:border-[#3FA796] focus-within:ring-2 focus-within:ring-[#3FA796]/40 transition-all">
+              <span className="text-[#8A96B3] font-mono text-xs sm:text-sm flex-shrink-0">https://</span>
               <input
                 type="text"
                 placeholder="example.com"
                 value={urlInput.replace(/^https?:\/\//, "")}
                 onChange={(e) => setUrlInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && runScan()}
-                className="flex-1 bg-transparent font-mono text-sm sm:text-base text-[#EAF0FA] placeholder:text-[#4C5A78] focus:outline-none min-w-0"
+                className="flex-1 bg-transparent font-mono text-sm sm:text-base text-[#EAF0FA] placeholder:text-[#8A96B3] focus:outline-none min-w-0"
               />
             </div>
           </div>
@@ -285,10 +285,10 @@ export default function JSScannerClient() {
                 <p className="text-xs text-[#7C89A6] mb-2">Frameworks Detected</p>
                 <div className="flex flex-wrap gap-2">
                   {result.frameworks.map((fw, idx) => (
-                    <span key={idx} className="px-3 py-1 rounded-full bg-[#0E1420] border border-[#2A3348] text-xs text-[#EAF0FA]">
+                    <span key={idx} className="px-3 py-1 rounded-full bg-[#0E1420] border border-[#5F6F8F] text-xs text-[#EAF0FA]">
                       {fw.name}
                       {fw.version && <span className="text-[#7C89A6] ml-1">v{fw.version}</span>}
-                      <span className="text-[#4C5A78] ml-1">({fw.confidence}%)</span>
+                      <span className="text-[#8A96B3] ml-1">({fw.confidence}%)</span>
                     </span>
                   ))}
                 </div>
@@ -337,12 +337,12 @@ export default function JSScannerClient() {
                                 </span>
                               )}
                               {script.confidence && script.confidence > 50 && (
-                                <span className="text-xs text-[#4C5A78]">
+                                <span className="text-xs text-[#8A96B3]">
                                   {script.confidence}%
                                 </span>
                               )}
                               {script.size > 0 && (
-                                <span className="text-xs text-[#4C5A78]">
+                                <span className="text-xs text-[#8A96B3]">
                                   {formatFileSize(script.size)}
                                 </span>
                               )}
@@ -499,7 +499,7 @@ export default function JSScannerClient() {
 
           {/* Scan Info */}
           <div className="rounded-2xl border border-[#232B3D] bg-[#141B2A] p-4">
-            <p className="text-center text-xs text-[#4C5A78]">
+            <p className="text-center text-xs text-[#8A96B3]">
               Scanned at {new Date(result.scanned_at).toLocaleString()}
               {result.cached && " (cached)"}
             </p>

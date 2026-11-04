@@ -5,19 +5,20 @@
   --surface: #ffffff;
   --surface-raised: #ece6f7;
   --border: #ddd3ef;
-  --border-strong: #c3b3e3;
+  --border-strong: #8a7aa8; /* >=3:1 UI */
   --foreground: #1a1225;
   --muted: #5f5573;
-  --muted-dim: #8e83a3;
+  --muted-dim: #6f6485;
+  --text-faint: #6f6485;
   --accent: #b721c9;
   --accent-2: #7c3aed;
   --accent-dim: #9111a3;
   --accent-fg: #fdf6ff;
 
   --sev-critical: #d81b4d;
-  --sev-high: #d9670c;
-  --sev-medium: #a9760a;
-  --sev-low: #0e7fb0;
+  --sev-high: #b45309;
+  --sev-medium: #8a5a00;
+  --sev-low: #0369a1;
   --sev-info: #5b5f7a;
 
   --graph-line: #d9cdee;
@@ -33,10 +34,11 @@
   --surface: #120c1f;
   --surface-raised: #1a1229;
   --border: #2a2040;
-  --border-strong: #453264;
+  --border-strong: #6a5a8f; /* >=3:1 UI */
   --foreground: #f1e9fb;
   --muted: #9d8fbe;
-  --muted-dim: #665a85;
+  --muted-dim: #8f82b3;
+  --text-faint: #8f82b3;
   --accent: #e93ee8;
   --accent-2: #8b3ffb;
   --accent-dim: #b52bc4;
@@ -65,6 +67,7 @@
   --color-foreground: var(--foreground);
   --color-muted: var(--muted);
   --color-muted-dim: var(--muted-dim);
+  --color-text-faint: var(--text-faint);
   --color-accent: var(--accent);
   --color-accent-2: var(--accent-2);
   --color-accent-dim: var(--accent-dim);
@@ -95,11 +98,11 @@ html.dark {
 }
 
 body {
+  background-color: var(--background);
   background:
     radial-gradient(ellipse 900px 500px at 15% -10%, color-mix(in srgb, var(--accent) 14%, transparent), transparent),
     radial-gradient(ellipse 700px 500px at 100% 0%, color-mix(in srgb, var(--accent-2) 12%, transparent), transparent),
     var(--background);
-  background-attachment: fixed;
   color: var(--foreground);
   font-family: var(--font-geist-mono), ui-monospace, monospace;
   font-feature-settings: "liga" 0;
@@ -125,9 +128,14 @@ body {
   color: var(--accent-fg);
 }
 
-*,
-*::before,
-*::after {
+a,
+button,
+input,
+select,
+textarea,
+summary,
+[role="button"],
+[role="tab"] {
   transition-property: background-color, border-color, color, fill, stroke, box-shadow;
   transition-timing-function: ease;
   transition-duration: 180ms;
@@ -144,6 +152,10 @@ body {
   }
 }
 
+.thin-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
 .thin-scroll::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -216,4 +228,55 @@ body {
 .accordion-rows > .accordion-inner {
   overflow: hidden;
   min-height: 0;
+}
+
+/* --- Global focus ring (keyboard) --- */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* --- Skip link --- */
+.skip-link {
+  position: absolute;
+  left: 0.75rem;
+  top: -4rem;
+  z-index: 100;
+  padding: 0.5rem 0.875rem;
+  border-radius: 0.5rem;
+  background: var(--accent);
+  color: var(--accent-fg);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+.skip-link:focus {
+  top: 0.75rem;
+}
+
+/* --- Gradient text must stay legible in forced-colors --- */
+@media (forced-colors: active) {
+  .text-gradient-accent {
+    background: none;
+    -webkit-background-clip: border-box;
+    background-clip: border-box;
+    color: CanvasText;
+  }
+  .bg-clip-text {
+    -webkit-background-clip: border-box;
+    background-clip: border-box;
+    color: CanvasText !important;
+  }
+}
+
+/* --- Print: readable reports --- */
+@media print {
+  html, body, body * {
+    background: #fff !important;
+    color: #000 !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+  aside, header, nav, .skip-link { display: none !important; }
+  main { overflow: visible !important; height: auto !important; }
+  a[href^="http"]::after { content: " (" attr(href) ")"; font-size: 0.8em; }
 }

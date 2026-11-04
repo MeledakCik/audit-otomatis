@@ -59,7 +59,7 @@ export function OutputPanel({ report, loading }: OutputPanelProps) {
           <div className="flex-1 min-w-0 space-y-1.5 text-center sm:text-left">
             <div className="text-sm font-mono text-muted-dim truncate">Target</div>
             <div className="text-base font-bold font-mono text-foreground truncate">{report.finalUrl}</div>
-            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3 text-[11px] font-mono text-muted-dim pt-1">
+            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3 text-xs font-mono text-muted-dim pt-1">
               <span>HTTP {report.statusCode}</span>
               <span>·</span>
               <span>

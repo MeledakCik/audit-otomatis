@@ -10,7 +10,7 @@ export function DomainSummary({ domain, probes, hitCount, totalProbed }: {
   return (
     <div className="rounded-2xl border border-border bg-surface shadow-[0_12px_32px_-16px_rgba(0,0,0,0.5)] overflow-hidden">
       <div className="border-b border-border px-4 py-3.5">
-        <h2 className="text-[11px] font-bold uppercase tracking-widest text-muted">
+        <h2 className="text-xs font-bold uppercase tracking-widest text-muted">
           {hitCount} of {totalProbed} common emails at {domain} found in breaches
         </h2>
       </div>
@@ -28,7 +28,7 @@ export function DomainSummary({ domain, probes, hitCount, totalProbed }: {
               {clean && <ShieldCheck className="h-3.5 w-3.5 text-sev-low shrink-0" />}
               {(rateLimited || errored) && <ShieldQuestion className="h-3.5 w-3.5 text-sev-medium shrink-0" />}
               <span className="font-mono text-foreground truncate flex-1">{p.email}</span>
-              <span className="text-[10px] font-mono text-muted-dim shrink-0">
+              <span className="text-xs font-mono text-muted-dim shrink-0">
                 {hit && `${r.breachCount} breach${r.breachCount === 1 ? "" : "es"}`}
                 {clean && "clean"}
                 {rateLimited && "rate limited"}

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 export default function NotFound() {
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-4 px-6 text-center">
-      <span className="rounded-full border border-sev-critical/40 bg-sev-critical/10 px-3 py-1 text-[11px] uppercase tracking-widest text-sev-critical">
+      <span className="rounded-full border border-sev-critical/40 bg-sev-critical/10 px-3 py-1 text-xs uppercase tracking-widest text-sev-critical">
         404 — not found
       </span>
       <h1 className="text-lg font-semibold text-foreground">

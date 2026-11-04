@@ -21,7 +21,7 @@ function MethodBadge({ method }: { method: DiscoveredEndpoint["method"] }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center justify-center rounded-full border px-2 py-0.5 text-[10px] font-bold tracking-widest uppercase shrink-0 w-14",
+        "inline-flex items-center justify-center rounded-full border px-2 py-0.5 text-xs font-bold tracking-widest uppercase shrink-0 w-14",
         METHOD_STYLES[method],
       )}
     >
@@ -180,19 +180,19 @@ function EndpointCard({
 
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] uppercase tracking-widest text-muted-dim">
+              <span className="text-xs uppercase tracking-widest text-muted-dim">
                 cURL — uji manual
               </span>
               <CopyButton text={curl} />
             </div>
-            <pre className="overflow-x-auto whitespace-pre-wrap break-all bg-background border border-border rounded-lg px-3 py-2 text-[11px] leading-relaxed text-foreground font-mono">
+            <pre className="overflow-x-auto whitespace-pre-wrap break-all bg-background border border-border rounded-lg px-3 py-2 text-xs leading-relaxed text-foreground font-mono">
               {curl}
             </pre>
           </div>
 
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center justify-between flex-wrap gap-2">
-              <span className="text-[10px] uppercase tracking-widest text-muted-dim">
+              <span className="text-xs uppercase tracking-widest text-muted-dim">
                 {isGet
                   ? "Kirim request langsung"
                   : "Test langsung tidak tersedia untuk method ini"}
@@ -212,7 +212,7 @@ function EndpointCard({
               )}
             </div>
             {!isGet && (
-              <p className="text-[11px] text-muted-dim leading-relaxed">
+              <p className="text-xs text-muted-dim leading-relaxed">
                 Sejalan dengan kebijakan pasif tool ini (GET-only,
                 non-destruktif), method{" "}
                 <span className="font-mono text-muted">{ep.method}</span> tidak
@@ -244,7 +244,7 @@ function EndpointCard({
                     </div>
                     {result.headers &&
                       Object.keys(result.headers).length > 0 && (
-                        <details className="text-[11px]">
+                        <details className="text-xs">
                           <summary className="cursor-pointer text-muted-dim hover:text-muted">
                             response headers (
                             {Object.keys(result.headers).length})
@@ -260,7 +260,7 @@ function EndpointCard({
                         </details>
                       )}
                     {result.bodyPreview !== undefined && (
-                      <details className="text-[11px]" open>
+                      <details className="text-xs" open>
                         <summary className="cursor-pointer text-muted-dim hover:text-muted">
                           response body
                         </summary>
@@ -344,7 +344,7 @@ export function EndpointsTable({
               key={f}
               onClick={() => setFilter(f)}
               className={cn(
-                "rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest border transition-colors",
+                "rounded-full px-2.5 py-1 text-xs font-bold uppercase tracking-widest border transition-colors",
                 filter === f
                   ? "border-accent text-accent bg-accent/10"
                   : "border-border-strong text-muted-dim hover:text-muted",
@@ -395,7 +395,7 @@ function Row({
 }) {
   return (
     <div className="flex flex-col gap-0.5">
-      <span className="text-[10px] uppercase tracking-widest text-muted-dim">
+      <span className="text-xs uppercase tracking-widest text-muted-dim">
         {label}
       </span>
       <span

@@ -94,7 +94,7 @@ export function BreachPeekView() {
         </div>
         <div>
           <h1 className="text-lg font-extrabold tracking-tight text-foreground flex items-center gap-2">
-            Breach Peek <span className="text-[10px] font-bold uppercase tracking-widest text-accent">Free</span>
+            Breach Peek <span className="text-xs font-bold uppercase tracking-widest text-accent">Free</span>
             <Lock className="h-4 w-4 text-accent" />
           </h1>
           <p className="text-xs font-mono text-muted-dim">
@@ -113,7 +113,7 @@ export function BreachPeekView() {
         </div>
       </div>
 
-      <p className="text-[10px] font-mono text-muted-dim text-center pt-2 border-t border-border">
+      <p className="text-xs font-mono text-muted-dim text-center pt-2 border-t border-border">
         Powered by the XposedOrNot free OSINT breach database — 100% passive, no credentials or exploits involved.
       </p>
     </div>

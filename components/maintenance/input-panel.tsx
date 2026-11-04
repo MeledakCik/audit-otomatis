@@ -100,10 +100,10 @@ export function InputPanel({ onAnalyze, loading }: InputPanelProps) {
               <div className="text-sm font-medium text-foreground">
                 Drag & drop file, atau klik untuk pilih
               </div>
-              <div className="text-[11px] font-mono text-muted-dim">
+              <div className="text-xs font-mono text-muted-dim">
                 .json · .log · .txt · .har — maks. {MAX_FILE_MB}MB
               </div>
-              <div className="text-[10px] font-mono text-muted-dim/70 pt-1">
+              <div className="text-xs font-mono text-muted-dim/70 pt-1">
                 Contoh: npm audit --json, next build log, vercel log, access.log, error stack trace
               </div>
               <input
@@ -155,7 +155,7 @@ export function InputPanel({ onAnalyze, loading }: InputPanelProps) {
         {error && <div className="text-xs font-mono text-sev-critical">{error}</div>}
 
         {detectedKind && (
-          <div className="flex items-center gap-2 text-[11px] font-mono text-muted">
+          <div className="flex items-center gap-2 text-xs font-mono text-muted">
             <span className="text-muted-dim uppercase tracking-wider">Auto-detect:</span>
             <span className="text-accent font-semibold">{INPUT_KIND_LABEL[detectedKind]}</span>
           </div>

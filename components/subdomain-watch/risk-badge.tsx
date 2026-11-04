@@ -12,7 +12,7 @@ export function RiskBadge({ risk }: { risk: TakeoverRisk }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[10px] font-bold tracking-widest uppercase shrink-0",
+        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-bold tracking-widest uppercase shrink-0",
         RISK_STYLES[risk]
       )}
     >

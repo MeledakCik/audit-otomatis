@@ -68,13 +68,13 @@ export function InputPanel({
                   type="button"
                   onClick={() => setDomainValue(d)}
                   disabled={loading}
-                  className="rounded-full border border-border-strong px-2.5 py-1 text-[10px] font-mono text-muted hover:border-accent hover:text-accent transition-colors disabled:opacity-40"
+                  className="rounded-full border border-border-strong px-2.5 py-1 text-xs font-mono text-muted hover:border-accent hover:text-accent transition-colors disabled:opacity-40"
                 >
                   {d}
                 </button>
               ))}
             </div>
-            <p className="text-[10px] font-mono text-muted-dim">
+            <p className="text-xs font-mono text-muted-dim">
               Checks 5 common addresses: admin@, info@, contact@, support@, hello@
             </p>
           </div>
@@ -86,7 +86,7 @@ export function InputPanel({
         </Button>
       </form>
 
-      {liveStatus && <p className="text-[11px] font-mono text-muted-dim animate-pulse">{liveStatus}</p>}
+      {liveStatus && <p className="text-xs font-mono text-muted-dim animate-pulse">{liveStatus}</p>}
     </div>
   );
 }

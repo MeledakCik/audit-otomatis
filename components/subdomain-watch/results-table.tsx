@@ -28,16 +28,16 @@ function StatusCell({ status }: { status: number | null }) {
 function RowState({ status }: { status: "pending" | "checking" | "checked" | "error" }) {
   if (status === "checking") {
     return (
-      <span className="inline-flex items-center gap-1.5 text-[10px] font-mono text-accent">
+      <span className="inline-flex items-center gap-1.5 text-xs font-mono text-accent">
         <Loader2 className="h-3 w-3 animate-spin" /> checking
       </span>
     );
   }
   if (status === "pending") {
-    return <span className="text-[10px] font-mono text-muted-dim">not checked</span>;
+    return <span className="text-xs font-mono text-muted-dim">not checked</span>;
   }
   if (status === "error") {
-    return <span className="text-[10px] font-mono text-sev-high">skipped</span>;
+    return <span className="text-xs font-mono text-sev-high">skipped</span>;
   }
   return null;
 }
@@ -98,7 +98,7 @@ export function ResultsTable({ report, checkedCount, onCheckMore, checkingMore, 
           </div>
         </div>
 
-        <div className="text-[11px] font-mono text-muted-dim">
+        <div className="text-xs font-mono text-muted-dim">
           Checked {checkedCount} / {report.rows.length} subdomain untuk indikasi takeover.
           {hasMoreToCheck && (
             <Button size="sm" variant="ghost" className="ml-2 h-6 px-2" onClick={onCheckMore} disabled={checkingMore}>
@@ -116,7 +116,7 @@ export function ResultsTable({ report, checkedCount, onCheckMore, checkingMore, 
         <div className="overflow-x-auto rounded-xl border border-border">
           <table className="w-full text-xs font-mono">
             <thead>
-              <tr className="border-b border-border text-[10px] uppercase tracking-widest text-muted-dim">
+              <tr className="border-b border-border text-xs uppercase tracking-widest text-muted-dim">
                 <th className="text-left px-4 py-2.5 font-semibold">Subdomain</th>
                 <th className="text-left px-4 py-2.5 font-semibold">Source</th>
                 <th className="text-left px-4 py-2.5 font-semibold">Status</th>

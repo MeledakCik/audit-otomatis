@@ -235,27 +235,27 @@ export default function SSLScannerClient() {
 
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
           <div className="flex-1">
-            <div className="flex items-center gap-2 bg-[#0E1420] rounded-lg border border-[#2A3348] px-3 sm:px-4 py-2.5 sm:py-3 focus-within:border-[#3FA796] focus-within:ring-2 focus-within:ring-[#3FA796]/40 transition-all">
-              <Globe className="h-4 w-4 text-[#4C5A78] flex-shrink-0" />
+            <div className="flex items-center gap-2 bg-[#0E1420] rounded-lg border border-[#5F6F8F] px-3 sm:px-4 py-2.5 sm:py-3 focus-within:border-[#3FA796] focus-within:ring-2 focus-within:ring-[#3FA796]/40 transition-all">
+              <Globe className="h-4 w-4 text-[#8A96B3] flex-shrink-0" />
               <input
                 type="text"
                 placeholder="example.com"
                 value={domainInput}
                 onChange={(e) => setDomainInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && runScan()}
-                className="flex-1 bg-transparent font-mono text-sm sm:text-base text-[#EAF0FA] placeholder:text-[#4C5A78] focus:outline-none min-w-0"
+                className="flex-1 bg-transparent font-mono text-sm sm:text-base text-[#EAF0FA] placeholder:text-[#8A96B3] focus:outline-none min-w-0"
               />
             </div>
           </div>
           <div className="w-24 sm:w-28 flex-shrink-0">
-            <div className="flex items-center gap-2 bg-[#0E1420] rounded-lg border border-[#2A3348] px-3 py-2.5 sm:py-3 focus-within:border-[#3FA796] focus-within:ring-2 focus-within:ring-[#3FA796]/40 transition-all">
-              <Server className="h-4 w-4 text-[#4C5A78] flex-shrink-0" />
+            <div className="flex items-center gap-2 bg-[#0E1420] rounded-lg border border-[#5F6F8F] px-3 py-2.5 sm:py-3 focus-within:border-[#3FA796] focus-within:ring-2 focus-within:ring-[#3FA796]/40 transition-all">
+              <Server className="h-4 w-4 text-[#8A96B3] flex-shrink-0" />
               <input
                 type="number"
                 placeholder="443"
                 value={portInput}
                 onChange={(e) => setPortInput(e.target.value)}
-                className="w-full bg-transparent font-mono text-sm text-[#EAF0FA] placeholder:text-[#4C5A78] focus:outline-none"
+                className="w-full bg-transparent font-mono text-sm text-[#EAF0FA] placeholder:text-[#8A96B3] focus:outline-none"
               />
             </div>
           </div>
@@ -385,7 +385,7 @@ export default function SSLScannerClient() {
                       result.cert.san.map((name, idx) => (
                         <span 
                           key={idx}
-                          className="group relative px-2 py-1 bg-[#0E1420] border border-[#2A3348] rounded text-xs font-mono text-[#C9D2E3] cursor-pointer hover:border-[#3FA796] transition"
+                          className="group relative px-2 py-1 bg-[#0E1420] border border-[#5F6F8F] rounded text-xs font-mono text-[#C9D2E3] cursor-pointer hover:border-[#3FA796] transition"
                           onClick={() => copyToClipboard(name, `san-${idx}`)}
                         >
                           {name}
@@ -399,7 +399,7 @@ export default function SSLScannerClient() {
                         </span>
                       ))
                     ) : (
-                      <span className="text-xs text-[#4C5A78]">No SAN entries</span>
+                      <span className="text-xs text-[#8A96B3]">No SAN entries</span>
                     )}
                   </div>
                 </div>
@@ -587,7 +587,7 @@ export default function SSLScannerClient() {
 
           {/* Footer */}
           <div className="rounded-2xl border border-[#232B3D] bg-[#141B2A] p-4">
-            <p className="text-center text-xs text-[#4C5A78]">
+            <p className="text-center text-xs text-[#8A96B3]">
               Passive handshake only. No vulnerability exploitation.
               {result.scan_duration_ms && ` Scanned in ${(result.scan_duration_ms / 1000).toFixed(2)}s`}
             </p>

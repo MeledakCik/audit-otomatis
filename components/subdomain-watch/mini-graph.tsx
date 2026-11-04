@@ -42,7 +42,7 @@ export function MiniGraph({ domain, rows }: { domain: string; rows: SubdomainRow
           <Network className="h-3.5 w-3.5 text-accent" /> Graph View
         </CardTitle>
         {rows.length > MAX_NODES && (
-          <span className="text-[10px] font-mono text-muted-dim">showing {MAX_NODES} of {rows.length}</span>
+          <span className="text-xs font-mono text-muted-dim">showing {MAX_NODES} of {rows.length}</span>
         )}
       </CardHeader>
       <CardContent>

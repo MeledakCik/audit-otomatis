@@ -14,7 +14,7 @@ export function Legend() {
   return (
     <div className="flex flex-wrap items-center gap-3">
       {LEGEND_ITEMS.map((item) => (
-        <div key={item.type} className="flex items-center gap-1.5 text-[10px] font-mono text-muted-dim">
+        <div key={item.type} className="flex items-center gap-1.5 text-xs font-mono text-muted-dim">
           <span
             className="h-2.5 w-2.5 rounded-full shrink-0"
             style={{ background: NODE_COLORS[item.type], boxShadow: `0 0 6px 1px ${NODE_COLORS[item.type]}90` }}

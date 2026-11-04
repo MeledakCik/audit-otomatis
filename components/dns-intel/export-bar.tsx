@@ -21,7 +21,7 @@ export function ExportBar({ report }: { report: DnsIntelReport }) {
   return (
     <Card>
       <CardContent className="py-3.5 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-4 text-[11px] font-mono text-muted-dim">
+        <div className="flex items-center gap-4 text-xs font-mono text-muted-dim">
           <span className="flex items-center gap-1.5">
             <Clock className="h-3.5 w-3.5" /> Scan time: {report.scanDurationMs}ms · {new Date(report.createdAt).toLocaleString("id-ID")}
           </span>
@@ -36,7 +36,7 @@ export function ExportBar({ report }: { report: DnsIntelReport }) {
           </Button>
         </div>
       </CardContent>
-      <div className="border-t border-border px-4 py-2.5 flex items-start gap-2 text-[10px] font-mono text-muted-dim">
+      <div className="border-t border-border px-4 py-2.5 flex items-start gap-2 text-xs font-mono text-muted-dim">
         <Info className="h-3 w-3 shrink-0 mt-0.5" />
         <span>
           Data dari standard DNS query publik (DoH Cloudflare) — 100% pasif, tidak ada zone transfer/bruteforce. Hint

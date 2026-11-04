@@ -51,7 +51,7 @@ export function HistoryPanel({ entries, activeId, onSelect, onClear }: HistoryPa
                 {entry.riskLevel} · {entry.findingsCount}
               </span>
             </div>
-            <div className="mt-1 text-[10px] font-mono text-muted-dim truncate">
+            <div className="mt-1 text-xs font-mono text-muted-dim truncate">
               {new Date(entry.createdAt).toLocaleString("id-ID")}
             </div>
           </button>

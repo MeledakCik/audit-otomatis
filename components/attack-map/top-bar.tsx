@@ -27,7 +27,7 @@ export function TopBar({ onScan, loading, hasReport, onFitView, onExportPng, onE
         </div>
         <div className="mr-2">
           <div className="text-sm font-extrabold tracking-tight text-foreground">Attack Surface Map</div>
-          <div className="text-[10px] font-mono text-muted-dim">Passive · GET-only · same-origin · depth 2 · max 50 nodes</div>
+          <div className="text-xs font-mono text-muted-dim">Passive · GET-only · same-origin · depth 2 · max 50 nodes</div>
         </div>
 
         <input
@@ -72,7 +72,7 @@ export function TopBar({ onScan, loading, hasReport, onFitView, onExportPng, onE
       <div className="flex flex-wrap items-center justify-between gap-2">
         <Legend />
         {liveStatus && (
-          <div className="flex items-center gap-2 text-[11px] font-mono text-accent">
+          <div className="flex items-center gap-2 text-xs font-mono text-accent">
             <span className="h-1.5 w-1.5 rounded-full bg-accent shadow-[0_0_8px_1px_var(--accent)] animate-pulse" />
             {liveStatus}
           </div>

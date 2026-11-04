@@ -48,7 +48,7 @@ export function ResultsGrid({ report }: { report: StackFingerprintReport | null 
 
         {grouped.map((g) => (
           <div key={g.category} className="space-y-2.5">
-            <h3 className="text-[11px] font-bold uppercase tracking-widest text-muted-dim">
+            <h3 className="text-xs font-bold uppercase tracking-widest text-muted-dim">
               {g.category} <span className="text-muted-dim/60">({g.stacks.length})</span>
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

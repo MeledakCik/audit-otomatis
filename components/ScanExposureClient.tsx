@@ -195,14 +195,14 @@ export default function ScanExposureClient() {
 
         {/* Input URL */}
         <div className="space-y-3">
-          <div className="flex items-center gap-2 bg-[#0E1420] rounded-xl border border-[#2A3348] px-3.5 py-3 focus-within:border-[#3FA796] focus-within:ring-2 focus-within:ring-[#3FA796]/30 transition-all">
-            <span className="text-[#4C5A78] font-mono text-sm select-none">https://</span>
+          <div className="flex items-center gap-2 bg-[#0E1420] rounded-xl border border-[#5F6F8F] px-3.5 py-3 focus-within:border-[#3FA796] focus-within:ring-2 focus-within:ring-[#3FA796]/30 transition-all">
+            <span className="text-[#8A96B3] font-mono text-sm select-none">https://</span>
             <input
               type="text"
               placeholder="example.com"
               value={urlInput.replace(/^https?:\/\//, "")}
               onChange={(e) => setUrlInput(e.target.value)}
-              className="flex-1 bg-transparent font-mono text-sm text-[#EAF0FA] placeholder:text-[#4C5A78] focus:outline-none min-w-0"
+              className="flex-1 bg-transparent font-mono text-sm text-[#EAF0FA] placeholder:text-[#8A96B3] focus:outline-none min-w-0"
             />
           </div>
 
@@ -221,7 +221,7 @@ export default function ScanExposureClient() {
               type="checkbox"
               checked={ownershipConfirmed}
               onChange={(e) => setOwnershipConfirmed(e.target.checked)}
-              className="mt-0.5 h-4 w-4 rounded border-[#2A3348] bg-[#0E1420] accent-[#3FA796] transition cursor-pointer"
+              className="mt-0.5 h-4 w-4 rounded border-[#5F6F8F] bg-[#0E1420] accent-[#3FA796] transition cursor-pointer"
             />
             <span className="text-xs sm:text-sm">Saya mengonfirmasi memiliki izin penuh atas domain ini.</span>
           </label>
@@ -250,7 +250,7 @@ export default function ScanExposureClient() {
               placeholder="Cek path spesifik (cth: /.env atau /wp-config.php)"
               value={sensitivePath}
               onChange={(e) => setSensitivePath(e.target.value)}
-              className="flex-1 rounded-xl border border-[#2A3348] bg-[#0E1420] px-3.5 py-2.5 font-mono text-xs text-[#EAF0FA] placeholder:text-[#4C5A78] focus:border-[#F2A93C] focus:outline-none focus:ring-2 focus:ring-[#F2A93C]/30 transition"
+              className="flex-1 rounded-xl border border-[#5F6F8F] bg-[#0E1420] px-3.5 py-2.5 font-mono text-xs text-[#EAF0FA] placeholder:text-[#8A96B3] focus:border-[#F2A93C] focus:outline-none focus:ring-2 focus:ring-[#F2A93C]/30 transition"
             />
             <button
               onClick={handleSensitiveCheckClick}
@@ -260,7 +260,7 @@ export default function ScanExposureClient() {
               Uji Path
             </button>
           </div>
-          <p className="mt-2 text-[11px] text-[#7C89A6]">
+          <p className="mt-2 text-xs text-[#7C89A6]">
             Opsional: Uji eksposur file sensitif tertentu langsung pada server target.
           </p>
         </div>
@@ -338,7 +338,7 @@ export default function ScanExposureClient() {
               </div>
 
               {result.timestamp && (
-                <p className="mt-3 text-[11px] font-mono text-[#4C5A78]">
+                <p className="mt-3 text-xs font-mono text-[#8A96B3]">
                   Waktu Pemindaian: {new Date(result.timestamp).toLocaleString("id-ID")}
                 </p>
               )}
@@ -389,7 +389,7 @@ export default function ScanExposureClient() {
                     className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-4 border-b border-[#232B3D]/60 py-2 last:border-0"
                   >
                     <span className="text-[#7C89A6] font-medium">{key}</span>
-                    <span className="text-[#C9D2E3] break-all sm:text-right font-mono text-[11px] sm:text-xs">
+                    <span className="text-[#C9D2E3] break-all sm:text-right font-mono text-xs sm:text-xs">
                       {value || "—"}
                     </span>
                   </div>
@@ -442,7 +442,7 @@ export default function ScanExposureClient() {
                         {f.evidence}
                       </p>
 
-                      <p className="text-[11px] font-mono text-[#7C89A6] break-all">
+                      <p className="text-xs font-mono text-[#7C89A6] break-all">
                         Lokasi: {f.location}
                       </p>
 
@@ -469,7 +469,7 @@ export default function ScanExposureClient() {
               </div>
 
               <div className="space-y-3">
-                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 bg-[#0E1420] rounded-xl px-3.5 py-2.5 border border-[#2A3348]">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 bg-[#0E1420] rounded-xl px-3.5 py-2.5 border border-[#5F6F8F]">
                   <span className="text-xs font-medium text-[#7C89A6]">Target Path:</span>
                   <span className="font-mono text-xs text-[#EAF0FA] break-all">
                     {result.sensitivePathCheck.checked}
@@ -487,13 +487,13 @@ export default function ScanExposureClient() {
                 {result.sensitivePathCheck.allowed && (
                   <div className="grid grid-cols-2 gap-3">
                     <div className="rounded-xl border border-[#232B3D] bg-[#0E1420] p-3">
-                      <p className="text-[11px] text-[#7C89A6]">Status Code</p>
+                      <p className="text-xs text-[#7C89A6]">Status Code</p>
                       <p className="font-mono text-sm font-semibold text-[#EAF0FA] mt-0.5">
                         {result.sensitivePathCheck.statusCode}
                       </p>
                     </div>
                     <div className="rounded-xl border border-[#232B3D] bg-[#0E1420] p-3">
-                      <p className="text-[11px] text-[#7C89A6]">Status Terbuka</p>
+                      <p className="text-xs text-[#7C89A6]">Status Terbuka</p>
                       <p
                         className={`font-mono text-sm font-bold mt-0.5 ${
                           result.sensitivePathCheck.exposed ? "text-[#E15252]" : "text-[#3FA796]"
@@ -515,7 +515,7 @@ export default function ScanExposureClient() {
                         {result.sensitivePathCheck.matchedPatterns.map((pattern, idx) => (
                           <span
                             key={idx}
-                            className="px-2 py-1 bg-[#0E1420] rounded-md border border-[#232B3D] text-[11px] font-mono text-[#C9D2E3]"
+                            className="px-2 py-1 bg-[#0E1420] rounded-md border border-[#232B3D] text-xs font-mono text-[#C9D2E3]"
                           >
                             {pattern}
                           </span>
@@ -526,7 +526,7 @@ export default function ScanExposureClient() {
 
                 {result.sensitivePathCheck.preview && (
                   <div className="rounded-xl border border-[#E15252]/30 bg-[#0E1420] p-3.5 space-y-1.5">
-                    <p className="text-[11px] font-medium text-[#7C89A6]">
+                    <p className="text-xs font-medium text-[#7C89A6]">
                       Pratinjau Respons (200 Karakter Pertama):
                     </p>
                     <pre className="font-mono text-xs text-[#C9D2E3] whitespace-pre-wrap break-all bg-black/30 p-2.5 rounded-lg">
@@ -540,7 +540,7 @@ export default function ScanExposureClient() {
 
           {/* Disclaimer */}
           <div className="rounded-2xl border border-[#232B3D]/60 bg-[#141B2A]/50 p-4">
-            <p className="text-center text-[11px] text-[#7C89A6] leading-relaxed">
+            <p className="text-center text-xs text-[#7C89A6] leading-relaxed">
               {result.disclaimer}
             </p>
           </div>
@@ -562,7 +562,7 @@ export default function ScanExposureClient() {
               Sistem akan mengirimkan satu permintaan pembacaan (read-only) ke alamat berikut:
             </p>
 
-            <div className="rounded-xl bg-[#0E1420] border border-[#2A3348] p-3">
+            <div className="rounded-xl bg-[#0E1420] border border-[#5F6F8F] p-3">
               <code className="font-mono text-xs text-[#EAF0FA] break-all">
                 {pendingSensitivePath}
               </code>
@@ -588,7 +588,7 @@ export default function ScanExposureClient() {
                 type="checkbox"
                 checked={sensitiveOwnerAck}
                 onChange={(e) => setSensitiveOwnerAck(e.target.checked)}
-                className="mt-0.5 h-4 w-4 rounded border-[#2A3348] bg-[#0E1420] accent-[#E15252] cursor-pointer"
+                className="mt-0.5 h-4 w-4 rounded border-[#5F6F8F] bg-[#0E1420] accent-[#E15252] cursor-pointer"
               />
               <span>
                 Saya menyatakan secara sah bahwa saya adalah pemilik domain ini atau memiliki izin tertulis untuk pengujian.
@@ -598,7 +598,7 @@ export default function ScanExposureClient() {
             <div className="flex flex-col-reverse sm:flex-row gap-2.5 pt-2">
               <button
                 onClick={() => setShowSensitiveModal(false)}
-                className="w-full sm:flex-1 rounded-xl border border-[#2A3348] px-4 py-2.5 text-xs font-semibold text-[#C9D2E3] hover:bg-[#1A2233] transition"
+                className="w-full sm:flex-1 rounded-xl border border-[#5F6F8F] px-4 py-2.5 text-xs font-semibold text-[#C9D2E3] hover:bg-[#1A2233] transition"
               >
                 Batal
               </button>

@@ -43,7 +43,7 @@ export function HistoryPanel({ entries, activeId, onSelect, onClear }: HistoryPa
               <span className="text-xs font-mono text-foreground truncate">{entry.sourceName}</span>
               <SeverityIndicator severity={entry.overallSeverity} />
             </div>
-            <div className="mt-1 text-[10px] font-mono text-muted-dim truncate">
+            <div className="mt-1 text-xs font-mono text-muted-dim truncate">
               {new Date(entry.createdAt).toLocaleString("id-ID")}
             </div>
           </button>

@@ -36,7 +36,7 @@ function MapNodeInner({ data }: NodeProps) {
 
   return (
     <div
-      className="group flex items-center gap-2 rounded-xl border px-3 py-2 font-mono text-[11px] cursor-pointer transition-transform hover:scale-[1.03]"
+      className="group flex items-center gap-2 rounded-xl border px-3 py-2 font-mono text-xs cursor-pointer transition-transform hover:scale-[1.03]"
       style={{
         borderColor: `${color}66`,
         background: `linear-gradient(135deg, ${color}1f, #0f0b16)`,
@@ -52,9 +52,9 @@ function MapNodeInner({ data }: NodeProps) {
           {d.label}
         </div>
         {d.methods && d.methods.length > 0 && (
-          <div className="truncate text-[9px] text-white/50">{d.methods.join(" · ")}</div>
+          <div className="truncate text-xs text-white/50">{d.methods.join(" · ")}</div>
         )}
-        {d.isAdminLike && <div className="text-[9px] text-sev-critical font-bold uppercase tracking-wide">⚠ admin-like</div>}
+        {d.isAdminLike && <div className="text-xs text-sev-critical font-bold uppercase tracking-wide">⚠ admin-like</div>}
       </div>
       <Handle type="source" position={Position.Right} style={{ background: color, border: "none", width: 6, height: 6 }} />
     </div>

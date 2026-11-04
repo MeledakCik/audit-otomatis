@@ -21,7 +21,7 @@ function StatusRow({
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <span
-            className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold tracking-widest uppercase ${
+            className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-bold tracking-widest uppercase ${
               pass ? "text-[#38d47a] border-[#38d47a]/40 bg-[#38d47a]/10" : "text-sev-critical border-sev-critical/40 bg-sev-critical/10"
             }`}
           >
@@ -33,11 +33,11 @@ function StatusRow({
         {risk && <SeverityBadge severity={risk} />}
       </div>
       {value && (
-        <div className="rounded-md bg-[#0a0710] border border-border px-2.5 py-1.5 text-[11px] font-mono text-[#8be9a8] break-all">
+        <div className="rounded-md bg-[#0a0710] border border-border px-2.5 py-1.5 text-xs font-mono text-[#8be9a8] break-all">
           {value}
         </div>
       )}
-      <p className="text-[11px] font-mono text-muted-dim leading-relaxed">{note}</p>
+      <p className="text-xs font-mono text-muted-dim leading-relaxed">{note}</p>
     </div>
   );
 }
@@ -67,19 +67,19 @@ export function EmailSecurityCard({ security }: { security: DnsSecurity }) {
             <Info className="h-3.5 w-3.5 text-muted-dim" />
             <span className="text-sm font-bold font-mono text-foreground">DKIM Hint</span>
           </div>
-          <p className="text-[11px] font-mono text-muted-dim leading-relaxed">{dkimHint.note}</p>
+          <p className="text-xs font-mono text-muted-dim leading-relaxed">{dkimHint.note}</p>
         </div>
 
         <div className="rounded-lg border border-border bg-surface-raised/50 px-3.5 py-3 space-y-1.5">
           <div className="flex items-center justify-between gap-2">
             <span className="text-sm font-bold font-mono text-foreground">MX Provider</span>
             {mxProvider && (
-              <span className="rounded-full border border-accent/40 bg-accent/10 text-accent px-2 py-0.5 text-[10px] font-mono font-bold">
+              <span className="rounded-full border border-accent/40 bg-accent/10 text-accent px-2 py-0.5 text-xs font-mono font-bold">
                 {mxProvider.confidence}
               </span>
             )}
           </div>
-          <p className="text-[11px] font-mono text-muted-dim">
+          <p className="text-xs font-mono text-muted-dim">
             {mxProvider ? mxProvider.provider : "Tidak ada MX record — domain ini kemungkinan tidak menerima email."}
           </p>
         </div>

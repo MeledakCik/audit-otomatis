@@ -164,15 +164,16 @@ export function GraphView({
 
         <div className="overflow-auto thin-scroll max-h-[50vh] px-4 py-4">
           {graph.nodes.length > 0 && visibleEdges.length === 0 && (
-            <div className="mb-3 p-2.5 bg-amber-950/30 border border-amber-900/50 rounded-lg text-[11px] text-amber-400 font-mono">
+            <div className="mb-3 p-2.5 bg-amber-950/30 border border-amber-900/50 rounded-lg text-xs text-amber-400 font-mono">
               ⚠️ Node ditemukan ({graph.nodes.length}), tetapi relasi (edges)
               belum terbentuk sempurna oleh backend.
             </div>
           )}
           <svg
-            width={860}
-            height={height}
-            className="min-w-[860px] animate-fade-in select-none"
+            viewBox={`0 0 860 ${height}`}
+            role="img"
+            aria-label="Grafik relasi antar halaman dan aset"
+            className="w-full h-auto min-w-[480px] animate-fade-in select-none"
           >
             <defs>
               <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">

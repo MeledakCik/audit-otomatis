@@ -37,7 +37,7 @@ export function CardHeader({ className, children }: { className?: string; childr
 
 export function CardTitle({ className, children }: { className?: string; children: React.ReactNode }) {
   return (
-    <h2 className={cn("text-[11px] font-bold uppercase tracking-widest text-muted flex items-center gap-2", className)}>
+    <h2 className={cn("text-xs font-bold uppercase tracking-widest text-muted flex items-center gap-2", className)}>
       {children}
     </h2>
   );

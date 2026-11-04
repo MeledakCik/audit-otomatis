@@ -87,7 +87,7 @@ export default function DocsPage() {
     <div className="w-full min-h-full">
       <div className="mx-auto max-w-6xl px-6 lg:px-8 py-10">
         {/* Breadcrumb */}
-        <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest text-muted-dim mb-3">
+        <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-widest text-muted-dim mb-3">
           <span>Resources</span>
           <span className="text-border-strong">/</span>
           <span className="text-accent-2">Documentation</span>
@@ -271,7 +271,7 @@ GOOGLE_PAGESPEED_API_KEY=...`}</CodeBlock>
           {/* Right TOC */}
           <aside className="hidden xl:block w-52 shrink-0">
             <div className="sticky top-24 space-y-3">
-              <div className="text-[10px] font-mono uppercase tracking-widest text-muted-dim px-1">
+              <div className="text-xs font-mono uppercase tracking-widest text-muted-dim px-1">
                 On This Page
               </div>
               <nav className="space-y-0.5">

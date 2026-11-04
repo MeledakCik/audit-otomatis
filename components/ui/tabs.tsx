@@ -32,5 +32,5 @@ export function TabsTrigger({ className, ...props }: React.ComponentProps<typeof
 }
 
 export function TabsContent({ className, ...props }: React.ComponentProps<typeof TabsPrimitive.Content>) {
-  return <TabsPrimitive.Content className={cn("mt-4 focus-visible:outline-none", className)} {...props} />;
+  return <TabsPrimitive.Content className={cn("mt-4 rounded-lg focus-visible:outline-2 focus-visible:outline-accent", className)} {...props} />;
 }

@@ -58,13 +58,13 @@ export function OutputPanel({ report, loading, onToggleStep, onMarkPatched }: Ou
         <CardHeader>
           <CardTitle>
             <Sparkles className="h-3.5 w-3.5 text-accent" /> Executive Summary
-            {report.aiEnriched && <span className="text-[9px] normal-case text-accent">· AI-enriched</span>}
+            {report.aiEnriched && <span className="text-xs normal-case text-accent">· AI-enriched</span>}
           </CardTitle>
           <SeverityIndicator severity={report.overallSeverity} />
         </CardHeader>
         <CardContent className="space-y-3">
           <p className="text-sm leading-relaxed text-foreground/90">{report.summary}</p>
-          <div className="flex flex-wrap items-center gap-3 text-[11px] font-mono text-muted-dim">
+          <div className="flex flex-wrap items-center gap-3 text-xs font-mono text-muted-dim">
             <span>Source: <span className="text-foreground">{report.sourceName}</span></span>
             <span>·</span>
             <span>{report.findings.length} temuan</span>

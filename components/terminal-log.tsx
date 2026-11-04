@@ -59,14 +59,14 @@ export function TerminalLog({ logs }: { logs: ScanLogEvent[] }) {
   }, [logs.length]);
 
   return (
-    <div className="h-full flex flex-col overflow-hidden bg-[#0a0710] text-[11px] font-mono leading-relaxed">
+    <div className="h-full flex flex-col overflow-hidden bg-[#0a0710] text-xs font-mono leading-relaxed">
       <div className="flex-1 overflow-y-auto thin-scroll px-4 py-3 flex flex-col gap-1">
         {logs.length === 0 && (
-          <p className="text-slate-500 italic">menunggu koneksi stream…</p>
+          <p className="text-slate-400 italic">menunggu koneksi stream…</p>
         )}
         {logs.map((evt, i) => (
           <div key={i} className={cn("flex items-start gap-3 py-0.5", TYPE_ROW_HIGHLIGHT[evt.type])}>
-            <span className="text-slate-500 shrink-0 select-none">{timeLabel(evt.timestamp)}</span>
+            <span className="text-slate-400 shrink-0 select-none">{timeLabel(evt.timestamp)}</span>
             <span className={cn("whitespace-pre-wrap break-all flex-1 min-w-0", TYPE_COLOR[evt.type])}>
               {lineText(evt)}
             </span>

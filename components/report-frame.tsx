@@ -50,14 +50,14 @@ export function ReportFrame({ id, domain }: { id: string; domain: string }) {
             <a
               href={`/api/scan/${id}/report?download=1`}
               download
-              className="inline-flex items-center justify-center rounded-lg border border-white/10 bg-[#1a1426] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-200 hover:border-purple-500/50 hover:bg-purple-500/10 transition-all shadow-sm"
+              className="inline-flex items-center justify-center rounded-lg border border-white/10 bg-[#1a1426] px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-slate-200 hover:border-purple-500/50 hover:bg-purple-500/10 transition-all shadow-sm"
             >
               Export .HTML
             </a>
             <a
               href={`/api/scan/${id}/export`}
               download
-              className="inline-flex items-center justify-center rounded-lg border border-white/10 bg-[#1a1426] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-200 hover:border-purple-500/50 hover:bg-purple-500/10 transition-all shadow-sm"
+              className="inline-flex items-center justify-center rounded-lg border border-white/10 bg-[#1a1426] px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-slate-200 hover:border-purple-500/50 hover:bg-purple-500/10 transition-all shadow-sm"
             >
               Export .MD
             </a>
@@ -65,7 +65,7 @@ export function ReportFrame({ id, domain }: { id: string; domain: string }) {
               href={`/api/scan/${id}/graph`}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center justify-center rounded-lg border border-purple-500/50 bg-purple-600 px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-wider text-white hover:bg-purple-500 hover:shadow-[0_0_12px_rgba(168,85,247,0.4)] transition-all shadow-sm"
+              className="inline-flex items-center justify-center rounded-lg border border-purple-500/50 bg-purple-600 px-3.5 py-1.5 text-xs font-bold uppercase tracking-wider text-white hover:bg-purple-500 hover:shadow-[0_0_12px_rgba(168,85,247,0.4)] transition-all shadow-sm"
             >
               View Graph.json
             </a>

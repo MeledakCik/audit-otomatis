@@ -27,7 +27,7 @@ export function ActionChecklist() {
   return (
     <div className="rounded-2xl border border-border bg-surface shadow-[0_12px_32px_-16px_rgba(0,0,0,0.5)] overflow-hidden">
       <div className="border-b border-border px-4 py-3.5">
-        <h2 className="text-[11px] font-bold uppercase tracking-widest text-muted">Recommended Next Steps</h2>
+        <h2 className="text-xs font-bold uppercase tracking-widest text-muted">Recommended Next Steps</h2>
       </div>
       <div className="p-4 grid sm:grid-cols-2 gap-3">
         {ACTIONS.map((a) => (
@@ -37,7 +37,7 @@ export function ActionChecklist() {
             </div>
             <div className="space-y-0.5">
               <p className="text-xs font-bold text-foreground">{a.title}</p>
-              <p className="text-[11px] text-muted leading-relaxed">{a.detail}</p>
+              <p className="text-xs text-muted leading-relaxed">{a.detail}</p>
             </div>
           </div>
         ))}

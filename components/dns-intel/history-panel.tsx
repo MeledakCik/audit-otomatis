@@ -43,9 +43,9 @@ export function HistoryPanel({
           >
             <div className="flex items-center justify-between gap-2">
               <span className="text-xs font-mono text-foreground truncate">{entry.domain}</span>
-              <span className="text-[10px] font-mono text-muted-dim shrink-0">{entry.riskCount} risiko</span>
+              <span className="text-xs font-mono text-muted-dim shrink-0">{entry.riskCount} risiko</span>
             </div>
-            <div className="mt-1 text-[10px] font-mono text-muted-dim truncate">
+            <div className="mt-1 text-xs font-mono text-muted-dim truncate">
               {new Date(entry.createdAt).toLocaleString("id-ID")}
             </div>
           </button>

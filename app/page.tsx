@@ -87,7 +87,7 @@ export default function Home() {
                 <span className="text-xs font-mono font-bold text-purple-400">
                   {c.n}
                 </span>
-                <c.icon className="h-4 w-4 text-slate-500 group-hover:text-purple-300 transition-colors" />
+                <c.icon className="h-4 w-4 text-slate-400 group-hover:text-purple-300 transition-colors" />
               </div>
               <div className="mt-4">
                 <div className="text-sm font-semibold text-white">{c.t}</div>

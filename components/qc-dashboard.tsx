@@ -5,10 +5,14 @@ import Link from "next/link";
 import { useQcStream } from "@/lib/use-qc-stream";
 import { QcStatusPill } from "@/components/qc-status-pill";
 import { QcTerminalLog } from "@/components/qc-terminal-log";
-import { QcScoreDonut } from "@/components/qc-score-donut";
+import dynamic from "next/dynamic";
 import { QcIssueList } from "@/components/qc-issue-list";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
+const QcScoreDonut = dynamic(
+  () => import("@/components/qc-score-donut").then((m) => m.QcScoreDonut),
+  { ssr: false, loading: () => <div className="h-[132px] w-[132px]" aria-hidden="true" /> }
+);
 import type { QcModulesSelection } from "@/lib/qc-types";
 
 export function QcDashboard({
@@ -60,7 +64,7 @@ export function QcDashboard({
         </div>
       </header>
 
-      <main className="flex-1 mx-auto w-full max-w-5xl px-4 sm:px-6 py-5 sm:py-6 flex flex-col gap-4">
+      <div className="flex-1 mx-auto w-full max-w-5xl px-4 sm:px-6 py-5 sm:py-6 flex flex-col gap-4">
         {status === "error" && errorMessage && (
           <div className="rounded-xl border border-sev-high/40 bg-sev-high/10 px-4 py-3 text-xs text-sev-high leading-relaxed animate-fade-up">
             <span className="font-bold uppercase tracking-widest block mb-1">
@@ -120,7 +124,7 @@ export function QcDashboard({
               <CardHeader>
                 <CardTitle>QC SEO Otomatis</CardTitle>
                 {result.seo && (
-                  <span className="text-[10px] text-muted-dim">
+                  <span className="text-xs text-muted-dim">
                     {result.seo.issues.length} issue
                   </span>
                 )}
@@ -142,7 +146,7 @@ export function QcDashboard({
               <CardHeader>
                 <CardTitle>QC Performance</CardTitle>
                 {result.perf && (
-                  <span className="text-[10px] text-muted-dim">
+                  <span className="text-xs text-muted-dim">
                     {result.perf.metrics.source === "pagespeed"
                       ? "PageSpeed Insights"
                       : "fallback manual"}
@@ -152,7 +156,7 @@ export function QcDashboard({
               <div className="overflow-y-auto thin-scroll max-h-[40vh] px-3 py-2 flex flex-col gap-3">
                 {result.perf ? (
                   <>
-                    <div className="grid grid-cols-2 gap-2 text-[11px] font-mono px-1">
+                    <div className="grid grid-cols-2 gap-2 text-xs font-mono px-1">
                       <MetricCell label="LCP" value={result.perf.metrics.lcp} />
                       <MetricCell label="CLS" value={result.perf.metrics.cls} />
                       <MetricCell label="FCP" value={result.perf.metrics.fcp} />
@@ -172,21 +176,21 @@ export function QcDashboard({
                     </div>
                     {result.perf.metrics.lcpElement && (
                       <div className="rounded-lg border border-sev-high/30 bg-sev-high/[0.06] px-3 py-2">
-                        <div className="text-[9px] uppercase tracking-widest text-muted-dim mb-1">
+                        <div className="text-xs uppercase tracking-widest text-muted-dim mb-1">
                           Elemen Penyebab LCP
                         </div>
                         {result.perf.metrics.lcpElement.selector && (
-                          <div className="text-[11px] font-mono text-sev-high mb-1">
+                          <div className="text-xs font-mono text-sev-high mb-1">
                             {result.perf.metrics.lcpElement.selector}
                           </div>
                         )}
                         {result.perf.metrics.lcpElement.snippet && (
-                          <code className="block text-[10px] font-mono text-muted break-all whitespace-pre-wrap">
+                          <code className="block text-xs font-mono text-muted break-all whitespace-pre-wrap">
                             {result.perf.metrics.lcpElement.snippet}
                           </code>
                         )}
                         {result.perf.metrics.lcpElement.isLazyLoaded && (
-                          <div className="mt-1.5 text-[10px] text-sev-high">
+                          <div className="mt-1.5 text-xs text-sev-high">
                             ⚠ Elemen ini kena loading=&quot;lazy&quot; —
                             sebaiknya di-load prioritas tinggi.
                           </div>
@@ -214,7 +218,7 @@ export function QcDashboard({
               <CardHeader>
                 <CardTitle>QC Content / Link</CardTitle>
                 {result.content && (
-                  <span className="text-[10px] text-muted-dim">
+                  <span className="text-xs text-muted-dim">
                     {result.content.checked.linksChecked} link dicek ·{" "}
                     {result.content.brokenLinks.length} broken
                   </span>
@@ -223,7 +227,7 @@ export function QcDashboard({
               {result.content ? (
                 <div className="grid lg:grid-cols-2 gap-3 px-3 py-2">
                   <div className="min-h-0">
-                    <div className="text-[10px] uppercase tracking-widest text-muted-dim px-1 pb-1.5">
+                    <div className="text-xs uppercase tracking-widest text-muted-dim px-1 pb-1.5">
                       Broken Links ({result.content.brokenLinks.length})
                     </div>
                     <div className="overflow-y-auto thin-scroll max-h-[30vh] flex flex-col gap-1">
@@ -235,7 +239,7 @@ export function QcDashboard({
                         result.content.brokenLinks.map((link, i) => (
                           <div
                             key={i}
-                            className="text-[11px] font-mono text-sev-high break-all px-2 py-1 rounded bg-sev-high/10 border border-sev-high/20"
+                            className="text-xs font-mono text-sev-high break-all px-2 py-1 rounded bg-sev-high/10 border border-sev-high/20"
                           >
                             {link}
                           </div>
@@ -244,7 +248,7 @@ export function QcDashboard({
                     </div>
                   </div>
                   <div className="min-h-0">
-                    <div className="text-[10px] uppercase tracking-widest text-muted-dim px-1 pb-1.5">
+                    <div className="text-xs uppercase tracking-widest text-muted-dim px-1 pb-1.5">
                       A11y Issues
                     </div>
                     <div className="overflow-y-auto thin-scroll max-h-[30vh]">
@@ -266,7 +270,7 @@ export function QcDashboard({
           >
             <CardHeader>
               <CardTitle>Log Aktivitas</CardTitle>
-              <span className="text-[10px] text-muted-dim">
+              <span className="text-xs text-muted-dim">
                 {logs.length} event
               </span>
             </CardHeader>
@@ -275,7 +279,7 @@ export function QcDashboard({
             </div>
           </Card>
         </div>
-      </main>
+      </div>
     </div>
   );
 }
@@ -283,7 +287,7 @@ export function QcDashboard({
 function MetricCell({ label, value }: { label: string; value: string | null }) {
   return (
     <div className="rounded-lg border border-border bg-surface-raised px-2.5 py-1.5">
-      <div className="text-[9px] uppercase tracking-widest text-muted-dim">
+      <div className="text-xs uppercase tracking-widest text-muted-dim">
         {label}
       </div>
       <div className="text-foreground">{value ?? "-"}</div>

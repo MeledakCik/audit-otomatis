@@ -16,7 +16,7 @@ function CopyPathButton({ path }: { path: string }) {
           setTimeout(() => setCopied(false), 1500);
         });
       }}
-      className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-mono text-muted-dim hover:text-accent hover:bg-white/5 transition-colors shrink-0"
+      className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-mono text-muted-dim hover:text-accent hover:bg-white/5 transition-colors shrink-0"
       title="Copy path"
     >
       {copied ? <Check className="h-3 w-3 text-[#38d47a]" /> : <Copy className="h-3 w-3" />}
@@ -40,7 +40,7 @@ export function FindingsTable({ findings }: { findings: SecretFinding[] }) {
           <div className="overflow-x-auto">
             <table className="w-full text-xs font-mono">
               <thead>
-                <tr className="border-b border-border text-[10px] uppercase tracking-widest text-muted-dim">
+                <tr className="border-b border-border text-xs uppercase tracking-widest text-muted-dim">
                   <th className="text-left px-4 py-2.5 font-semibold">Severity</th>
                   <th className="text-left px-4 py-2.5 font-semibold">Type</th>
                   <th className="text-left px-4 py-2.5 font-semibold">File</th>

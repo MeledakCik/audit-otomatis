@@ -126,7 +126,7 @@ export default function NodeExplorerPage() {
   }, [nodes, searchQuery, activeFilter, sortBy]);
 
   return (
-    <div className="min-h-screen bg-[#05070d] text-zinc-100 font-sans p-4 md:p-8 lg:p-10 selection:bg-emerald-500/30 selection:text-emerald-300 relative overflow-hidden">
+    <div className="min-h-dvh bg-[#05070d] text-zinc-100 font-sans p-4 md:p-8 lg:p-10 selection:bg-emerald-500/30 selection:text-emerald-300 relative overflow-hidden">
       <div className="absolute top-0 left-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none animate-pulse" />
       <div className="absolute bottom-1/3 right-10 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
 
@@ -146,7 +146,7 @@ export default function NodeExplorerPage() {
                 <h1 className="text-2xl md:text-4xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-zinc-100 via-emerald-200 to-emerald-400">
                   Sentinel Node Map Explorer
                 </h1>
-                <span className="hidden md:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-mono font-medium bg-emerald-950/60 border border-emerald-500/30 text-emerald-400 animate-pulse">
+                <span className="hidden md:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-medium bg-emerald-950/60 border border-emerald-500/30 text-emerald-400 animate-pulse">
                   <Radio className="w-3 h-3" /> LIVE STREAM
                 </span>
               </div>
@@ -211,7 +211,7 @@ export default function NodeExplorerPage() {
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery("")}
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[10px] font-mono text-zinc-500 hover:text-zinc-300 bg-zinc-800/50 px-2 py-1 rounded-lg"
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-mono text-zinc-500 hover:text-zinc-300 bg-zinc-800/50 px-2 py-1 rounded-lg"
               >
                 Clear
               </button>
@@ -336,7 +336,7 @@ export default function NodeExplorerPage() {
                         )}
                       </div>
                       <span
-                        className={`text-[10px] font-mono tracking-wider px-3 py-1 rounded-lg border uppercase font-semibold ${
+                        className={`text-xs font-mono tracking-wider px-3 py-1 rounded-lg border uppercase font-semibold ${
                           isPage
                             ? "bg-emerald-950/20 border-emerald-900/40 text-emerald-400"
                             : isEndpoint
@@ -349,7 +349,7 @@ export default function NodeExplorerPage() {
                     </div>
 
                     <div className="space-y-2 my-1">
-                      <h4 className="text-[11px] font-mono font-bold tracking-wider text-emerald-400/90 uppercase truncate">
+                      <h4 className="text-xs font-mono font-bold tracking-wider text-emerald-400/90 uppercase truncate">
                         {isPage
                           ? "ROOT_DOMAIN"
                           : isEndpoint
@@ -362,7 +362,7 @@ export default function NodeExplorerPage() {
                     </div>
                   </div>
 
-                  <div className="pt-4 mt-4 border-t border-zinc-800/60 flex items-center justify-between text-[11px] text-zinc-500 font-mono">
+                  <div className="pt-4 mt-4 border-t border-zinc-800/60 flex items-center justify-between text-xs text-zinc-500 font-mono">
                     <span className="flex items-center gap-1.5 text-zinc-400">
                       {isPage ? (
                         <>
@@ -382,7 +382,7 @@ export default function NodeExplorerPage() {
                       )}
                     </span>
                     {isPage && (
-                      <span className="text-[10px] bg-zinc-900/90 px-2.5 py-0.5 rounded-lg border border-zinc-800 text-zinc-400">
+                      <span className="text-xs bg-zinc-900/90 px-2.5 py-0.5 rounded-lg border border-zinc-800 text-zinc-400">
                         Depth: {node.depth ?? 0}
                       </span>
                     )}
@@ -419,7 +419,7 @@ function StatBox({
         {icon}
       </div>
       <div>
-        <div className="text-[10px] font-mono text-zinc-400 tracking-wider uppercase">
+        <div className="text-xs font-mono text-zinc-400 tracking-wider uppercase">
           {label}
         </div>
         <div className="text-lg font-bold font-mono text-zinc-100 group-hover:text-emerald-400 transition-colors">

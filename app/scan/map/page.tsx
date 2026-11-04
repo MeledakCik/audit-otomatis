@@ -1,4 +1,4 @@
-import { AttackMapView } from "@/components/attack-map/attack-map-view";
+import { AttackMapLazy } from "@/components/attack-map/attack-map-lazy";
 
 export const dynamic = "force-dynamic";
 
@@ -8,5 +8,5 @@ export const metadata = {
 };
 
 export default function AttackSurfaceMapPage() {
-  return <AttackMapView />;
+  return <AttackMapLazy />;
 }
