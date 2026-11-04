@@ -2,15 +2,18 @@ import type { Finding, Severity } from "./types";
 import { chromeHeaders, detectCloudflareChallenge } from "./crawler";
 import { analyzeSecurityHeaders } from "./security-headers";
 import type { RequestBudget } from "./rate-limit";
+import { CRITICAL_CHECKS, evaluateCritical, toPublicFinding, type PublicFinding, type RawEvidence } from "./sentinel/audit";
 
+// Hanya pola yang benar-benar khas pesan error internal. Kata generik ("SQL", "expected…got",
+// "token is missing") DIBUANG karena muncul di HTML/JS/artikel biasa → false positive.
 const LEAK_PATTERNS: Array<{ pattern: RegExp; label: string }> = [
-  { pattern: /\bSQL\b/i, label: "kata 'SQL'" },
-  { pattern: /stack\s*trace|at\s+\/var\/www|at\s+[A-Za-z]:\\/i, label: "stack trace" },
-  { pattern: /token is missing/i, label: "'token is missing'" },
-  { pattern: /\bexpected\b.{0,40}\bgot\b/i, label: "pesan error 'expected ... got'" },
-  { pattern: /Warning:\s+.*on line \d+/i, label: "PHP warning" },
-  { pattern: /ORA-\d{5}/i, label: "Oracle error code" },
-  { pattern: /Traceback \(most recent call last\)/i, label: "Python traceback" },
+  { pattern: /You have an error in your SQL syntax|SQLSTATE\[\w+\]|Unclosed quotation mark after the character string|pg_query\(\)|mysqli?_(?:fetch|query)\w*\(\)|SQLite3?::|sqlite3\.OperationalError|PSQLException/i, label: "pesan error SQL" },
+  { pattern: /\bat\s+\/(?:var\/www|home|usr|app|srv)\/[^\s<]+\.(?:php|js|py|rb|java):\d+|\bat\s+[A-Za-z]:\\[^\s<]+\.(?:cs|php|js):/i, label: "stack trace dengan path server" },
+  { pattern: /(?:\n|^)\s+at\s+[\w$.<>]+\s+\((?:\/|file:|[A-Za-z]:\\)[^)\s]+:\d+:\d+\)(?:\s*\n\s+at\s+[^\n]+){2,}/, label: "stack trace Node.js" },
+  { pattern: /(?:Warning|Fatal error|Parse error):\s+[^<\n]{3,}\s+in\s+\/[^\s<]+\.php\s+on line\s+\d+/i, label: "PHP error dengan path file" },
+  { pattern: /\bORA-\d{5}\b/, label: "Oracle error code" },
+  { pattern: /Traceback \(most recent call last\)/, label: "Python traceback" },
+  { pattern: /Server Error in '\/[^']*' Application|System\.(?:Data|NullReference)\w*Exception/, label: "ASP.NET error page" },
 ];
 
 const SENSITIVE_FILES = ["/robots.txt", "/.env", "/.git/HEAD"];
@@ -52,13 +55,19 @@ export async function testResponseLeakage(url: string): Promise<Finding | null> 
     const cf = detectCloudflareChallenge(res.status, res.headers, text.slice(0, 2000));
     if (cf) return null;
 
+    const ct = (res.headers.get("content-type") ?? "").toLowerCase();
+    if (/image|font|video|audio|javascript|css|octet-stream/.test(ct)) return null; // bundle/aset ≠ halaman error
+    const body = text.replace(/<script[\s\S]*?<\/script>/gi, " ").replace(/<style[\s\S]*?<\/style>/gi, " ");
+
     for (const { pattern, label } of LEAK_PATTERNS) {
-      if (pattern.test(text)) {
+      const m = pattern.exec(body);
+      if (m) {
+        const at = Math.max(0, m.index - 30);
         return mkFinding(
           "HIGH",
           `Response leakage terdeteksi (${label})`,
           url,
-          `HTTP ${res.status} — "${snippet(text)}"`,
+          `HTTP ${res.status} — "…${snippet(body.slice(at, at + 140))}"`,
           "Pesan error internal (query, stack trace, path server) bocor ke client, mempermudah reconnaissance penyerang.",
           "Matikan mode debug di production, tampilkan pesan error generik ke client, log detail hanya di server."
         );
@@ -106,48 +115,61 @@ export async function testAntiAutomation(url: string): Promise<Finding | null> {
  * Test 3: Open file exposure — /robots.txt, /.env, /.git/HEAD.
  * Kalau 200 -> CRITICAL untuk .env dan .git/HEAD, tapi TIDAK menampilkan isi.
  */
+export interface ExposedHit { finding: PublicFinding; raw: RawEvidence }
+
 export async function testExposedFiles(
   origin: string,
-  budget: RequestBudget
+  budget: RequestBudget,
+  onHit?: (hit: ExposedHit) => void
 ): Promise<Finding[]> {
   const findings: Finding[] = [];
+  const domain = new URL(origin).hostname.toLowerCase();
+
   for (const path of SENSITIVE_FILES) {
     const url = new URL(path, origin).toString();
     const result = await budget.spend(async () => {
       try {
-        const res = await fetch(url, { method: "GET", headers: chromeHeaders() });
-        const text = await res.text();
-        return { status: res.status, headers: res.headers, textLen: text.length, textPreview: text.slice(0, 2000) };
+        const res = await fetch(url, { method: "GET", headers: chromeHeaders(), redirect: "manual" });
+        const text = (await res.text()).slice(0, 64 * 1024);
+        return { status: res.status, headers: res.headers, text, contentType: (res.headers.get("content-type") ?? "").toLowerCase() };
       } catch {
         return null;
       }
     });
     if (!result) continue;
 
-    const cf = detectCloudflareChallenge(result.status, result.headers, result.textPreview);
+    const cf = detectCloudflareChallenge(result.status, result.headers, result.text.slice(0, 2000));
     if (cf) continue;
 
-    if (result.status === 200) {
-      const isCritical = path !== "/robots.txt";
-      findings.push(
-        mkFinding(
-          isCritical ? "CRITICAL" : "INFO",
-          `File berpotensi sensitif ter-expose: ${path}`,
-          url,
-          `HTTP 200 — file dapat diakses publik (isi tidak ditampilkan demi keamanan)`,
-          path === "/.env"
-            ? "File .env bisa berisi kredensial/API key/secret database — dampak kompromi penuh bila bocor."
-            : path === "/.git/HEAD"
-              ? "Folder .git ter-expose berarti seluruh riwayat source code berpotensi diunduh penyerang."
-              : "robots.txt bersifat publik secara normal, ini hanya info tambahan.",
-          path === "/.env"
-            ? "Hapus file .env dari direktori publik, pastikan web server tidak serve dotfile, rotasi semua secret yang mungkin bocor."
-            : path === "/.git/HEAD"
-              ? "Blokir akses ke folder .git di konfigurasi web server/reverse proxy, atau pastikan build output tidak menyertakan .git."
-              : "Tidak ada aksi wajib."
-        )
-      );
+    if (path === "/robots.txt") {
+      // INFO hanya kalau benar-benar file robots (bukan halaman HTML catch-all)
+      if (result.status === 200 && /^\s*(user-agent|disallow|allow|sitemap)\s*:/im.test(result.text) && !result.contentType.includes("html"))
+        findings.push(mkFinding("INFO", "robots.txt ditemukan", url, "HTTP 200 — file robots valid", "robots.txt bersifat publik secara normal, ini hanya info tambahan.", "Tidak ada aksi wajib."));
+      continue;
     }
+
+    // CRITICAL hanya jika TRUE POSITIVE: status 200 + isi cocok marker nyata (bukan SPA/soft-404)
+    const check = CRITICAL_CHECKS.find((c) => c.path === path);
+    if (!check) continue;
+    const hit = evaluateCritical(check, { ...result, head: new Uint8Array(8) });
+    if (!hit) continue;
+
+    findings.push(
+      mkFinding(
+        "CRITICAL",
+        `File sensitif ter-expose & terverifikasi: ${path}`,
+        url,
+        `HTTP 200 — body berisi marker "${hit.marker}" (isi tidak ditampilkan, tersimpan terenkripsi di vault)`,
+        path === "/.env"
+          ? "File .env berisi kredensial/API key/secret — dampak kompromi penuh bila bocor."
+          : "Folder .git ter-expose berarti riwayat source code berpotensi diunduh penyerang.",
+        check.fix
+      )
+    );
+    onHit?.({
+      finding: toPublicFinding(domain, check, hit.marker),
+      raw: { domain, path, status: result.status, contentType: result.contentType, marker: hit.marker, snippet: hit.snippet },
+    });
   }
   return findings;
 }

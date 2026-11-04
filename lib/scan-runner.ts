@@ -2,7 +2,8 @@ import { crawlSite, endpointNodeId, jsNodeId } from "./site-crawler";
 import { analyzeJsSource, analyzeInlineScripts, fetchJsFiles } from "./js-analyzer";
 import { scanSecrets } from "./secret-scanner";
 import { fingerprintLibraries, libraryDetectionsToFindings, detectNextJs } from "./library-fingerprint";
-import { testResponseLeakage, testAntiAutomation, testExposedFiles, testSecurityHeaders } from "./tester";
+import { testResponseLeakage, testAntiAutomation, testExposedFiles, testSecurityHeaders, type ExposedHit } from "./tester";
+import { publishScanCriticals } from "./sentinel/publish";
 import { RequestBudget, sleep } from "./rate-limit";
 import { discoverFilesDetailed } from "./discovery/passiveDiscovery";
 import { checkVulnerableLibs } from "./vuln/jsLibChecker";
@@ -236,7 +237,8 @@ export async function runScan(scanId: string, origin: string) {
     await setStatus(scanId, "testing");
 
     await log(scanId, "Mengecek file sensitif (robots.txt, .env, .git/HEAD)...");
-    const exposedFindings = await testExposedFiles(origin, budget);
+    const exposedHits: ExposedHit[] = [];
+    const exposedFindings = await testExposedFiles(origin, budget, (h) => exposedHits.push(h));
     for (const f of exposedFindings) addFinding(scanId, f);
     await bumpRequestCount(scanId, 3);
 
@@ -271,6 +273,15 @@ export async function runScan(scanId: string, origin: string) {
       }
 
       await sleep(50);
+    }
+
+    if (exposedHits.length) {
+      await publishScanCriticals(
+        new URL(origin).hostname.toLowerCase(),
+        exposedHits.map((h) => h.finding),
+        exposedHits.map((h) => h.raw)
+      );
+      await log(scanId, `${exposedHits.length} temuan CRITICAL terverifikasi → evidence disimpan terenkripsi di vault admin.`);
     }
 
     await log(scanId, "Semua pengujian pasif selesai.");

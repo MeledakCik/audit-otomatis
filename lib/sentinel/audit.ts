@@ -84,7 +84,11 @@ async function get(url: string, wantBytes = MAX_TEXT_BYTES): Promise<Got | null>
 
 /** Ikuti redirect hanya antar host yang sama (apex ↔ www), tiap hop divalidasi SSRF guard. */
 async function getHome(origin: URL): Promise<Got | null> {
-  let url = new URL(origin.toString());
+  return getFollow(origin, origin);
+}
+
+async function getFollow(start: URL, origin: URL): Promise<Got | null> {
+  let url = new URL(start.toString());
   for (let i = 0; i < 3; i++) {
     const r = await get(url.toString());
     if (!r) return null;
@@ -99,6 +103,7 @@ async function getHome(origin: URL): Promise<Got | null> {
     }
     const strip = (h: string) => h.replace(/^www\./, "");
     if (strip(next.hostname) !== strip(origin.hostname)) return r;
+    if (/\/(login|signin|auth)\b/i.test(next.pathname)) return r; // redirect ke login ≠ exposed
     try {
       next = (await assertPublicHttpsTarget(next.toString())).url;
     } catch {
@@ -152,6 +157,14 @@ export const CRITICAL_CHECKS: CriticalCheck[] = [
     fix: FIX_SECRET,
     extra: [["DB_PASSWORD (any)", /\bDB_PASSWORD['"]?\s*[:=]\s*\S+/]],
   },
+  { path: "/.env.production", finding: ".env.production exposed", fix: FIX_SECRET },
+  { path: "/.env.local", finding: ".env.local exposed", fix: FIX_SECRET },
+  { path: "/.env.bak", finding: ".env backup exposed (.env.bak)", fix: FIX_SECRET },
+  {
+    path: "/.git/config",
+    finding: "Git config exposed (/.git/config)",
+    fix: "Blokir akses ke /.git/ di web server, hapus folder .git dari webroot, dan rotasi secret yang pernah ter-commit.",
+  },
   { path: "/backup.zip", finding: "Backup archive exposed (/backup.zip)", fix: "Hapus backup dari webroot, simpan di storage privat, dan anggap isinya sudah bocor (rotasi kredensial).", zip: true },
   { path: "/.aws/credentials", finding: "AWS credentials exposed", fix: "Hapus file, nonaktifkan access key di IAM SEKARANG, buat key baru, dan periksa CloudTrail." },
   {
@@ -184,6 +197,16 @@ export function evaluateCritical(
   if (!c.allowPhp && (r.contentType.includes("text/html") || looksLikeHtml(r.text))) return null; // SPA / soft-404
   const marker = matchMarker(r.text, c.extra);
   return marker ? { marker, snippet: r.text.slice(0, 1024) } : null;
+}
+
+export function toPublicFinding(domain: string, c: CriticalCheck, marker: string): PublicFinding {
+  return {
+    domain,
+    severity: "CRITICAL",
+    finding: c.finding,
+    evidence_public: `200 OK, response body contains marker "${marker}" (value tidak ditampilkan)`,
+    fix: c.fix,
+  };
 }
 
 // ---------- runner ----------
@@ -222,13 +245,7 @@ export async function auditDomain(input: string): Promise<AuditResult> {
     if (!hit) return; // FALSE → buang
     const { marker, snippet } = hit;
 
-    findings.push({
-      domain,
-      severity: "CRITICAL",
-      finding: c.finding,
-      evidence_public: `200 OK, response body contains marker "${marker}" (value tidak ditampilkan)`,
-      fix: c.fix,
-    });
+    findings.push(toPublicFinding(domain, c, marker));
     raw.push({ domain, path: c.path, status: r.status, contentType: r.contentType, marker, snippet });
   });
 
@@ -244,6 +261,22 @@ export async function auditDomain(input: string): Promise<AuditResult> {
       miss("Strict-Transport-Security", "Missing HSTS", "Tambahkan `Strict-Transport-Security: max-age=63072000; includeSubDomains; preload`.");
     if (!csp)
       miss("Content-Security-Policy", "Missing CSP", "Tambahkan CSP minimal (`default-src 'self'`) lalu perketat bertahap.");
+    const hsts = h.get("strict-transport-security");
+    if (hsts) {
+      const age = Number(/max-age\s*=\s*(\d+)/i.exec(hsts)?.[1] ?? 0);
+      if (age < 15552000) // < 180 hari (0 = HSTS dimatikan)
+        findings.push({ domain, severity: "HIGH", finding: "Weak HSTS (max-age terlalu pendek)", evidence_public: `Strict-Transport-Security max-age=${age} detik (< 180 hari)`, fix: "Naikkan `max-age` ke ≥ 31536000 dan tambahkan `includeSubDomains`." });
+    }
+    if (csp) {
+      const dir = /(?:^|;)\s*(?:script-src|default-src)\s+([^;]*)/gi;
+      let m: RegExpExecArray | null;
+      while ((m = dir.exec(csp))) {
+        if (/(^|\s)(\*|https:|http:|data:)(\s|$)/.test(m[1])) {
+          findings.push({ domain, severity: "HIGH", finding: "Weak CSP (wildcard/skema terbuka di script-src/default-src)", evidence_public: "CSP mengizinkan sumber script yang terlalu luas (*, https:, http:, atau data:)", fix: "Daftarkan host script secara eksplisit atau pakai nonce/hash + 'strict-dynamic'." });
+          break;
+        }
+      }
+    }
     if (!h.get("x-frame-options") && !/frame-ancestors/i.test(csp))
       miss("X-Frame-Options", "Missing X-Frame-Options", "Tambahkan `X-Frame-Options: DENY` atau CSP `frame-ancestors 'none'`.");
 
@@ -253,7 +286,7 @@ export async function auditDomain(input: string): Promise<AuditResult> {
 
   // 3) HIGH — directory listing
   await pool(HIGH_DIRS, CONCURRENCY, async (p) => {
-    const r = await get(at(p));
+    const r = await getFollow(new URL(at(p)), origin);
     if (!r || r.status !== 200) return;
     if (/(<title>|<h1>)\s*Index of \//i.test(r.text)) {
       findings.push({
@@ -266,7 +299,7 @@ export async function auditDomain(input: string): Promise<AuditResult> {
 
   // 4) HIGH — swagger / api-docs
   await pool(SWAGGER_PATHS, CONCURRENCY, async (p) => {
-    const r = await get(at(p));
+    const r = await getFollow(new URL(at(p)), origin);
     if (!r || r.status !== 200) return;
     const isJsonSpec = /"(swagger|openapi)"\s*:\s*"\d/.test(r.text);
     const isUi = /swagger-ui|SwaggerUIBundle|<title>[^<]*(swagger|redoc)/i.test(r.text);
@@ -277,6 +310,13 @@ export async function auditDomain(input: string): Promise<AuditResult> {
       fix: "Batasi dokumentasi API ke jaringan internal / di belakang autentikasi, atau nonaktifkan di production.",
     });
   });
+
+  // 5) HIGH — phpinfo()
+  {
+    const r = await get(at("/phpinfo.php"));
+    if (r && r.status === 200 && /phpinfo\(\)|<title>phpinfo\(\)<\/title>/i.test(r.text) && /PHP Version/i.test(r.text))
+      findings.push({ domain, severity: "HIGH", finding: "phpinfo() exposed (/phpinfo.php)", evidence_public: "200 OK, halaman phpinfo() dapat diakses publik", fix: "Hapus phpinfo.php dari production." });
+  }
 
   findings.sort((a, b) => (a.severity === b.severity ? 0 : a.severity === "CRITICAL" ? -1 : 1));
   return { domain, scannedAt: Date.now(), findings, raw };
