@@ -50,5 +50,9 @@ Mulai dari URL utama, discovery jalan dulu buat kumpulin peta website. Hasil pet
 
 Tool ini sengaja tidak bisa untuk ngetes website orang lain secara agresif. Tidak ada fitur bypass WAF, brute force, atau exploit. Kalau mau scan, pastikan domain itu memang milik sendiri.
 
+### OSINT Lookup (`/scan/osint`)
+
+Pencarian **data publik saja** berdasarkan **username** (Instagram, TikTok, Facebook, X, GitHub, dll), **email** (MX, cek email sekali pakai, Gravatar), **domain** (DNS, RDAP, subdomain crt.sh), dan **nama** (link pencarian publik). Tanpa login, tanpa scraping di balik auth, dibatasi 10 req/menit. API: `GET /api/osint?type=username|email|domain|name&q=...`
+
 ---
 Also available in: [English](./README.md)
