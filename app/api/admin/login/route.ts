@@ -6,15 +6,21 @@ import { COOKIE } from "@/lib/sentinel/session";
 export const runtime = "nodejs";
 
 export async function POST(req: Request) {
-  const body = await req.json().catch(() => null);
-  const r = await login(clientIp(req), req.headers.get("user-agent") ?? "", body?.user, body?.pass);
+  try {
+    const body = await req.json().catch(() => null);
+    const r = await login(clientIp(req), req.headers.get("user-agent") ?? "", body?.user, body?.pass);
 
-  if (!r.ok) {
-    const headers: Record<string, string> = { ...noStore };
-    if (r.retryAfter) headers["Retry-After"] = String(r.retryAfter);
-    return NextResponse.json({ error: r.error }, { status: r.status, headers });
+    if (!r.ok) {
+      const headers: Record<string, string> = { ...noStore };
+      if (r.retryAfter) headers["Retry-After"] = String(r.retryAfter);
+      return NextResponse.json({ error: r.error }, { status: r.status, headers });
+    }
+    const res = NextResponse.json({ ok: true }, { headers: noStore });
+    res.cookies.set(COOKIE, r.token, cookieOpts(12 * 3600));
+    return res;
+  } catch (e) {
+    // Pesan asli hanya ke log server, bukan ke browser.
+    console.error("[admin/login]", e instanceof Error ? e.message : e);
+    return NextResponse.json({ error: "Konfigurasi server bermasalah. Cek log." }, { status: 500, headers: noStore });
   }
-  const res = NextResponse.json({ ok: true }, { headers: noStore });
-  res.cookies.set(COOKIE, r.token, cookieOpts(12 * 3600));
-  return res;
 }
