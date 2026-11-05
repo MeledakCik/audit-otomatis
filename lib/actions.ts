@@ -4,6 +4,7 @@ import { after } from "next/server";
 import { headers, cookies } from "next/headers";
 import { nanoid } from "nanoid";
 import { validateDomainInput } from "./validate-domain";
+import { sanitizeCfClearance } from "./crawler";
 import { checkAndRegisterCooldown } from "./rate-limit";
 import { createScan } from "./scan-store";
 import { runScan } from "./scan-runner";
@@ -18,6 +19,8 @@ export interface StartScanResult {
 export async function startScanAction(formData: FormData): Promise<StartScanResult> {
   const domainInput = String(formData.get("domain") || "");
   const hasPermission = formData.get("permission") === "on";
+  const cfClearanceRaw = String(formData.get("cfClearance") || "");
+  const cfClearance = sanitizeCfClearance(cfClearanceRaw);
 
   if (!hasPermission) {
     return {
@@ -35,7 +38,9 @@ export async function startScanAction(formData: FormData): Promise<StartScanResu
   const jar = await cookies();
   const userKey = (h.get("x-forwarded-for")?.split(",")[0] || h.get("x-real-ip") || "anonymous").trim();
   const ua = h.get("user-agent") || "Unknown Browser";
-  const uid = jar.get("sentinel_uid")?.value || `usr_${Buffer.from(`${userKey}:${ua.slice(0, 32)}`).toString("base64url").slice(0, 10)}`;
+  const uid =
+    jar.get("sentinel_uid")?.value ||
+    `usr_${Buffer.from(`${userKey}:${ua.slice(0, 32)}`).toString("base64url").slice(0, 10)}`;
 
   const cooldown = await checkAndRegisterCooldown(userKey, validation.hostname);
   if (!cooldown.allowed) {
@@ -54,15 +59,20 @@ export async function startScanAction(formData: FormData): Promise<StartScanResu
     userAgent: ua,
     userId: uid,
     module: "FULL_SCAN",
-    action: "Memulai Full Passive Audit + Sentinel Vault Scan",
+    action: "Memulai Full Passive Audit + Deep Shell/OOB + Sentinel Vault Scan",
     target: validation.hostname,
     status: "RUNNING",
-    summary: `Scan ID: ${scanId} dimulai pada ${validation.normalizedUrl}`,
-    meta: { scanId, origin: validation.normalizedUrl },
+    summary: `Scan ID: ${scanId} dimulai pada ${validation.normalizedUrl}${cfClearance ? " (dengan CF Clearance Owner Token)" : ""}`,
+    meta: { scanId, origin: validation.normalizedUrl, hasCfClearance: Boolean(cfClearance) },
   });
 
   after(async () => {
-    await runScan(scanId, validation.normalizedUrl!, { ip: userKey, userAgent: ua, userId: uid });
+    await runScan(
+      scanId,
+      validation.normalizedUrl!,
+      { ip: userKey, userAgent: ua, userId: uid },
+      cfClearance
+    );
   });
 
   return { ok: true, scanId };

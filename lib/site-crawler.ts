@@ -1,12 +1,18 @@
 import * as cheerio from "cheerio";
 import { parseHTML } from "linkedom";
-import { chromeHeaders, detectCloudflareChallenge, type CloudflareChallenge } from "./crawler";
+import {
+  chromeHeaders,
+  detectCloudflareChallenge,
+  detectWafAndEdgeInfo,
+  type CloudflareChallenge,
+  type WafEdgeInfo,
+} from "./crawler";
 import type { CrawledPage, FormInfo, GraphData, GraphNode, GraphEdge } from "./types";
 import type { RequestBudget } from "./rate-limit";
 
 export const MAX_CRAWL_URLS = 50;
 export const DEFAULT_MAX_DEPTH = 3; // level 0 (homepage) .. level 3
-export const MAX_STORED_HTML_CHARS = 20_000; // batas HTML yang disimpan per halaman ke Redis (preview di UI cuma perlu ~2000 char)
+export const MAX_STORED_HTML_CHARS = 20_000;
 
 interface PageParseResult {
   internalLinks: string[];
@@ -85,11 +91,6 @@ function parsePage(origin: string, pageUrl: string, html: string): PageParseResu
   return { internalLinks, scripts: Array.from(scripts), forms, inlineScripts };
 }
 
-/**
- * Node id helper — dipakai konsisten di sini dan di scan-runner saat
- * menambahkan endpoint node hasil js-analyzer, supaya id tidak bentrok
- * antar tipe node (page vs js vs endpoint) meski string URL-nya sama.
- */
 export function pageNodeId(url: string): string {
   return `page:${url}`;
 }
@@ -108,22 +109,17 @@ export interface SiteCrawlResult {
   allInlineScripts: { pageUrl: string; scripts: string[] }[];
   graph: GraphData;
   cloudflare: CloudflareChallenge | null;
+  wafInfo: WafEdgeInfo | null;
   visitedCount: number;
 }
 
-/**
- * Crawl same-origin BFS mulai dari homepage, sampai maxDepth level atau
- * maxUrls halaman (mana yang lebih dulu tercapai). Setiap halaman baru
- * dipakai budget.spend() satu request GET — tetap tunduk pada RequestBudget
- * yang sama dengan pengujian pasif lainnya, jadi tidak menambah total
- * request di luar batas 100/scan yang sudah ada.
- */
 export async function crawlSite(
   origin: string,
   budget: RequestBudget,
   onLog: (msg: string) => void,
   maxDepth = DEFAULT_MAX_DEPTH,
-  maxUrls = MAX_CRAWL_URLS
+  maxUrls = MAX_CRAWL_URLS,
+  cfClearance?: string
 ): Promise<SiteCrawlResult> {
   const visited = new Set<string>();
   const queue: { url: string; depth: number }[] = [{ url: origin, depth: 0 }];
@@ -146,6 +142,7 @@ export async function crawlSite(
   }
 
   let cloudflare: CloudflareChallenge | null = null;
+  let wafInfo: WafEdgeInfo | null = null;
 
   while (queue.length > 0 && visited.size < maxUrls) {
     const next = queue.shift()!;
@@ -159,7 +156,11 @@ export async function crawlSite(
 
     const fetched = await budget.spend(async () => {
       try {
-        const res = await fetch(next.url, { method: "GET", headers: chromeHeaders(), redirect: "follow" });
+        const res = await fetch(next.url, {
+          method: "GET",
+          headers: chromeHeaders(next.depth > 0 ? origin : undefined, cfClearance),
+          redirect: "follow",
+        });
         const body = await res.text();
         return { status: res.status, headers: res.headers, body };
       } catch (err) {
@@ -167,20 +168,16 @@ export async function crawlSite(
       }
     });
 
-    if (!fetched) break; // budget habis di tengah spend()
+    if (!fetched) break;
     if (fetched.status === 0) {
       onLog(`Gagal fetch ${next.url}${fetched.error ? `: ${fetched.error}` : ""}`);
       continue;
     }
 
-    const cf = detectCloudflareChallenge(fetched.status, fetched.headers, fetched.body.slice(0, 2000));
-    if (cf) {
-      cloudflare = cf;
-      onLog(`Cloudflare challenge terdeteksi saat crawl ${next.url}: ${cf.reason}`);
-      break;
+    const snippet = fetched.body.slice(0, 2000);
+    if (!wafInfo) {
+      wafInfo = detectWafAndEdgeInfo(fetched.status, fetched.headers, snippet);
     }
-
-    const parsed = parsePage(origin, next.url, fetched.body);
 
     const headersObj: Record<string, string> = {};
     fetched.headers.forEach((value, key) => {
@@ -188,6 +185,29 @@ export async function crawlSite(
     });
     const contentType = headersObj["content-type"] ?? "";
     const size = Buffer.byteLength(fetched.body, "utf8");
+
+    const cf = detectCloudflareChallenge(fetched.status, fetched.headers, snippet);
+    if (cf) {
+      cloudflare = cf;
+      onLog(
+        `[WAF/CF] Proteksi Cloudflare/WAF terdeteksi pada ${next.url} (HTTP ${fetched.status}) — tetap menyimpan snapshot header Edge & melanjutkan pemeriksaan rute publik/statis.`
+      );
+      // Simpan snapshot halaman/header Edge meskipun terkena challenge agar analisis Header, Server/CPE & Request Inspector tetap bekerja
+      pages.push({
+        url: next.url,
+        depth: next.depth,
+        scripts: [],
+        status: fetched.status,
+        headers: headersObj,
+        contentType,
+        size,
+        html: fetched.body.slice(0, MAX_STORED_HTML_CHARS),
+      });
+      addNode({ id: pageNodeId(next.url), type: "page", label: `${next.url} [WAF Edge]`, depth: next.depth });
+      continue;
+    }
+
+    const parsed = parsePage(origin, next.url, fetched.body);
 
     pages.push({
       url: next.url,
@@ -232,6 +252,7 @@ export async function crawlSite(
     allInlineScripts,
     graph: { nodes, edges },
     cloudflare,
+    wafInfo,
     visitedCount: visited.size,
   };
 }

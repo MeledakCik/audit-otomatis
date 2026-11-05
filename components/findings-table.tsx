@@ -20,6 +20,13 @@ const CATEGORY_LABELS: Record<NonNullable<Finding["category"]>, string> = {
   "passive-discovery": "discovery",
   "cve-match": "cve",
   "rce-surface": "rce surface",
+  wp2shell: "wp2shell",
+  php2shell: "php2shell",
+  node2shell: "node2shell",
+  go2shell: "go2shell",
+  py2shell: "py2shell",
+  "node-oob": "node out-of-bounds",
+  "sensitive-file": "vault encrypted",
 };
 
 export function FindingsTable({ findings }: { findings: Finding[] }) {

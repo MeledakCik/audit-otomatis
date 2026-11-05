@@ -22,11 +22,66 @@ import {
   ArrowUpRight,
   Sparkles,
   Activity,
+  Terminal,
+  Cpu,
+  ShieldAlert,
 } from "lucide-react";
 
 export const maxDuration = 300;
 
+const DEEP_SHELL_ENGINES = [
+  {
+    code: "wp2shell",
+    title: "WordPress RCE & Config Surface",
+    cwe: "CWE-434 · CWE-538 · CWE-284",
+    desc: "Deteksi pasif wp-config.php.bak/~/.save, debug.log, xmlrpc.php aktif, enumerasi user REST API (/wp-json/wp/v2/users), installer terbuka, dan indeks /wp-content/uploads/.",
+    targets: ["/wp-config.php.bak", "/wp-content/debug.log", "/xmlrpc.php", "/wp-json/wp/v2/users"],
+  },
+  {
+    code: "php2shell",
+    title: "PHP Eval, Ignition & Profiler",
+    cwe: "CWE-94 · CWE-95 · CWE-489",
+    desc: "Audit pasif Laravel Ignition debug RCE (CVE-2021-3129), PHPUnit eval-stdin.php (CVE-2017-9841), Symfony Profiler, phpinfo(), PHP-FPM status, dan eksposur composer.json.",
+    targets: ["/_ignition/health-check", "/vendor/phpunit/.../eval-stdin.php", "/phpinfo.php", "/fpm-status"],
+  },
+  {
+    code: "node2shell",
+    title: "Node.js V8 Inspector & SSR Sinks",
+    cwe: "CWE-94 · CWE-502 · CWE-1321",
+    desc: "Deteksi port debug V8 Inspector (/json/version), PM2 ecosystem.config.js, Next.js dev stack-frame, serta sink AST child_process, vm.runInNewContext, deserialization & prototype pollution.",
+    targets: ["/json/version", "/ecosystem.config.js", "child_process / vm", "__proto__ pollution"],
+  },
+  {
+    code: "go2shell",
+    title: "Go Runtime pprof & Expvar",
+    cwe: "CWE-215 · CWE-200 · CWE-489",
+    desc: "Inspeksi pasif profil runtime Go (/debug/pprof/), kebocoran argumen binary (/debug/pprof/cmdline), goroutine/heap dump, serta variabel runtime expvar (/debug/vars).",
+    targets: ["/debug/pprof/", "/debug/pprof/cmdline", "/debug/vars", "Go panic trace"],
+  },
+  {
+    code: "py2shell",
+    title: "Python Werkzeug, Jupyter & Celery",
+    cwe: "CWE-94 · CWE-306 · CWE-489",
+    desc: "Deteksi Werkzeug/Flask interactive debugger (/console), Jupyter Notebook kernel API tanpa autentikasi (/api/kernels), Celery Flower monitor (/api/workers), dan Django Debug Toolbar.",
+    targets: ["/console", "/api/kernels", "/api/workers", "/__debug__/"],
+  },
+  {
+    code: "node out of bound",
+    title: "Node Out-of-Bounds (OOB) & Memory",
+    cwe: "CWE-119 · CWE-125 · CWE-787 · CWE-918",
+    desc: "Deteksi snapshot memori V8 (/heapdump), alokasi Buffer.allocUnsafe & pembacaan TypedArray/DataView out-of-bounds, RangeError buffer leak, serta kandidat parameter Out-of-Band (OOB SSRF/Webhook).",
+    targets: ["/heapdump", "Buffer.allocUnsafe", "TypedArray OOB", "OOB Callback/SSRF"],
+  },
+];
+
 const QUICK_MODULES = [
+  {
+    title: "Sentinel Vault & Klaim",
+    desc: "Audit File Sensitif (.env, .git/HEAD, backup.zip, wp-config.php.bak, AWS keys) & Brankas AES-256-GCM",
+    href: "/scan/sentinel",
+    icon: Lock,
+    badge: "AES-256-GCM",
+  },
   {
     title: "Header Armor",
     desc: "Skor & analisis HTTP security headers (CSP, HSTS, XFO)",
@@ -92,7 +147,7 @@ const QUICK_MODULES = [
   },
   {
     title: "Exposure Check",
-    desc: "Verifikasi kebocoran file konfigurasi & informasi sensitif",
+    desc: "Verifikasi kebocoran file konfigurasi, shell surface & informasi sensitif",
     href: "/scan/exposure",
     icon: ExternalLink,
     badge: "Passive",
@@ -124,7 +179,7 @@ export default function Home() {
             <div className="flex flex-wrap items-center gap-2.5">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/15 border border-purple-500/30 text-xs font-mono tracking-wider uppercase text-purple-300">
                 <span className="h-2 w-2 rounded-full bg-purple-400 animate-pulse" />
-                SENTINEL-ID PASSIVE AUDITOR v3.2
+                SENTINEL-ID PASSIVE AUDITOR v3.5
               </div>
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/[0.04] border border-white/10 text-xs font-mono text-slate-300">
                 <Lock className="h-3 w-3 text-pink-400" />
@@ -136,14 +191,17 @@ export default function Home() {
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold leading-[1.12] tracking-tight text-white">
                 Platform Audit Keamanan Web{" "}
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-fuchsia-400 to-pink-400">
-                  Pasif &amp; Terpadu
+                  Pasif, Mendalam &amp; Terpadu
                 </span>
               </h1>
               <p className="text-sm sm:text-base leading-relaxed text-slate-300/90 max-w-xl">
-                Analisis postur keamanan domain Anda secara instan tanpa risiko merusak server. Menggabungkan{" "}
+                Analisis postur keamanan domain secara mendalam tanpa risiko merusak server. Menggabungkan{" "}
                 <strong className="text-white">Multi-Page Crawler</strong>,{" "}
-                <strong className="text-white">AST JS Analyzer</strong>, dan{" "}
-                <strong className="text-white">Sentinel Encrypted Vault</strong> dalam satu pusat komando.
+                <strong className="text-white">Deep Shell &amp; OOB Engine</strong> (
+                <code className="text-purple-300">wp2shell</code>, <code className="text-purple-300">php2shell</code>,{" "}
+                <code className="text-purple-300">node2shell</code>, <code className="text-purple-300">go2shell</code>,{" "}
+                <code className="text-purple-300">py2shell</code>, <code className="text-purple-300">node out of bound</code>
+                ), dan <strong className="text-white">Brankas Bukti Terenkripsi (AES-256-GCM)</strong>.
               </p>
             </div>
 
@@ -152,11 +210,43 @@ export default function Home() {
               <VerifiedBadge variant="hero" />
             </div>
 
+            {/* Highlighted Box: Audit File Sensitif & Brankas Bukti Terenkripsi (AES-256-GCM) */}
+            <div className="rounded-2xl border border-purple-500/35 bg-gradient-to-r from-purple-950/40 via-[#150f24] to-pink-950/30 p-4 sm:p-5 space-y-2.5 shadow-lg">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="inline-flex items-center gap-2 text-xs font-mono font-bold text-purple-300">
+                  <Lock className="h-4 w-4 text-pink-400" />
+                  <span>PROTEKSI BUKTI KRITIS &amp; KLAIM DOMAIN SAH</span>
+                </div>
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 border border-emerald-500/35 px-2.5 py-0.5 text-[10px] font-mono font-bold text-emerald-300">
+                  ✓ Sudah Terverifikasi oleh Google Developer Bandung
+                </span>
+              </div>
+              <h2 className="text-base sm:text-lg font-extrabold text-white">
+                Audit File Sensitif &amp; Brankas Bukti Terenkripsi (AES-256-GCM)
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-200/90 leading-relaxed">
+                Mendeteksi kebocoran kritis (<code className="text-purple-300 font-semibold">.env</code>,{" "}
+                <code className="text-purple-300 font-semibold">.git/HEAD</code>,{" "}
+                <code className="text-purple-300 font-semibold">backup.zip</code>,{" "}
+                <code className="text-purple-300 font-semibold">wp-config.php.bak</code>,{" "}
+                <code className="text-purple-300 font-semibold">AWS keys</code>) secara pasif. Nilai rahasia tidak pernah bocor ke publik dan disimpan terenkripsi di Vault Admin untuk diklaim pemilik sah domain.
+              </p>
+              <div className="flex flex-wrap items-center gap-2 pt-1">
+                <Link
+                  href="/scan/sentinel"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-purple-600/30 hover:bg-purple-600/45 border border-purple-400/40 px-3.5 py-1.5 text-xs font-mono font-bold text-purple-100 transition-colors"
+                >
+                  <span>Buka Brankas Bukti &amp; Klaim Domain</span>
+                  <ArrowUpRight className="h-3.5 w-3.5" />
+                </Link>
+              </div>
+            </div>
+
             {/* Key Capabilities Pills */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
               {[
                 { label: "Deep Crawl", sub: "Max 50 URL · Depth 3", icon: Search },
-                { label: "AST JS Engine", sub: "Endpoint & Secret", icon: Code2 },
+                { label: "Shell & OOB Check", sub: "wp/php/node/go/py", icon: Terminal },
                 { label: "Sentinel Vault", sub: "AES-256-GCM + Klaim", icon: Lock },
                 { label: "Laporan & Export", sub: "Markdown & Graph", icon: FileText },
               ].map((item) => (
@@ -182,20 +272,20 @@ export default function Home() {
               <span className="text-white/20">•</span>
               <span>SSRF Guard</span>
               <span className="text-white/20">•</span>
-              <span>Semua aktivitas tercatat di Admin Telemetry</span>
+              <span>Terverifikasi Google Developer Bandung</span>
             </div>
           </div>
 
           {/* Right Column: Unified Scan & Sentinel Vault Card */}
           <div className="relative rounded-2xl border border-purple-500/25 bg-gradient-to-b from-[#171126] via-[#120d1e] to-[#0e0a18] p-5 sm:p-6 shadow-2xl shadow-purple-950/30">
-            <div className="mb-4 flex items-center justify-between">
+            <div className="mb-4 flex items-center justify-between gap-2">
               <div>
                 <div className="text-xs font-mono tracking-widest uppercase text-purple-300 font-bold flex items-center gap-1.5">
                   <Sparkles className="h-3.5 w-3.5 text-purple-400" />
-                  Unified Security Scanner
+                  Unified Deep Security Scanner
                 </div>
                 <p className="text-xs text-slate-400 mt-0.5">
-                  Pilih Full Scan komprehensif atau audit cepat Sentinel Vault &amp; Klaim Domain
+                  Pilih Full Scan komprehensif atau Audit File Sensitif &amp; Brankas Bukti Terenkripsi (AES-256-GCM)
                 </p>
               </div>
             </div>
@@ -206,15 +296,66 @@ export default function Home() {
           </div>
         </div>
 
+        {/* Deep Shell-Surface & Node Out-of-Bounds Security Matrix */}
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <div className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider text-pink-400 font-bold mb-1">
+                <Cpu className="h-3.5 w-3.5" />
+                DEEP PASSIVE RUNTIME &amp; SHELL-SURFACE ENGINE
+              </div>
+              <h2 className="text-lg sm:text-xl font-extrabold text-white tracking-tight">
+                Deteksi Mendalam: wp2shell, php2shell, node2shell, go2shell, py2shell &amp; Node Out-of-Bounds
+              </h2>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Memeriksa titik masuk eksekusi kode, debugger terbuka, dan kebocoran memori secara 100% pasif (GET-only, validasi isi respons)
+              </p>
+            </div>
+            <VerifiedBadge variant="vault" />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {DEEP_SHELL_ENGINES.map((eng) => (
+              <div
+                key={eng.code}
+                className="flex flex-col justify-between rounded-2xl border border-white/[0.08] bg-gradient-to-b from-[#161024] to-[#0f0b19] p-5 hover:border-purple-500/40 transition-all"
+              >
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-400/35 px-2.5 py-1 text-xs font-mono font-extrabold uppercase text-pink-200">
+                      <ShieldAlert className="h-3.5 w-3.5 text-pink-400" />
+                      {eng.code}
+                    </span>
+                    <span className="text-[10px] font-mono text-slate-400">{eng.cwe}</span>
+                  </div>
+                  <h3 className="text-sm font-bold text-white">{eng.title}</h3>
+                  <p className="text-xs text-slate-400 leading-relaxed">{eng.desc}</p>
+                </div>
+
+                <div className="mt-4 pt-3 border-t border-white/[0.06] flex flex-wrap gap-1.5">
+                  {eng.targets.map((t) => (
+                    <code
+                      key={t}
+                      className="rounded-md bg-black/40 border border-white/[0.07] px-2 py-0.5 text-[10px] font-mono text-purple-300"
+                    >
+                      {t}
+                    </code>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* 4-Step Workflow Pipeline */}
         <div className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               <h2 className="text-lg font-extrabold text-white tracking-tight">
-                Alur Kerja Audit Pasif &amp; Proteksi Bukti (Sentinel Vault)
+                Alur Kerja Audit File Sensitif &amp; Brankas Bukti Terenkripsi (AES-256-GCM)
               </h2>
               <p className="text-xs text-slate-400">
-                Dirancang untuk menjaga kerahasiaan temuan kritis hingga pemilik domain terverifikasi
+                Dirancang untuk menjaga kerahasiaan temuan kritis hingga pemilik sah domain terverifikasi — Sudah Terverifikasi oleh Google Developer Bandung
               </p>
             </div>
           </div>
@@ -229,20 +370,20 @@ export default function Home() {
               },
               {
                 n: "02",
-                t: "AST JS & Secret Scan",
-                d: "Membedah bundle JavaScript menggunakan Acorn AST untuk memetakan API endpoint & mendeteksi secret.",
+                t: "Deep Shell & OOB Audit",
+                d: "Mendeteksi permukaan wp2shell, php2shell, node2shell, go2shell, py2shell, dan Node Out-of-Bounds secara pasif.",
                 icon: Code2,
               },
               {
                 n: "03",
-                t: "Sentinel Encrypted Vault",
-                d: "Temuan CRITICAL (.env, .git, backup) dienkripsi AES-256-GCM ke Vault Admin tanpa membocorkan isi ke publik.",
+                t: "Brankas Bukti AES-256-GCM",
+                d: "Kebocoran kritis (.env, .git/HEAD, backup.zip, wp-config.php.bak, AWS keys) dienkripsi ke Vault Admin tanpa bocor ke publik.",
                 icon: Lock,
               },
               {
                 n: "04",
-                t: "Klaim Domain & Laporan",
-                d: "Pemilik domain memverifikasi DNS TXT / file HTTP untuk membuka bukti 1x lihat & mengunduh laporan.",
+                t: "Klaim Pemilik Sah Domain",
+                d: "Pemilik sah domain memverifikasi DNS TXT / file HTTP untuk membuka bukti 1x lihat & mengunduh laporan.",
                 icon: FileText,
               },
             ].map((c) => (
@@ -265,7 +406,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Complete Suite of 12 Specialized Security Scanners */}
+        {/* Complete Suite of Specialized Security Scanners */}
         <div className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
@@ -273,7 +414,7 @@ export default function Home() {
                 Modul Spesialis Keamanan &amp; Intelijen Siber
               </h2>
               <p className="text-xs text-slate-400">
-                Seluruh modul terintegrasi langsung dengan pusat monitoring aktivitas Admin
+                Seluruh modul terintegrasi langsung dengan pusat monitoring aktivitas Admin &amp; Brankas AES-256-GCM
               </p>
             </div>
             <Link
