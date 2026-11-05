@@ -1,11 +1,10 @@
 /**
  * lib/vuln/redirectChecker.ts
  *
- * Generate test case untuk OPEN_REDIRECT / SSRF dari nama query-param yang
- * "berbau" redirect/target URL. TIDAK melakukan fetch sama sekali (spec:
- * "JANGAN langsung fetch, cukup generate test case untuk laporan karena
- * CORS") — murni analisis nama param + siapin payload buat step eksekusi
- * lain (mis. tester.ts yang sudah ada, yang jalan lewat proxy/user action).
+ * Analisis nama query-param secara pasif (TANPA fetch / TANPA eksekusi payload):
+ * 1. OPEN_REDIRECT & SSRF (url, redirect, next, dest, target, returnUrl)
+ * 2. NODE_OOB (Out-of-Band interaction / webhook / callback / XML / pingback kandidat)
+ * 3. SHELL_SURFACE (kandidat parameter command/code/file-inclusion: cmd, exec, shell, php, file, path, template)
  *
  * Pure function.
  */
@@ -13,12 +12,36 @@
 import type { AuditFinding, AuditSeverity } from "./types";
 
 const REDIRECT_PARAM_NAMES = ["url", "redirect", "next", "dest", "target", "returnUrl"] as const;
+const OOB_PARAM_NAMES = [
+  "callback",
+  "webhook",
+  "notify_url",
+  "pingback",
+  "oob",
+  "wsdl",
+  "xml",
+  "uri",
+  "host",
+  "domain",
+] as const;
+const SHELL_PARAM_NAMES = [
+  "cmd",
+  "exec",
+  "shell",
+  "command",
+  "code",
+  "eval",
+  "template",
+  "include",
+  "file",
+  "path",
+] as const;
 
 const OPEN_REDIRECT_PAYLOAD = "https://evil.com";
 const SSRF_PAYLOADS = ["http://127.0.0.1", "http://169.254.169.254"] as const;
 
 export interface TestCase extends AuditFinding {
-  type: "OPEN_REDIRECT" | "SSRF";
+  type: "OPEN_REDIRECT" | "SSRF" | "NODE_OOB" | "SHELL_SURFACE";
   originalUrl: string;
   param: string;
   payload: string;
@@ -33,44 +56,70 @@ function safeParseUrl(raw: string): URL | null {
 }
 
 function severityFor(type: TestCase["type"]): AuditSeverity {
-  return type === "SSRF" ? "high" : "medium";
+  if (type === "SSRF" || type === "SHELL_SURFACE" || type === "NODE_OOB") return "high";
+  return "medium";
 }
 
 /**
- * Cek query param di `url`; kalau nama param match daftar redirect-like param
- * (url/redirect/next/dest/target/returnUrl), generate test case OPEN_REDIRECT
- * (payload https://evil.com) + test case SSRF (payload internal IP /
- * cloud metadata endpoint). Tidak melakukan request apapun.
+ * Cek query param di `url` secara pasif tanpa mengirim request apa pun.
  */
 export function detectRedirectParams(url: string): TestCase[] {
   const parsed = safeParseUrl(url);
   if (!parsed) return [];
 
   const cases: TestCase[] = [];
-  const paramNamesLower = new Set(REDIRECT_PARAM_NAMES.map((p) => p.toLowerCase()));
+  const redirectSet = new Set(REDIRECT_PARAM_NAMES.map((p) => p.toLowerCase()));
+  const oobSet = new Set(OOB_PARAM_NAMES.map((p) => p.toLowerCase()));
+  const shellSet = new Set(SHELL_PARAM_NAMES.map((p) => p.toLowerCase()));
 
   for (const key of parsed.searchParams.keys()) {
-    if (!paramNamesLower.has(key.toLowerCase())) continue;
+    const k = key.toLowerCase();
 
-    cases.push({
-      type: "OPEN_REDIRECT",
-      severity: severityFor("OPEN_REDIRECT"),
-      url,
-      originalUrl: url,
-      param: key,
-      payload: OPEN_REDIRECT_PAYLOAD,
-      evidence: `param "${key}" terlihat seperti redirect target di ${url}`,
-    });
-
-    for (const ssrfPayload of SSRF_PAYLOADS) {
+    if (redirectSet.has(k)) {
       cases.push({
-        type: "SSRF",
-        severity: severityFor("SSRF"),
+        type: "OPEN_REDIRECT",
+        severity: severityFor("OPEN_REDIRECT"),
         url,
         originalUrl: url,
         param: key,
-        payload: ssrfPayload,
-        evidence: `param "${key}" berpotensi dipakai server buat fetch balik ke internal/metadata endpoint`,
+        payload: OPEN_REDIRECT_PAYLOAD,
+        evidence: `param "${key}" terlihat seperti redirect target di ${url}`,
+      });
+
+      for (const ssrfPayload of SSRF_PAYLOADS) {
+        cases.push({
+          type: "SSRF",
+          severity: severityFor("SSRF"),
+          url,
+          originalUrl: url,
+          param: key,
+          payload: ssrfPayload,
+          evidence: `param "${key}" berpotensi dipakai server buat fetch balik ke internal/metadata endpoint`,
+        });
+      }
+    }
+
+    if (oobSet.has(k)) {
+      cases.push({
+        type: "NODE_OOB",
+        severity: severityFor("NODE_OOB"),
+        url,
+        originalUrl: url,
+        param: key,
+        payload: "https://oob-audit.sentinel-id.invalid/callback",
+        evidence: `param "${key}" berpotensi memicu koneksi Out-of-Band (OOB / SSRF / Webhook) pada ${url}`,
+      });
+    }
+
+    if (shellSet.has(k)) {
+      cases.push({
+        type: "SHELL_SURFACE",
+        severity: severityFor("SHELL_SURFACE"),
+        url,
+        originalUrl: url,
+        param: key,
+        payload: "<passive-review-only>",
+        evidence: `param "${key}" pada ${url} memiliki penamaan kandidat eksekusi perintah/template/file (wp2shell/php2shell/node2shell/py2shell/go2shell)`,
       });
     }
   }

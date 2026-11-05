@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { LucideCloudCheck, Lock, AlertTriangle, CheckCircle2, Loader2, ShieldAlert } from "lucide-react";
+import Link from "next/link";
+import { LucideCloudCheck, Lock, AlertTriangle, CheckCircle2, Loader2, ShieldAlert, ArrowUpRight } from "lucide-react";
+import { VerifiedBadge } from "@/components/verified-badge";
 
 type Severity = "critical" | "medium" | "low" | "info";
 
@@ -17,6 +19,7 @@ interface SensitivePathResult {
   checked: string;
   allowed: boolean;
   exposed: boolean;
+  vaultStored?: boolean;
   statusCode?: number;
   contentType?: string;
   preview?: string;
@@ -43,6 +46,20 @@ interface ScanResult {
   disclaimer: string;
   timestamp?: string;
 }
+
+const PRESET_PATHS = [
+  { label: ".env", path: "/.env", tag: "Vault" },
+  { label: ".git/HEAD", path: "/.git/HEAD", tag: "Vault" },
+  { label: "backup.zip", path: "/backup.zip", tag: "Vault" },
+  { label: "wp-config.php.bak", path: "/wp-config.php.bak", tag: "wp2shell" },
+  { label: "AWS Keys", path: "/.aws/credentials", tag: "Vault" },
+  { label: "WP Debug Log", path: "/wp-content/debug.log", tag: "wp2shell" },
+  { label: "Ignition RCE", path: "/_ignition/health-check", tag: "php2shell" },
+  { label: "Node V8 Debug", path: "/json/version", tag: "node2shell" },
+  { label: "Go pprof", path: "/debug/pprof/", tag: "go2shell" },
+  { label: "Werkzeug Console", path: "/console", tag: "py2shell" },
+  { label: "Node Heapdump", path: "/heapdump", tag: "node out of bound" },
+];
 
 const SEVERITY_STYLES: Record<
   Severity,
@@ -166,21 +183,30 @@ export default function ScanExposureClient() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6 sm:pb-24">
+    <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6 sm:pb-24 space-y-6">
       {/* Header Section */}
-      <div className="flex items-start gap-3.5 mb-6">
-        <div className="h-10 w-10 grid place-items-center rounded-xl bg-gradient-to-br from-[#c084fc] to-[#9333ea] text-white shadow-lg shadow-purple-500/20 shrink-0 mt-0.5">
-          <LucideCloudCheck className="h-5 w-5 text-white" strokeWidth={2.5} />
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex items-start gap-3.5">
+          <div className="h-10 w-10 grid place-items-center rounded-xl bg-gradient-to-br from-[#c084fc] to-[#9333ea] text-white shadow-lg shadow-purple-500/20 shrink-0 mt-0.5">
+            <LucideCloudCheck className="h-5 w-5 text-white" strokeWidth={2.5} />
+          </div>
+          <div className="space-y-1">
+            <h1 className="text-base sm:text-lg font-bold tracking-tight text-foreground flex items-center gap-2 flex-wrap">
+              Audit File Sensitif &amp; Brankas Bukti Terenkripsi (AES-256-GCM)
+              <Lock className="h-4 w-4 text-[#3FA796]" />
+            </h1>
+            <p className="text-xs text-[#C9D2E3] max-w-2xl leading-relaxed">
+              Mendeteksi kebocoran kritis (<code className="text-purple-300">.env</code>,{" "}
+              <code className="text-purple-300">.git/HEAD</code>, <code className="text-purple-300">backup.zip</code>,{" "}
+              <code className="text-purple-300">wp-config.php.bak</code>, <code className="text-purple-300">AWS keys</code>
+              ) serta permukaan <code className="text-pink-300">wp2shell</code>,{" "}
+              <code className="text-pink-300">php2shell</code>, <code className="text-pink-300">node2shell</code>,{" "}
+              <code className="text-pink-300">go2shell</code>, <code className="text-pink-300">py2shell</code>, dan{" "}
+              <code className="text-pink-300">node out of bound</code> secara pasif. Nilai rahasia tidak pernah bocor ke publik dan disimpan terenkripsi di Vault Admin untuk diklaim pemilik sah domain.
+            </p>
+          </div>
         </div>
-        <div className="space-y-1">
-          <h1 className="text-base sm:text-lg font-bold tracking-tight text-foreground flex items-center gap-2 flex-wrap">
-            Cloud Exposure & Misconfig Inspector
-            <Lock className="h-4 w-4 text-[#3FA796]" />
-          </h1>
-          <p className="text-xs font-mono text-[#7C89A6] leading-relaxed">
-            Audit inventaris aset publik & konfigurasi cloud untuk kebutuhan edukasi (tanpa eksploitasi/CVE database).
-          </p>
-        </div>
+        <VerifiedBadge variant="vault" />
       </div>
 
       {/* Main Form Container */}
@@ -209,7 +235,7 @@ export default function ScanExposureClient() {
           <div className="flex items-start gap-2.5 rounded-lg border border-[#F2A93C]/20 bg-[#F2A93C]/5 px-3.5 py-2.5">
             <AlertTriangle className="h-4 w-4 text-[#F2A93C] shrink-0 mt-0.5" />
             <p className="text-xs text-[#C9D2E3] leading-relaxed">
-              Memeriksa penanda teknologi publik melalui satu permintaan GET standar ke domain utama. Tidak melakukan bruteforce maupun pemindaian kerentanan agresif.
+              Memeriksa penanda teknologi publik melalui permintaan GET standar yang 100% pasif. Nilai rahasia dari file sensitif tidak pernah ditampilkan di layar publik dan langsung dienkripsi AES-256-GCM ke Vault Admin.
             </p>
           </div>
         </div>
@@ -229,7 +255,7 @@ export default function ScanExposureClient() {
           <button
             onClick={handleScanClick}
             disabled={loading}
-            className="w-full sm:w-auto min-w-[140px] flex items-center justify-center gap-2 rounded-xl bg-[#3FA796] px-6 py-2.5 font-mono text-xs font-bold uppercase tracking-wider text-[#0E1420] transition hover:bg-[#57C4B2] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+            className="w-full sm:w-auto min-w-[140px] flex items-center justify-center gap-2 rounded-xl bg-[#3FA796] px-6 py-2.5 font-mono text-xs font-bold uppercase tracking-wider text-[#0E1420] transition hover:bg-[#57C4B2] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
           >
             {loading ? (
               <>
@@ -242,12 +268,40 @@ export default function ScanExposureClient() {
           </button>
         </div>
 
-        {/* Sensitive Path Checker Optional */}
-        <div className="mt-6 pt-6 border-t border-[#232B3D]/80">
+        {/* Sensitive Path & Deep Shell Surface Checker */}
+        <div className="mt-6 pt-6 border-t border-[#232B3D]/80 space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="text-xs font-mono font-bold text-[#F2A93C]">
+              Uji Path File Sensitif / Deep Shell Surface (Otomatis Enkripsi AES-256-GCM ke Vault):
+            </span>
+            <Link
+              href="/scan/sentinel"
+              className="inline-flex items-center gap-1 text-[11px] font-mono text-purple-300 hover:text-purple-200"
+            >
+              <span>Audit Semua Path Sekaligus di Sentinel Vault</span>
+              <ArrowUpRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+
+          {/* Preset Quick Buttons */}
+          <div className="flex flex-wrap gap-1.5">
+            {PRESET_PATHS.map((p) => (
+              <button
+                key={p.path}
+                type="button"
+                onClick={() => setSensitivePath(p.path)}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-[#232B3D] bg-[#0E1420] hover:border-[#3FA796]/60 px-2.5 py-1 text-[11px] font-mono text-[#C9D2E3] transition cursor-pointer"
+              >
+                <span className="text-[#3FA796] font-bold">[{p.tag}]</span>
+                <span>{p.path}</span>
+              </button>
+            ))}
+          </div>
+
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
             <input
               type="text"
-              placeholder="Cek path spesifik (cth: /.env atau /wp-config.php)"
+              placeholder="Cek path spesifik (cth: /.env, /.git/HEAD, /backup.zip, /wp-config.php.bak, /json/version)"
               value={sensitivePath}
               onChange={(e) => setSensitivePath(e.target.value)}
               className="flex-1 rounded-xl border border-[#5F6F8F] bg-[#0E1420] px-3.5 py-2.5 font-mono text-xs text-[#EAF0FA] placeholder:text-[#8A96B3] focus:border-[#F2A93C] focus:outline-none focus:ring-2 focus:ring-[#F2A93C]/30 transition"
@@ -255,14 +309,11 @@ export default function ScanExposureClient() {
             <button
               onClick={handleSensitiveCheckClick}
               disabled={loading}
-              className="w-full sm:w-auto rounded-xl border border-[#F2A93C]/50 bg-[#F2A93C]/5 px-5 py-2.5 font-mono text-xs font-semibold text-[#F2A93C] transition hover:bg-[#F2A93C]/15 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 whitespace-nowrap"
+              className="w-full sm:w-auto rounded-xl border border-[#F2A93C]/50 bg-[#F2A93C]/5 px-5 py-2.5 font-mono text-xs font-semibold text-[#F2A93C] transition hover:bg-[#F2A93C]/15 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 whitespace-nowrap cursor-pointer"
             >
-              Uji Path
+              Uji &amp; Amankan ke Vault
             </button>
           </div>
-          <p className="mt-2 text-xs text-[#7C89A6]">
-            Opsional: Uji eksposur file sensitif tertentu langsung pada server target.
-          </p>
         </div>
 
         {/* Error State */}
@@ -306,7 +357,7 @@ export default function ScanExposureClient() {
                     <span className="flex items-center gap-1.5 bg-[#E15252]/10 border border-[#E15252]/20 px-2.5 py-1 rounded-md">
                       <span className="h-2 w-2 rounded-full bg-[#E15252]" />
                       <span className="text-xs font-mono font-medium text-[#E15252]">
-                        {result.summary.critical} Critical
+                        {result.summary.critical} Critical (Vault AES-256-GCM)
                       </span>
                     </span>
                   )}
@@ -381,7 +432,7 @@ export default function ScanExposureClient() {
                     "strict-transport-security",
                     "content-security-policy",
                     "x-frame-options",
-                  ].includes(key),
+                  ].includes(key)
                 )
                 .map(([key, value]) => (
                   <div
@@ -463,7 +514,7 @@ export default function ScanExposureClient() {
             <div className="rounded-2xl border border-[#232B3D] bg-[#141B2A] p-4 sm:p-6 shadow-xl">
               <div className="flex items-center gap-3 mb-4">
                 <span className="font-mono text-xs font-semibold uppercase tracking-widest text-[#F2A93C]">
-                  Hasil Pemeriksaan Path
+                  Hasil Pemeriksaan Path &amp; Status Brankas AES-256-GCM
                 </span>
                 <span className="h-px flex-1 bg-[#232B3D]" />
               </div>
@@ -493,13 +544,15 @@ export default function ScanExposureClient() {
                       </p>
                     </div>
                     <div className="rounded-xl border border-[#232B3D] bg-[#0E1420] p-3">
-                      <p className="text-xs text-[#7C89A6]">Status Terbuka</p>
+                      <p className="text-xs text-[#7C89A6]">Status Eksposur &amp; Vault</p>
                       <p
                         className={`font-mono text-sm font-bold mt-0.5 ${
                           result.sensitivePathCheck.exposed ? "text-[#E15252]" : "text-[#3FA796]"
                         }`}
                       >
-                        {result.sensitivePathCheck.exposed ? "⚠️ TEREKSPOS" : "✅ AMAN"}
+                        {result.sensitivePathCheck.exposed
+                          ? "⚠️ TEREKSPOS (Dienkripsi ke Vault Admin)"
+                          : "✅ AMAN"}
                       </p>
                     </div>
                   </div>
@@ -509,7 +562,7 @@ export default function ScanExposureClient() {
                   result.sensitivePathCheck.matchedPatterns.length > 0 && (
                     <div className="rounded-xl border border-[#E15252]/30 bg-[#E15252]/5 p-3.5 space-y-2">
                       <p className="text-xs text-[#E15252] font-semibold">
-                        Pola Cocok ({result.sensitivePathCheck.matchedPatterns.length}):
+                        Penanda Kritis Terdeteksi ({result.sensitivePathCheck.matchedPatterns.length}):
                       </p>
                       <div className="flex flex-wrap gap-1.5">
                         {result.sensitivePathCheck.matchedPatterns.map((pattern, idx) => (
@@ -525,13 +578,20 @@ export default function ScanExposureClient() {
                   )}
 
                 {result.sensitivePathCheck.preview && (
-                  <div className="rounded-xl border border-[#E15252]/30 bg-[#0E1420] p-3.5 space-y-1.5">
-                    <p className="text-xs font-medium text-[#7C89A6]">
-                      Pratinjau Respons (200 Karakter Pertama):
+                  <div className="rounded-xl border border-purple-500/35 bg-[#0E1420] p-3.5 space-y-2">
+                    <p className="text-xs font-mono font-bold text-purple-300 flex items-center gap-1.5">
+                      <Lock className="h-3.5 w-3.5 text-pink-400" />
+                      Proteksi Nilai Rahasia (AES-256-GCM Vault Admin):
                     </p>
                     <pre className="font-mono text-xs text-[#C9D2E3] whitespace-pre-wrap break-all bg-black/30 p-2.5 rounded-lg">
                       {result.sensitivePathCheck.preview}
                     </pre>
+                    <Link
+                      href="/scan/sentinel"
+                      className="inline-flex items-center gap-1.5 text-xs font-mono font-bold text-emerald-400 hover:text-emerald-300"
+                    >
+                      <span>Klaim Kepemilikan Domain untuk Membuka Bukti Mentah →</span>
+                    </Link>
                   </div>
                 )}
               </div>
@@ -554,12 +614,12 @@ export default function ScanExposureClient() {
             <div className="flex items-center gap-2.5 text-[#E15252]">
               <AlertTriangle className="h-5 w-5 shrink-0" />
               <h3 className="font-mono text-sm font-bold uppercase tracking-wide">
-                Konfirmasi Uji Path Sensitif
+                Konfirmasi Uji Path Sensitif &amp; Enkripsi Vault
               </h3>
             </div>
 
             <p className="text-xs sm:text-sm text-[#C9D2E3] leading-relaxed">
-              Sistem akan mengirimkan satu permintaan pembacaan (read-only) ke alamat berikut:
+              Sistem akan mengirimkan satu permintaan pembacaan pasif (GET-only) ke path berikut:
             </p>
 
             <div className="rounded-xl bg-[#0E1420] border border-[#5F6F8F] p-3">
@@ -571,15 +631,15 @@ export default function ScanExposureClient() {
             <div className="space-y-2 bg-[#0E1420]/50 p-3 rounded-xl border border-[#232B3D]">
               <div className="flex items-start gap-2 text-xs text-[#7C89A6]">
                 <span className="text-[#3FA796] font-bold">✓</span>
-                <span>Hanya memeriksa path spesifik yang Anda masukkan</span>
+                <span>100% pasif GET-only tanpa payload eksploitasi</span>
               </div>
               <div className="flex items-start gap-2 text-xs text-[#7C89A6]">
                 <span className="text-[#3FA796] font-bold">✓</span>
-                <span>Tidak ada isi file yang disimpan secara permanen</span>
+                <span>Nilai rahasia tidak pernah bocor ke layar publik</span>
               </div>
               <div className="flex items-start gap-2 text-xs text-[#7C89A6]">
                 <span className="text-[#3FA796] font-bold">✓</span>
-                <span>Hanya menampilkan pratinjau jika terdeteksi pola kredensial</span>
+                <span>Bukti kritis dienkripsi AES-256-GCM di Vault Admin untuk diklaim pemilik sah domain</span>
               </div>
             </div>
 
@@ -598,16 +658,16 @@ export default function ScanExposureClient() {
             <div className="flex flex-col-reverse sm:flex-row gap-2.5 pt-2">
               <button
                 onClick={() => setShowSensitiveModal(false)}
-                className="w-full sm:flex-1 rounded-xl border border-[#5F6F8F] px-4 py-2.5 text-xs font-semibold text-[#C9D2E3] hover:bg-[#1A2233] transition"
+                className="w-full sm:flex-1 rounded-xl border border-[#5F6F8F] px-4 py-2.5 text-xs font-semibold text-[#C9D2E3] hover:bg-[#1A2233] transition cursor-pointer"
               >
                 Batal
               </button>
               <button
                 onClick={confirmSensitiveScan}
                 disabled={!sensitiveOwnerAck}
-                className="w-full sm:flex-1 rounded-xl bg-[#E15252] px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-[#EC6E6E] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+                className="w-full sm:flex-1 rounded-xl bg-[#E15252] px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-[#EC6E6E] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer"
               >
-                Setuju & Periksa
+                Setuju &amp; Periksa
               </button>
             </div>
           </div>

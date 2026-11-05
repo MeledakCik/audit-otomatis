@@ -2,14 +2,8 @@
  * lib/vuln/toFindings.ts
  *
  * Adapter: konversi output modul passive-audit (jsLibChecker, domSink,
- * redirectChecker, idorDetector, authChecker — semua pakai `AuditFinding`
- * standard JSON di ./types) ke `Finding` lama (lib/types.ts) supaya bisa
- * masuk ke pipeline addFinding() -> scan-store -> Finding UI -> export
- * markdown yang sudah ada, tanpa perlu ubah bentuk data di modul aslinya.
- *
- * Semua fungsi di sini pure (tidak ada network call) — cuma mapping data +
- * penulisan impact/fix dalam Bahasa Indonesia senada dengan module lain
- * (secret-scanner.ts, library-fingerprint.ts).
+ * redirectChecker, idorDetector, authChecker) ke `Finding` (lib/types.ts).
+ * Mendukung klasifikasi mendalam: wp2shell, php2shell, node2shell, go2shell, py2shell, node-oob.
  */
 
 import type { Finding } from "../types";
@@ -41,43 +35,168 @@ export function vulnLibsToFindings(vulns: Vuln[], sourceLabel: string): Finding[
 
 /** domSink.findDomSinks() -> Finding[]. */
 export function domSinksToFindings(sinks: Sink[], sourceLabel: string): Finding[] {
-  return sinks.map((s) => ({
-    id: newId(),
-    severity: toLegacySeverity(s.severity),
-    title: `Potensi DOM XSS sink: ${s.type}`,
-    endpoint: sourceLabel,
-    evidence: s.evidence,
-    impact:
-      "Sink DOM ini bisa jadi vektor XSS kalau data yang masuk berasal dari sumber yang bisa dikontrol pengguna (URL, postMessage, dsb) tanpa sanitasi. Deteksi ini regex pattern-matching di source, bukan bukti exploitability — wajib direview manual.",
-    fix: "Review kode di sekitar sink ini. Ganti innerHTML/outerHTML/document.write dengan textContent atau sanitizer (mis. DOMPurify), hindari eval/setTimeout dengan argumen string, dan validasi/encode nilai dari location.hash atau location.search sebelum dipakai.",
-    cwe: "CWE-79",
-    category: "dom-xss-sink",
-  }));
+  return sinks.map((s) => {
+    if (s.type === "node2shell_child_process") {
+      return {
+        id: newId(),
+        severity: toLegacySeverity(s.severity),
+        title: `[node2shell] Indikator eksekusi proses Node.js (${s.type})`,
+        endpoint: sourceLabel,
+        evidence: s.evidence,
+        impact:
+          "Pola pemanggilan child_process / exec / spawn ditemukan di kode JS. Apabila menerima input pengguna tanpa sanitasi di sisi server/SSR, berisiko memicu OS Command Injection (node2shell).",
+        fix: "Hindari child_process.exec dengan string dinamis; gunakan execFile dengan argumen array yang divalidasi ketat dan jangan pernah menyertakan kode server di bundle client.",
+        cwe: "CWE-78",
+        rce: true,
+        category: "node2shell",
+      };
+    }
+    if (s.type === "node2shell_vm_eval") {
+      return {
+        id: newId(),
+        severity: toLegacySeverity(s.severity),
+        title: `[node2shell] Sink eksekusi VM / Function dinamis (${s.type})`,
+        endpoint: sourceLabel,
+        evidence: s.evidence,
+        impact:
+          "Penggunaan modul vm Node.js atau konstruktor new Function() bukan sandbox keamanan yang aman dan sering dapat di-bypass untuk mencapai RCE (node2shell).",
+        fix: "Ganti vm.runInNewContext / new Function dengan parser deklaratif (JSON.parse) atau isolasi proses menggunakan worker/container terpisah.",
+        cwe: "CWE-94",
+        rce: true,
+        category: "node2shell",
+      };
+    }
+    if (s.type === "node2shell_deserialization") {
+      return {
+        id: newId(),
+        severity: toLegacySeverity(s.severity),
+        title: `[node2shell] Pola deserialisasi tidak aman (${s.type})`,
+        endpoint: sourceLabel,
+        evidence: s.evidence,
+        impact:
+          "Deserialisasi payload menggunakan node-serialize / unserialize dapat mengeksekusi IIFE (Immediately Invoked Function Expression) yang berujung pada Remote Code Execution (node2shell).",
+        fix: "Gunakan JSON.parse murni dengan validasi skema (Zod/Joi) dan hapus pustaka node-serialize.",
+        cwe: "CWE-502",
+        rce: true,
+        category: "node2shell",
+      };
+    }
+    if (s.type === "node2shell_prototype_pollution") {
+      return {
+        id: newId(),
+        severity: toLegacySeverity(s.severity),
+        title: `[node2shell] Kandidat Prototype Pollution (__proto__ / prototype)`,
+        endpoint: sourceLabel,
+        evidence: s.evidence,
+        impact:
+          "Manipulasi properti __proto__ atau constructor.prototype tanpa filter dapat mencemari Object.prototype global, menyebabkan DOM XSS di browser atau RCE gadget chain di Node.js (node2shell).",
+        fix: "Blokir kunci '__proto__', 'constructor', dan 'prototype' saat melakukan deep merge/clone objek, atau gunakan Map / Object.create(null).",
+        cwe: "CWE-1321",
+        category: "node2shell",
+      };
+    }
+    if (s.type === "node_oob_buffer") {
+      return {
+        id: newId(),
+        severity: toLegacySeverity(s.severity),
+        title: `[Node Out-of-Bounds] Alokasi Buffer / TypedArray rawan OOB (${s.type})`,
+        endpoint: sourceLabel,
+        evidence: s.evidence,
+        impact:
+          "Penggunaan Buffer.allocUnsafe, konstruktor new Buffer(size) usang, atau pembacaan byteOffset DataView tanpa validasi batas dapat membocorkan memori internal (Out-of-Bounds Read CWE-125) atau korupsi memori (CWE-119/CWE-787).",
+        fix: "Gunakan Buffer.alloc() (otomatis zero-filled) atau Buffer.from(), dan selalu validasi batas panjang & offset sebelum mengakses TypedArray/DataView.",
+        cwe: "CWE-119, CWE-125",
+        category: "node-oob",
+      };
+    }
+    if (s.type === "wp2shell_admin_ajax") {
+      return {
+        id: newId(),
+        severity: toLegacySeverity(s.severity),
+        title: `[wp2shell] Endpoint WordPress admin-ajax / nopriv hook terdeteksi`,
+        endpoint: sourceLabel,
+        evidence: s.evidence,
+        impact:
+          "Rute /wp-admin/admin-ajax.php atau action wp_ajax_nopriv_ sering menjadi vektor utama kerentanan plugin WordPress (SQLi, Arbitrary File Upload, Privilege Escalation -> wp2shell).",
+        fix: "Pastikan setiap handler AJAX WordPress memverifikasi nonce (check_ajax_referer) dan kapabilitas pengguna (current_user_can).",
+        cwe: "CWE-284",
+        category: "wp2shell",
+      };
+    }
+
+    return {
+      id: newId(),
+      severity: toLegacySeverity(s.severity),
+      title: `Potensi DOM XSS sink: ${s.type}`,
+      endpoint: sourceLabel,
+      evidence: s.evidence,
+      impact:
+        "Sink DOM ini bisa jadi vektor XSS kalau data yang masuk berasal dari sumber yang bisa dikontrol pengguna (URL, postMessage, dsb) tanpa sanitasi. Deteksi ini regex pattern-matching di source, bukan bukti exploitability — wajib direview manual.",
+      fix: "Review kode di sekitar sink ini. Ganti innerHTML/outerHTML/document.write dengan textContent atau sanitizer (mis. DOMPurify), hindari eval/setTimeout dengan argumen string, dan validasi/encode nilai dari location.hash atau location.search sebelum dipakai.",
+      cwe: "CWE-79",
+      category: "dom-xss-sink",
+    };
+  });
 }
 
 /** redirectChecker.detectRedirectParams() -> Finding[] (kandidat, belum di-fetch). */
 export function redirectCasesToFindings(cases: TestCase[]): Finding[] {
-  return cases.map((c) => ({
-    id: newId(),
-    severity: toLegacySeverity(c.severity),
-    title:
-      c.type === "SSRF"
-        ? `Kandidat SSRF via query param "${c.param}"`
-        : `Kandidat Open Redirect via query param "${c.param}"`,
-    endpoint: c.originalUrl,
-    evidence: c.evidence,
-    impact:
-      c.type === "SSRF"
-        ? "Kalau server benar-benar melakukan fetch balik ke nilai param ini tanpa validasi, endpoint berpotensi disalahgunakan untuk SSRF ke resource internal / cloud metadata endpoint."
-        : "Kalau server melakukan redirect ke nilai param ini tanpa whitelist, endpoint berpotensi disalahgunakan untuk phishing (redirect ke domain attacker yang terlihat berasal dari domain tepercaya).",
-    fix:
-      c.type === "SSRF"
-        ? "Whitelist domain/IP tujuan yang boleh di-fetch server, blok range IP internal & metadata endpoint (169.254.169.254) di level aplikasi/network."
-        : "Validasi nilai redirect terhadap whitelist domain internal, atau pakai mapping id -> URL alih-alih menerima URL bebas dari user.",
-    poc: `Kandidat test case (belum dieksekusi — perlu izin eksplisit sebelum dijalankan): ganti param "${c.param}" jadi \`${c.payload}\` lalu cek header Location / perilaku response.`,
-    cwe: c.type === "SSRF" ? "CWE-918" : "CWE-601",
-    category: c.type === "SSRF" ? "ssrf" : "open-redirect",
-  }));
+  return cases.map((c) => {
+    if (c.type === "NODE_OOB") {
+      return {
+        id: newId(),
+        severity: toLegacySeverity(c.severity),
+        title: `[Node Out-of-Band / OOB] Kandidat interaksi eksternal via param "${c.param}"`,
+        endpoint: c.originalUrl,
+        evidence: c.evidence,
+        impact:
+          "Parameter callback/webhook/pingback/xml/uri yang diproses server tanpa allowlist dapat memicu interaksi Out-of-Band (OOB SSRF, Blind XXE, atau kebocoran token ke host eksternal).",
+        fix: "Terapkan allowlist domain tujuan secara ketat, matikan resolusi external entity pada parser XML, dan blokir akses ke IP privat/metadata cloud.",
+        poc: `Analisis pasif (tidak dieksekusi otomatis): periksa apakah parameter "${c.param}" melakukan HTTP/DNS lookup ke host eksternal.`,
+        cwe: "CWE-918, CWE-611",
+        category: "node-oob",
+      };
+    }
+
+    if (c.type === "SHELL_SURFACE") {
+      return {
+        id: newId(),
+        severity: toLegacySeverity(c.severity),
+        title: `[Shell Surface] Kandidat parameter sensitif "${c.param}" (wp2shell/php2shell/node2shell/py2shell/go2shell)`,
+        endpoint: c.originalUrl,
+        evidence: c.evidence,
+        impact:
+          "Parameter dengan nama seperti cmd/exec/shell/code/template/file/include berisiko tinggi terhadap Command Injection, Code Injection, SSTI, atau LFI/RFI jika diteruskan ke interpreter sistem.",
+        fix: "Jangan pernah meneruskan nilai query parameter langsung ke fungsi eksekusi shell/eval/include; gunakan pemetaan statis (allowlist key) di sisi server.",
+        poc: `Analisis pasif (tidak dieksekusi otomatis): audit handler backend untuk parameter "${c.param}" guna memastikan tidak ada pemanggilan shell/eval/file inclusion dinamis.`,
+        cwe: "CWE-78, CWE-94, CWE-98",
+        rce: true,
+        category: "rce-surface",
+      };
+    }
+
+    return {
+      id: newId(),
+      severity: toLegacySeverity(c.severity),
+      title:
+        c.type === "SSRF"
+          ? `Kandidat SSRF via query param "${c.param}"`
+          : `Kandidat Open Redirect via query param "${c.param}"`,
+      endpoint: c.originalUrl,
+      evidence: c.evidence,
+      impact:
+        c.type === "SSRF"
+          ? "Kalau server benar-benar melakukan fetch balik ke nilai param ini tanpa validasi, endpoint berpotensi disalahgunakan untuk SSRF ke resource internal / cloud metadata endpoint."
+          : "Kalau server melakukan redirect ke nilai param ini tanpa whitelist, endpoint berpotensi disalahgunakan untuk phishing (redirect ke domain attacker yang terlihat berasal dari domain tepercaya).",
+      fix:
+        c.type === "SSRF"
+          ? "Whitelist domain/IP tujuan yang boleh di-fetch server, blok range IP internal & metadata endpoint (169.254.169.254) di level aplikasi/network."
+          : "Validasi nilai redirect terhadap whitelist domain internal, atau pakai mapping id -> URL alih-alih menerima URL bebas dari user.",
+      poc: `Kandidat test case (belum dieksekusi — perlu izin eksplisit sebelum dijalankan): ganti param "${c.param}" jadi \`${c.payload}\` lalu cek header Location / perilaku response.`,
+      cwe: c.type === "SSRF" ? "CWE-918" : "CWE-601",
+      category: c.type === "SSRF" ? "ssrf" : "open-redirect",
+    };
+  });
 }
 
 /** idorDetector.generateIdorCases() -> Finding[], di-dedup 1 baris per originalUrl. */

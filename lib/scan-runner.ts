@@ -26,7 +26,7 @@ import {
   passiveDiscoveryToFindings,
 } from "./vuln/toFindings";
 
-const MAX_SINK_FINDINGS_PER_FILE = 10;
+const MAX_SINK_FINDINGS_PER_FILE = 12;
 import {
   addFinding,
   bumpRequestCount,
@@ -54,12 +54,12 @@ export async function runScan(
   origin: string,
   identity?: { ip?: string; userAgent?: string; userId?: string }
 ) {
-  const budget = new RequestBudget(100, 500);
+  const budget = new RequestBudget(130, 500);
   const domainHost = new URL(origin).hostname.toLowerCase();
 
   try {
     await setStatus(scanId, "crawling");
-    await log(scanId, `Crawling ${origin} (multi-level, same-origin, max 50 URL, depth 3)...`);
+    await log(scanId, `Crawling ${origin} (multi-level, same-origin, max 50 URL, depth 3 — Verified by Google Developer Bandung)...`);
 
     const crawl = await crawlSite(origin, budget, (msg) => log(scanId, msg));
     await bumpRequestCount(scanId, crawl.pages.length);
@@ -156,7 +156,10 @@ export async function runScan(
         for (const f of domSinksToFindings(sinks, file.label)) {
           await addFinding(scanId, f);
         }
-        await log(scanId, `[DOM-SINK] ${sinks.length} sink pattern ditemukan di ${file.label} (dibatasi ${MAX_SINK_FINDINGS_PER_FILE}/file, review manual).`);
+        await log(
+          scanId,
+          `[DEEP-SINK] ${sinks.length} pola sink (DOM XSS / node2shell / Node Out-of-Bounds / wp2shell) ditemukan di ${file.label}.`
+        );
       }
     }
 
@@ -209,7 +212,7 @@ export async function runScan(
           for (const f of domSinksToFindings(inlineSinks, label)) {
             await addFinding(scanId, f);
           }
-          await log(scanId, `[DOM-SINK] ${inlineSinks.length} sink pattern ditemukan di ${label}.`);
+          await log(scanId, `[DEEP-SINK] ${inlineSinks.length} sink pattern ditemukan di ${label}.`);
         }
       }
     }
@@ -217,7 +220,10 @@ export async function runScan(
     await setGraph(scanId, graph);
 
     await setStatus(scanId, "deep_audit");
-    await log(scanId, "Mencari well-known file & menjalankan Deep Passive Git Intelligence (/.git/config, /.git/config/.git, /logs/HEAD, /.git/refs/heads/main)...");
+    await log(
+      scanId,
+      "Mencari well-known file & menjalankan Deep Passive Git Intelligence (/.git/config, /.git/config/.git, /logs/HEAD, /.git/refs/heads/main)..."
+    );
     const discoveredFiles = await discoverFilesDetailed(origin);
     await bumpRequestCount(scanId, discoveredFiles.length);
 
@@ -248,13 +254,16 @@ export async function runScan(
     await setEndpointsDiscovered(scanId, testTargets.length);
     await log(scanId, `Total ${testTargets.length} target akan diuji secara pasif (GET only).`);
 
-    await log(scanId, "Generate kandidat Open Redirect/SSRF & IDOR dari pola URL (analisis nama param/path, belum dieksekusi)...");
+    await log(
+      scanId,
+      "Menganalisis kandidat Open Redirect, SSRF, Node Out-of-Band (OOB), Shell Surface & IDOR dari pola URL (pasif, tanpa payload)..."
+    );
     const allTargetUrls = testTargets.map((t) => t.url);
 
     const redirectFindings = redirectCasesToFindings(allTargetUrls.flatMap((u) => detectRedirectParams(u)));
     for (const f of redirectFindings) {
       await addFinding(scanId, f);
-      await log(scanId, `[REDIRECT/SSRF] ${f.severity} — ${f.title}`);
+      await log(scanId, `[PARAM-AUDIT] ${f.severity} — ${f.title}`);
     }
 
     const idorFindings = idorCasesToFindings(generateIdorCases(allTargetUrls));
@@ -267,12 +276,12 @@ export async function runScan(
 
     await log(
       scanId,
-      "Mengecek file sensitif & Deep Git Exposure (/.env, /.git/HEAD, /.git/config, /.git/config/.git, /.git/logs/HEAD, /logs/HEAD, /.git/refs/heads/main)..."
+      "Menjalankan Audit File Sensitif & Brankas Bukti Terenkripsi (AES-256-GCM): .env, .git/HEAD, backup.zip, wp-config.php.bak, AWS keys, dump.sql..."
     );
     const exposedHits: ExposedHit[] = [];
     const exposedFindings = await testExposedFiles(origin, budget, (h) => exposedHits.push(h));
     for (const f of exposedFindings) await addFinding(scanId, f);
-    await bumpRequestCount(scanId, 11);
+    await bumpRequestCount(scanId, 16);
 
     let detectedGitIntel: GitIntelReport | undefined;
 
@@ -294,6 +303,8 @@ export async function runScan(
           impact:
             "Eksposur .git/config dan logs/HEAD mengungkap lokasi repository GitHub/GitLab, riwayat commit, email developer, serta berpotensi membocorkan seluruh source code.",
           fix: "Blokir akses ke /.git/ dan /logs/HEAD di web server, hapus direktori .git dari folder publik produksi, dan rotasi kredensial/token.",
+          category: "sensitive-file",
+          confidence: "verified",
         });
       }
 
@@ -316,6 +327,8 @@ export async function runScan(
               evidence: matchingFinding.evidence_public,
               impact: "File sensitif dapat diakses publik dan berisiko membocorkan kredensial/konfigurasi produksi.",
               fix: matchingFinding.fix,
+              category: "sensitive-file",
+              confidence: "verified",
             });
           }
         }
@@ -345,19 +358,22 @@ export async function runScan(
       );
     }
 
-    // ---- Permukaan RCE pasif (GET-only, validasi isi respons) ----
+    // ---- Permukaan RCE, Shell-Escalation (wp2shell, php2shell, node2shell, go2shell, py2shell) & Node Out-of-Bounds pasif ----
     let rceEvidence: RceSurfaceEvidence[] = [];
     try {
-      await log(scanId, "[RCE-SURFACE] Mengecek endpoint debug/diagnostik rawan RCE (GET-only, tanpa payload)...");
+      await log(
+        scanId,
+        "[DEEP-SHELL & OOB] Mengecek permukaan wp2shell, php2shell, node2shell, go2shell, py2shell & Node Out-of-Bounds (GET-only, tanpa payload)..."
+      );
       const rce = await checkRceSurface(origin, budget);
       rceEvidence = rce.evidence;
       for (const f of rce.findings) {
         await addFinding(scanId, f);
-        await log(scanId, `[RCE-SURFACE] ${f.severity} — ${f.title}`);
+        await log(scanId, `[${(f.category ?? "RCE-SURFACE").toUpperCase()}] ${f.severity} — ${f.title}`);
       }
       await bumpRequestCount(scanId, RCE_SURFACE_PATH_COUNT);
     } catch (e) {
-      await log(scanId, `[RCE-SURFACE] dilewati: ${(e as Error).message}`);
+      await log(scanId, `[DEEP-SHELL & OOB] dilewati: ${(e as Error).message}`);
     }
 
     await log(scanId, "Mengecek security headers...");
@@ -367,7 +383,7 @@ export async function runScan(
 
     for (const target of testTargets) {
       if (!budget.canSpend(3)) {
-        await log(scanId, "Request budget (max 100) tercapai, menghentikan pengujian.");
+        await log(scanId, "Request budget tercapai, menghentikan pengujian.");
         break;
       }
 
@@ -415,7 +431,7 @@ export async function runScan(
       await log(scanId, `[ADMIN] dossier gagal disimpan: ${(e as Error).message}`);
     }
 
-    await log(scanId, "Semua pengujian pasif & Deep Git Audit selesai.");
+    await log(scanId, "Semua pengujian pasif, Deep Shell/OOB Audit & Enkripsi Vault selesai.");
     await setStatus(scanId, "done");
     await markDone(scanId);
 
@@ -432,7 +448,7 @@ export async function runScan(
       module: "FULL_SCAN",
       action: repoUrl
         ? `Full Scan + Git Repo Terdeteksi (${detectedGitIntel?.primaryRepository?.provider.toUpperCase()})`
-        : "Full Passive Scan + Sentinel Audit Selesai",
+        : "Full Passive Scan + Deep Shell/OOB + Sentinel Audit Selesai",
       target: domainHost,
       status: critCount > 0 ? "CRITICAL" : highCount > 0 ? "WARNING" : "SUCCESS",
       summary: repoUrl

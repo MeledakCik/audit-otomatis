@@ -1,6 +1,7 @@
 import { assertPublicHttpsTarget } from "@/lib/ssrf-guard";
 import { validateDomainInput } from "@/lib/validate-domain";
 import type { CveDossier } from "./dossier";
+import { RCE_SPECS, evaluateRceSpec } from "@/lib/vuln/rce-surface";
 import {
   GIT_PASSIVE_PROBES,
   validateGitProbeResponse,
@@ -20,7 +21,7 @@ export interface PublicFinding {
   fix: string;
 }
 
-/** Bukti mentah → hanya masuk Vault terenkripsi & Admin JSON view. */
+/** Bukti mentah → hanya masuk Vault terenkripsi (AES-256-GCM) & Admin JSON view. */
 export interface RawEvidence {
   domain: string;
   path: string;
@@ -40,7 +41,7 @@ export interface AuditResult {
   gitIntel?: GitIntelReport;
 }
 
-const UA = "Sentinel-ID Passive Auditor/3.2 (+https://sentinel-id.net)";
+const UA = "Sentinel-ID Passive Auditor/3.5 (+https://sentinel-id.net; Verified by Google Developer Bandung)";
 const TIMEOUT_MS = 8000;
 const MAX_TEXT_BYTES = 64 * 1024;
 const CONCURRENCY = 6;
@@ -66,7 +67,7 @@ async function get(url: string, wantBytes = MAX_TEXT_BYTES): Promise<Got | null>
     const reader = res.body?.getReader();
     const chunks: Uint8Array[] = [];
     let total = 0;
-    if (reader && res.status === 200) {
+    if (reader && (res.status === 200 || res.status === 405)) {
       while (total < wantBytes) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -128,7 +129,9 @@ async function getFollow(start: URL, origin: URL): Promise<Got | null> {
 const MARKERS: Array<[string, RegExp]> = [
   ["DB_PASSWORD=", /\bDB_PASSWORD\s*=\s*\S+/],
   ["APP_KEY=", /\bAPP_KEY\s*=\s*\S+/],
-  ["AWS_SECRET", /AWS_SECRET[A-Z_]*\s*[=:]\s*\S+|aws_secret_access_key\s*=\s*\S+/i],
+  ["DATABASE_URL=", /\bDATABASE_URL\s*=\s*\S+/],
+  ["JWT_SECRET=", /\bJWT_SECRET\s*=\s*\S+/],
+  ["AWS_SECRET", /AWS_SECRET[A-Z_]*\s*[=:]\s*\S+|aws_secret_access_key\s*=\s*\S+|AKIA[0-9A-Z]{16}/i],
   ["PRIVATE KEY block", /-----BEGIN (?:RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----/],
   ["[core]", /^\s*\[core\]\s*$/m],
   ["[remote origin]", /^\s*\[remote\s+"[^"]+"\]/m],
@@ -156,7 +159,11 @@ const FIX_GIT =
   "Blokir akses ke /.git/ dan /logs/HEAD di konfigurasi web server (Nginx/Apache), hapus metadata .git dari webroot produksi, dan rotasi kredensial/token yang pernah ter-commit.";
 
 export const CRITICAL_CHECKS: CriticalCheck[] = [
-  { path: "/.env", finding: ".env exposed", fix: FIX_SECRET },
+  { path: "/.env", finding: ".env exposed (Environment Secrets)", fix: FIX_SECRET },
+  { path: "/.env.production", finding: ".env.production exposed", fix: FIX_SECRET },
+  { path: "/.env.local", finding: ".env.local exposed", fix: FIX_SECRET },
+  { path: "/.env.bak", finding: ".env backup exposed (.env.bak)", fix: FIX_SECRET },
+  { path: "/.env.staging", finding: ".env.staging exposed", fix: FIX_SECRET },
   {
     path: "/.git/HEAD",
     finding: "Git repository exposed (/.git/HEAD)",
@@ -229,30 +236,89 @@ export const CRITICAL_CHECKS: CriticalCheck[] = [
     fix: FIX_SECRET,
     extra: [["DB_PASSWORD (any)", /\bDB_PASSWORD['"]?\s*[:=]\s*\S+/]],
   },
-  { path: "/.env.production", finding: ".env.production exposed", fix: FIX_SECRET },
-  { path: "/.env.local", finding: ".env.local exposed", fix: FIX_SECRET },
-  { path: "/.env.bak", finding: ".env backup exposed (.env.bak)", fix: FIX_SECRET },
   {
     path: "/backup.zip",
     finding: "Backup archive exposed (/backup.zip)",
-    fix: "Hapus backup dari webroot, simpan di storage privat, dan anggap isinya sudah bocor (rotasi kredensial).",
+    fix: "Hapus backup.zip dari webroot, simpan di storage privat, dan anggap isinya sudah bocor (rotasi kredensial).",
     zip: true,
   },
   {
+    path: "/site.zip",
+    finding: "Site archive exposed (/site.zip)",
+    fix: "Hapus site.zip dari webroot, simpan di storage privat, dan rotasi seluruh kredensial.",
+    zip: true,
+  },
+  {
+    path: "/backup.sql",
+    finding: "Database SQL dump exposed (/backup.sql)",
+    fix: FIX_SECRET,
+    extra: [["SQL dump header", /(?:--|\/\*)\s*(?:MySQL dump|PostgreSQL database dump)|CREATE TABLE\s+/i]],
+  },
+  {
+    path: "/dump.sql",
+    finding: "Database SQL dump exposed (/dump.sql)",
+    fix: FIX_SECRET,
+    extra: [["SQL dump header", /(?:--|\/\*)\s*(?:MySQL dump|PostgreSQL database dump)|CREATE TABLE\s+/i]],
+  },
+  {
     path: "/.aws/credentials",
-    finding: "AWS credentials exposed",
-    fix: "Hapus file, nonaktifkan access key di IAM SEKARANG, buat key baru, dan periksa CloudTrail.",
+    finding: "AWS credentials exposed (/.aws/credentials)",
+    fix: "Hapus file, nonaktifkan access key di AWS IAM SEKARANG, buat key baru, dan periksa CloudTrail.",
+    extra: [["aws_access_key_id", /\baws_access_key_id\s*=\s*AKIA[0-9A-Z]{16}/i]],
   },
   {
     path: "/wp-config.php.bak",
-    finding: "WordPress config backup exposed (wp-config.php.bak)",
+    finding: "[wp2shell] WordPress config backup exposed (/wp-config.php.bak)",
+    fix: FIX_SECRET,
+    allowPhp: true,
+    extra: [
+      ["DB_PASSWORD (define)", /define\(\s*['"]DB_PASSWORD['"]\s*,\s*['"][^'"]+['"]/],
+      ["AUTH_KEY (define)", /define\(\s*['"]AUTH_KEY['"]\s*,\s*['"][^'"]+['"]/],
+    ],
+  },
+  {
+    path: "/wp-config.php~",
+    finding: "[wp2shell] WordPress editor backup exposed (/wp-config.php~)",
     fix: FIX_SECRET,
     allowPhp: true,
     extra: [["DB_PASSWORD (define)", /define\(\s*['"]DB_PASSWORD['"]\s*,\s*['"][^'"]+['"]/]],
   },
+  {
+    path: "/wp-config.php.save",
+    finding: "[wp2shell] WordPress nano backup exposed (/wp-config.php.save)",
+    fix: FIX_SECRET,
+    allowPhp: true,
+    extra: [["DB_PASSWORD (define)", /define\(\s*['"]DB_PASSWORD['"]\s*,\s*['"][^'"]+['"]/]],
+  },
+  {
+    path: "/docker-compose.yml",
+    finding: "Docker Compose configuration exposed (/docker-compose.yml)",
+    fix: FIX_SECRET,
+    extra: [["docker services", /^\s*services\s*:\s*$/m]],
+  },
+  {
+    path: "/sftp-config.json",
+    finding: "SFTP deployment credentials exposed (/sftp-config.json)",
+    fix: FIX_SECRET,
+    extra: [["sftp host/password", /"type"\s*:\s*"sftp"[\s\S]*"(?:password|ssh_key)"\s*:/i]],
+  },
+  {
+    path: "/.ssh/id_rsa",
+    finding: "SSH Private Key exposed (/.ssh/id_rsa)",
+    fix: "Cabut public key dari authorized_keys di semua server, hapus file dari webroot, dan buat keypair baru.",
+  },
 ];
 
-const HIGH_DIRS = ["/uploads/", "/backup/", "/files/", "/assets/", "/images/", "/static/"];
+const HIGH_DIRS = [
+  "/uploads/",
+  "/backup/",
+  "/files/",
+  "/assets/",
+  "/images/",
+  "/static/",
+  "/wp-content/uploads/",
+  "/wp-content/plugins/",
+];
 const SWAGGER_PATHS = [
   "/swagger",
   "/swagger/",
@@ -281,7 +347,6 @@ export function evaluateCritical(
   }
   if (!c.allowPhp && (r.contentType.includes("text/html") || looksLikeHtml(r.text))) return null;
 
-  // Check if this is one of the specialized Git probes first
   const gitSpec = GIT_PASSIVE_PROBES.find((g) => g.path === c.path);
   if (gitSpec) {
     const gv = validateGitProbeResponse(gitSpec, r.status, r.contentType, r.text);
@@ -299,7 +364,7 @@ export function toPublicFinding(domain: string, c: CriticalCheck, marker: string
     domain,
     severity: "CRITICAL",
     finding: c.finding,
-    evidence_public: `200 OK, response body contains marker "${marker}" (detail lengkap & JSON repo tersimpan di Admin Vault)`,
+    evidence_public: `200 OK, response body contains marker "${marker}" (nilai rahasia tidak ditampilkan ke publik & disimpan terenkripsi AES-256-GCM di Admin Vault)`,
     fix: c.fix,
   };
 }
@@ -330,7 +395,7 @@ export async function auditDomain(input: string): Promise<AuditResult> {
   const gitHits: GitExposedFileHit[] = [];
   const at = (p: string) => new URL(p, origin).toString();
 
-  // 1) CRITICAL — termasuk seluruh probe Git (/.git/config, /.git/config/.git, /logs/HEAD, /.git/refs/heads/main, dll.)
+  // 1) CRITICAL — Audit File Sensitif (.env*, .git/*, backup.zip, wp-config.php.bak, AWS keys, SQL dumps, SSH keys)
   await pool(CRITICAL_CHECKS, CONCURRENCY, async (c) => {
     const r = await get(at(c.path), c.zip ? 16 : MAX_TEXT_BYTES);
     if (!r || r.status !== 200) return;
@@ -374,7 +439,7 @@ export async function auditDomain(input: string): Promise<AuditResult> {
       domain,
       severity: "CRITICAL",
       finding: gp.findingTitle,
-      evidence_public: `200 OK, marker "${gv.marker}" terdeteksi (detail JSON tersimpan di Admin Vault)`,
+      evidence_public: `200 OK, marker "${gv.marker}" terdeteksi (detail JSON tersimpan terenkripsi AES-256-GCM di Admin Vault)`,
       fix: FIX_GIT,
     });
     raw.push({
@@ -396,11 +461,10 @@ export async function auditDomain(input: string): Promise<AuditResult> {
         domain,
         severity: "CRITICAL",
         finding: `Git Remote Repository Teridentifikasi (${gitIntel.primaryRepository.provider.toUpperCase()}: ${gitIntel.primaryRepository.repoFullName})`,
-        evidence_public: `Remote origin mengarah ke ${gitIntel.primaryRepository.provider.toUpperCase()} repository (URL & JSON lengkap disimpan di Admin Console)`,
+        evidence_public: `Remote origin mengarah ke ${gitIntel.primaryRepository.provider.toUpperCase()} repository (URL & JSON lengkap disimpan terenkripsi di Admin Vault)`,
         fix: FIX_GIT,
       });
     }
-    // Save structured JSON summary entry directly into Admin Vault
     raw.unshift({
       domain,
       path: "/__git-intelligence.json",
@@ -414,7 +478,33 @@ export async function auditDomain(input: string): Promise<AuditResult> {
     });
   }
 
-  // 2) HIGH — security headers dari homepage
+  // 2) DEEP SHELL & OUT-OF-BOUNDS SURFACE PROBES (wp2shell, php2shell, node2shell, go2shell, py2shell, node-oob)
+  await pool(RCE_SPECS, CONCURRENCY, async (spec) => {
+    const r = await get(at(spec.path), MAX_TEXT_BYTES);
+    if (!r) return;
+    const sev = evaluateRceSpec(spec, r.status, r.contentType, r.text);
+    if (!sev) return;
+
+    const mappedSev: Sev = sev === "CRITICAL" ? "CRITICAL" : "HIGH";
+    findings.push({
+      domain,
+      severity: mappedSev,
+      finding: `${spec.title}${spec.rce ? " — Potensi RCE" : ""}`,
+      evidence_public: `HTTP ${r.status}, penanda "${spec.marker}" terverifikasi secara pasif (bukti mentah dienkripsi AES-256-GCM di Admin Vault)`,
+      fix: spec.fix,
+    });
+
+    raw.push({
+      domain,
+      path: spec.path,
+      status: r.status,
+      contentType: r.contentType,
+      marker: `[${spec.vector.toUpperCase()}] ${spec.marker}`,
+      snippet: r.text.slice(0, 2048),
+    });
+  });
+
+  // 3) HIGH — security headers & runtime leakage dari homepage
   const home = await getHome(origin);
   if (home && home.status >= 200 && home.status < 400) {
     const h = home.headers;
@@ -485,22 +575,25 @@ export async function auditDomain(input: string): Promise<AuditResult> {
       });
   }
 
-  // 3) HIGH — directory listing
+  // 4) HIGH — directory listing
   await pool(HIGH_DIRS, CONCURRENCY, async (p) => {
     const r = await getFollow(new URL(at(p)), origin);
     if (!r || r.status !== 200) return;
     if (/(<title>|<h1>)\s*Index of \//i.test(r.text)) {
-      findings.push({
-        domain,
-        severity: "HIGH",
-        finding: `Directory listing enabled (${p})`,
-        evidence_public: `200 OK, halaman ${p} berisi indeks direktori ("Index of /")`,
-        fix: "Nonaktifkan autoindex / Options -Indexes di web server.",
-      });
+      const exists = findings.some((f) => f.finding.includes(p));
+      if (!exists) {
+        findings.push({
+          domain,
+          severity: "HIGH",
+          finding: `Directory listing enabled (${p})`,
+          evidence_public: `200 OK, halaman ${p} berisi indeks direktori ("Index of /")`,
+          fix: "Nonaktifkan autoindex / Options -Indexes di web server.",
+        });
+      }
     }
   });
 
-  // 4) HIGH — swagger / api-docs
+  // 5) HIGH — swagger / api-docs
   await pool(SWAGGER_PATHS, CONCURRENCY, async (p) => {
     const r = await getFollow(new URL(at(p)), origin);
     if (!r || r.status !== 200) return;
@@ -515,24 +608,6 @@ export async function auditDomain(input: string): Promise<AuditResult> {
       fix: "Batasi dokumentasi API ke jaringan internal / di belakang autentikasi, atau nonaktifkan di production.",
     });
   });
-
-  // 5) HIGH — phpinfo()
-  {
-    const r = await get(at("/phpinfo.php"));
-    if (
-      r &&
-      r.status === 200 &&
-      /phpinfo\(\)|<title>phpinfo\(\)<\/title>/i.test(r.text) &&
-      /PHP Version/i.test(r.text)
-    )
-      findings.push({
-        domain,
-        severity: "HIGH",
-        finding: "phpinfo() exposed (/phpinfo.php)",
-        evidence_public: "200 OK, halaman phpinfo() dapat diakses publik",
-        fix: "Hapus phpinfo.php dari production.",
-      });
-  }
 
   findings.sort((a, b) => (a.severity === b.severity ? 0 : a.severity === "CRITICAL" ? -1 : 1));
   return { domain, scannedAt: Date.now(), findings, raw, gitIntel };

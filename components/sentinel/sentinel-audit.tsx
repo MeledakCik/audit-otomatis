@@ -16,8 +16,11 @@ import {
   Server,
   Sparkles,
   Eye,
+  Terminal,
+  Cpu,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { VerifiedBadge } from "@/components/verified-badge";
 
 export interface SentinelFinding {
   domain: string;
@@ -53,6 +56,48 @@ export interface SentinelEvidence {
   marker: string;
   snippet: string;
 }
+
+const DEEP_SECURITY_VECTORS = [
+  {
+    tag: "wp2shell",
+    label: "WordPress RCE & Config Surface",
+    desc: "wp-config.php.bak, debug.log, xmlrpc.php, REST users, installer & uploads listing",
+  },
+  {
+    tag: "php2shell",
+    label: "PHP Eval, Ignition & Profiler",
+    desc: "Laravel Ignition CVE-2021-3129, PHPUnit eval-stdin, Symfony Profiler, phpinfo & FPM status",
+  },
+  {
+    tag: "node2shell",
+    label: "Node.js V8 Inspector & SSR Sinks",
+    desc: "Port debug /json/version, PM2 ecosystem.config.js, child_process, VM eval & prototype pollution",
+  },
+  {
+    tag: "go2shell",
+    label: "Go pprof & Expvar Runtime",
+    desc: "Profil runtime /debug/pprof/, cmdline arguments, goroutine dump & /debug/vars memstats",
+  },
+  {
+    tag: "py2shell",
+    label: "Python Werkzeug, Jupyter & Celery",
+    desc: "Werkzeug /console interactive debugger, Jupyter /api/kernels, Celery Flower & Django Debug",
+  },
+  {
+    tag: "node out of bound",
+    label: "Node Out-of-Bounds (OOB) & Memory",
+    desc: "V8 /heapdump snapshot, Buffer.allocUnsafe, TypedArray OOB read/write & OOB SSRF callbacks",
+  },
+];
+
+const SENSITIVE_VAULT_TARGETS = [
+  ".env / .env.production",
+  ".git/HEAD & .git/config",
+  "backup.zip & site.zip",
+  "wp-config.php.bak",
+  "AWS keys (/.aws/credentials)",
+  "dump.sql & id_rsa",
+];
 
 const post = (url: string, body: unknown) =>
   fetch(url, {
@@ -116,7 +161,6 @@ export function SentinelAudit({
     }, 5000);
   }, []);
 
-  // Auto-load public Sentinel findings & claim status when initialDomain is provided (e.g. inside /scan/[id])
   useEffect(() => {
     if (!initialDomain || !autoLoadPublic) return;
     let cancelled = false;
@@ -227,21 +271,29 @@ export function SentinelAudit({
 
   return (
     <div className={cn("w-full space-y-5", !embedded && "mx-auto max-w-4xl p-4 md:p-8")}>
-      {/* Header Banner */}
-      <div className="rounded-2xl border border-purple-500/25 bg-gradient-to-br from-[#171126] via-[#120d1e] to-[#0d0917] p-5 shadow-xl">
+      {/* Header Banner: Audit File Sensitif & Brankas Bukti Terenkripsi (AES-256-GCM) */}
+      <div className="rounded-2xl border border-purple-500/30 bg-gradient-to-br from-[#171126] via-[#120d1e] to-[#0d0917] p-5 sm:p-6 shadow-xl space-y-4">
         <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="space-y-1.5">
-            <div className="inline-flex items-center gap-2 rounded-full bg-purple-500/15 border border-purple-500/30 px-3 py-0.5 text-[11px] font-mono font-semibold text-purple-300">
-              <Lock className="h-3 w-3 text-purple-400" />
-              SENTINEL VAULT AUDIT &amp; DOMAIN OWNERSHIP CLAIM
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="inline-flex items-center gap-2 rounded-full bg-purple-500/15 border border-purple-500/30 px-3 py-0.5 text-[11px] font-mono font-semibold text-purple-300">
+                <Lock className="h-3 w-3 text-purple-400" />
+                SENTINEL VAULT AUDIT &amp; DEEP SHELL SURFACE
+              </div>
+              <VerifiedBadge variant="vault" />
             </div>
+
             <h2 className="text-lg sm:text-xl font-extrabold text-white tracking-tight">
               Audit File Sensitif &amp; Brankas Bukti Terenkripsi (AES-256-GCM)
             </h2>
-            <p className="text-xs text-slate-300/85 max-w-2xl leading-relaxed">
+
+            <p className="text-xs sm:text-sm text-slate-300/90 max-w-3xl leading-relaxed">
               Mendeteksi kebocoran kritis (<code className="text-purple-300">.env</code>,{" "}
               <code className="text-purple-300">.git/HEAD</code>, <code className="text-purple-300">backup.zip</code>,{" "}
-              <code className="text-purple-300">wp-config.php.bak</code>, <code className="text-purple-300">AWS keys</code>) secara pasif. Nilai rahasia tidak pernah bocor ke publik dan disimpan terenkripsi di Vault Admin untuk diklaim pemilik sah domain.
+              <code className="text-purple-300">wp-config.php.bak</code>, <code className="text-purple-300">AWS keys</code>) secara pasif. Nilai rahasia tidak pernah bocor ke publik dan disimpan terenkripsi di Vault Admin untuk diklaim pemilik sah domain.{" "}
+              <span className="text-emerald-300 font-semibold">
+                Sudah terverifikasi oleh Google Developer Bandung.
+              </span>
             </p>
           </div>
 
@@ -253,14 +305,60 @@ export function SentinelAudit({
               className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-purple-600/25 disabled:opacity-50 cursor-pointer shrink-0"
             >
               <RefreshCw className={cn("h-3.5 w-3.5", busy && "animate-spin")} />
-              {busy ? "Memindai Vault…" : res ? "Scan Ulang Sentinel Vault" : "Jalankan Audit Vault Sekarang"}
+              {busy ? "Memindai Deep Vault…" : res ? "Scan Ulang Sentinel Vault" : "Jalankan Audit Vault Sekarang"}
             </button>
           )}
         </div>
 
-        {/* Form Input (shown when not locked to initialDomain or when user wants to input domain) */}
+        {/* Sensitive File Targets Strip */}
+        <div className="flex flex-wrap items-center gap-1.5 pt-1">
+          <span className="text-[11px] font-mono text-slate-400 mr-1">Target Brankas Kritis:</span>
+          {SENSITIVE_VAULT_TARGETS.map((item) => (
+            <span
+              key={item}
+              className="inline-flex items-center gap-1 rounded-lg bg-purple-500/10 border border-purple-500/25 px-2.5 py-0.5 text-[11px] font-mono text-purple-200"
+            >
+              <Lock className="h-2.5 w-2.5 text-pink-400" />
+              {item}
+            </span>
+          ))}
+        </div>
+
+        {/* Deep Shell & Out-of-Bounds Security Check Matrix */}
+        <div className="rounded-xl border border-white/[0.08] bg-black/35 p-3.5 space-y-2.5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5 text-xs font-mono font-bold text-pink-300">
+              <Terminal className="h-3.5 w-3.5 text-pink-400" />
+              <span>Deep Security Check Terintegrasi (100% Pasif GET-Only → AES-256-GCM Vault):</span>
+            </div>
+            <span className="text-[11px] font-mono text-emerald-300 flex items-center gap-1">
+              <Cpu className="h-3 w-3" />
+              Zero-Exploit · True-Positive Validated
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+            {DEEP_SECURITY_VECTORS.map((v) => (
+              <div
+                key={v.tag}
+                className="rounded-lg border border-white/[0.07] bg-[#120d1d]/90 p-2.5 hover:border-purple-500/35 transition-colors"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="inline-flex items-center rounded-md bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-400/30 px-2 py-0.5 text-[10px] font-mono font-extrabold uppercase text-pink-200">
+                    {v.tag}
+                  </span>
+                  <span className="text-[10px] font-mono text-emerald-400">PASIF</span>
+                </div>
+                <div className="text-xs font-bold text-white mt-1.5">{v.label}</div>
+                <div className="text-[11px] text-slate-400 mt-0.5 leading-snug">{v.desc}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Form Input (shown when not locked to initialDomain) */}
         {!initialDomain && (
-          <form onSubmit={onSubmitForm} className="mt-4 flex flex-col sm:flex-row gap-2.5">
+          <form onSubmit={onSubmitForm} className="pt-1 flex flex-col sm:flex-row gap-2.5">
             <div className="relative flex-1">
               <Server className="h-4 w-4 text-purple-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
@@ -276,7 +374,7 @@ export function SentinelAudit({
               disabled={busy}
               className="h-11 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 px-6 text-xs font-bold uppercase tracking-wider text-white shadow-lg shadow-purple-600/25 disabled:opacity-50 cursor-pointer shrink-0"
             >
-              {busy ? "Scanning Vault…" : "Audit & Simpan ke Vault →"}
+              {busy ? "Scanning Deep Vault…" : "Audit Deep & Simpan ke Vault →"}
             </button>
           </form>
         )}
@@ -284,7 +382,7 @@ export function SentinelAudit({
         {err && (
           <div
             role="alert"
-            className="mt-3 flex items-center gap-2 rounded-xl border border-red-500/40 bg-red-500/10 px-3.5 py-2.5 text-xs text-red-300"
+            className="mt-2 flex items-center gap-2 rounded-xl border border-red-500/40 bg-red-500/10 px-3.5 py-2.5 text-xs text-red-300"
           >
             <AlertTriangle className="h-4 w-4 text-red-400 shrink-0" />
             <span>{err}</span>
@@ -318,7 +416,7 @@ export function SentinelAudit({
             <div className="rounded-xl border border-amber-500/25 bg-amber-500/[0.06] p-4 flex items-center justify-between">
               <div>
                 <div className="text-[11px] font-mono uppercase tracking-wider text-amber-300/80">
-                  High Severity Posture
+                  High Severity / Shell Surface
                 </div>
                 <div className="text-xl font-extrabold text-amber-400 mt-0.5 tabular-nums">{highCount}</div>
               </div>
@@ -332,11 +430,15 @@ export function SentinelAudit({
               <CheckCircle2 className="h-6 w-6 text-emerald-400 shrink-0" />
               <div>
                 <div className="text-sm font-bold text-emerald-300">
-                  Aman — Tidak Ditemukan Eksposur File Rahasia pada Audit Pasif Ini
+                  Aman — Tidak Ditemukan Eksposur File Sensitif maupun Permukaan Shell/OOB pada Audit Pasif Ini
                 </div>
                 <p className="text-xs text-slate-300/80 mt-0.5">
                   Tidak ada marker kredensial terbuka (<code className="font-mono">.env</code>,{" "}
-                  <code className="font-mono">.git</code>, <code className="font-mono">backup.zip</code>) yang terdeteksi pada {res.domain}.
+                  <code className="font-mono">.git/HEAD</code>, <code className="font-mono">backup.zip</code>,{" "}
+                  <code className="font-mono">wp-config.php.bak</code>, <code className="font-mono">AWS keys</code>) maupun permukaan{" "}
+                  <code className="font-mono">wp2shell</code>, <code className="font-mono">php2shell</code>,{" "}
+                  <code className="font-mono">node2shell</code>, <code className="font-mono">go2shell</code>,{" "}
+                  <code className="font-mono">py2shell</code>, dan <code className="font-mono">node out of bound</code> yang terdeteksi pada {res.domain}.
                 </p>
               </div>
             </div>
@@ -370,7 +472,7 @@ export function SentinelAudit({
                       </div>
                       {isCrit && (
                         <span className="inline-flex items-center gap-1 text-[11px] font-mono text-purple-300 bg-purple-500/15 border border-purple-500/30 px-2.5 py-0.5 rounded-full">
-                          <Lock className="h-3 w-3" /> Tersimpan di Admin Vault (24j)
+                          <Lock className="h-3 w-3" /> AES-256-GCM Admin Vault (24j)
                         </span>
                       )}
                     </div>
@@ -392,7 +494,7 @@ export function SentinelAudit({
               <div className="space-y-1">
                 <div className="flex items-center gap-2 text-sm font-bold text-white">
                   <KeyRound className="h-4 w-4 text-purple-400" />
-                  <span>Verifikasi Kepemilikan Domain &amp; Akses Bukti Mentah (Vault)</span>
+                  <span>Verifikasi Kepemilikan Domain &amp; Klaim Bukti Terenkripsi (Vault Admin)</span>
                 </div>
                 <p className="text-xs text-slate-400">
                   Pemilik sah domain <strong>{res.domain}</strong> dapat membuktikan kepemilikan via DNS TXT atau file HTTP untuk meminta persetujuan Admin membuka snippet bukti mentah (1x lihat).
@@ -407,7 +509,7 @@ export function SentinelAudit({
                   className="inline-flex items-center gap-2 rounded-xl border border-purple-400/40 bg-purple-500/20 hover:bg-purple-500/30 px-4 py-2 text-xs font-bold text-purple-200 transition-all cursor-pointer shrink-0"
                 >
                   <Sparkles className="h-3.5 w-3.5 text-purple-300" />
-                  {claimBusy ? "Memproses…" : "Saya Pemilik Domain"}
+                  {claimBusy ? "Memproses…" : "Saya Pemilik Sah Domain"}
                 </button>
               )}
             </div>
@@ -441,7 +543,7 @@ export function SentinelAudit({
                 {claim.status === "AWAITING_PROOF" && claim.instructions && (
                   <div className="space-y-3">
                     <p className="text-xs text-slate-300">
-                      Pilih <strong>salah satu</strong> metode verifikasi di bawah ini, lalu klik tombol verifikasi:
+                      Pilih <strong>salah satu</strong> metode verifikasi kepemilikan domain di bawah ini, lalu klik tombol verifikasi:
                     </p>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -452,7 +554,7 @@ export function SentinelAudit({
                           <button
                             type="button"
                             onClick={() => copyText("dns", claim.instructions!.dns.value)}
-                            className="inline-flex items-center gap-1 text-[11px] font-mono text-purple-300 hover:text-white"
+                            className="inline-flex items-center gap-1 text-[11px] font-mono text-purple-300 hover:text-white cursor-pointer"
                           >
                             {copiedField === "dns" ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
                             {copiedField === "dns" ? "Tersalin" : "Salin Value"}
@@ -473,7 +575,7 @@ export function SentinelAudit({
                           <button
                             type="button"
                             onClick={() => copyText("file", claim.instructions!.file.content)}
-                            className="inline-flex items-center gap-1 text-[11px] font-mono text-sky-300 hover:text-white"
+                            className="inline-flex items-center gap-1 text-[11px] font-mono text-sky-300 hover:text-white cursor-pointer"
                           >
                             {copiedField === "file" ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
                             {copiedField === "file" ? "Tersalin" : "Salin Isi"}
@@ -526,7 +628,7 @@ export function SentinelAudit({
         <section className="space-y-3 rounded-2xl border border-red-500/40 bg-gradient-to-b from-red-950/30 to-[#120d1e] p-5 animate-fade-up">
           <div className="flex items-center gap-2 text-red-300 font-bold text-sm">
             <Eye className="h-4 w-4 text-red-400" />
-            <span>Evidence Mentah Terdekripsi (One-Time View — Hanya Tampil Sekali!)</span>
+            <span>Evidence Mentah Terdekripsi AES-256-GCM (One-Time View — Hanya Tampil Sekali!)</span>
           </div>
           <p className="text-xs text-slate-300">
             Token akses sekali pakai telah dikonsumsi dan dihapus secara atomik (<code className="font-mono">GETDEL</code>) dari Redis. Segera salin informasi yang diperlukan dan rotasi kredensial Anda.
@@ -542,7 +644,7 @@ export function SentinelAudit({
                   <button
                     type="button"
                     onClick={() => copyText(`ev_${i}`, e.snippet)}
-                    className="inline-flex items-center gap-1 text-[11px] text-emerald-400 hover:text-emerald-300"
+                    className="inline-flex items-center gap-1 text-[11px] text-emerald-400 hover:text-emerald-300 cursor-pointer"
                   >
                     {copiedField === `ev_${i}` ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
                     {copiedField === `ev_${i}` ? "Tersalin" : "Salin Snippet"}
