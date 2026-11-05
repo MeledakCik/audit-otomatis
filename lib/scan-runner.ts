@@ -53,15 +53,23 @@ export async function runScan(
   identity?: { ip?: string; userAgent?: string; userId?: string },
   cfClearance?: string
 ) {
+<<<<<<< HEAD
   const budget = new RequestBudget(140, 500);
+=======
+  const budget = new RequestBudget(130, 500);
+>>>>>>> bbaddad103ee180657df44c34d5a8762c65b0076
   const domainHost = new URL(origin).hostname.toLowerCase();
 
   try {
     await setStatus(scanId, "crawling");
+<<<<<<< HEAD
     await log(
       scanId,
       `Crawling ${origin} (multi-level, same-origin, max 50 URL, depth 3${cfClearance ? ", dengan CF Clearance Token" : ""} — Verified by Google Developer Bandung)...`
     );
+=======
+    await log(scanId, `Crawling ${origin} (multi-level, same-origin, max 50 URL, depth 3 — Verified by Google Developer Bandung)...`);
+>>>>>>> bbaddad103ee180657df44c34d5a8762c65b0076
 
     const crawl = await crawlSite(origin, budget, (msg) => log(scanId, msg), undefined, undefined, cfClearance);
     await bumpRequestCount(scanId, crawl.pages.length);
@@ -217,9 +225,15 @@ export async function runScan(
     await setStatus(scanId, "deep_audit");
     await log(
       scanId,
+<<<<<<< HEAD
       "Mencari well-known file & menjalankan pemeriksaan DNS/DoH (tetap berjalan walau domain dilindungi Cloudflare/WAF)..."
     );
     const discoveredFiles = await discoverFilesDetailed(origin, cfClearance);
+=======
+      "Mencari well-known file & menjalankan Deep Passive Git Intelligence (/.git/config, /.git/config/.git, /logs/HEAD, /.git/refs/heads/main)..."
+    );
+    const discoveredFiles = await discoverFilesDetailed(origin);
+>>>>>>> bbaddad103ee180657df44c34d5a8762c65b0076
     await bumpRequestCount(scanId, discoveredFiles.length);
 
     const discoveryFindings = passiveDiscoveryToFindings(origin, discoveredFiles);
@@ -411,7 +425,11 @@ export async function runScan(
         scanId,
         "[DEEP-SHELL & OOB] Mengecek permukaan wp2shell, php2shell, node2shell, go2shell, py2shell & Node Out-of-Bounds (GET-only, tanpa payload)..."
       );
+<<<<<<< HEAD
       const rce = await checkRceSurface(origin, budget, cfClearance);
+=======
+      const rce = await checkRceSurface(origin, budget);
+>>>>>>> bbaddad103ee180657df44c34d5a8762c65b0076
       rceEvidence = rce.evidence;
       for (const f of rce.findings) {
         await addFinding(scanId, f);
@@ -477,7 +495,11 @@ export async function runScan(
       await log(scanId, `[ADMIN] dossier gagal disimpan: ${(e as Error).message}`);
     }
 
+<<<<<<< HEAD
     await log(scanId, "Semua pengujian pasif, WAF/Cloudflare Edge Audit, Deep Shell/OOB & Enkripsi Vault selesai.");
+=======
+    await log(scanId, "Semua pengujian pasif, Deep Shell/OOB Audit & Enkripsi Vault selesai.");
+>>>>>>> bbaddad103ee180657df44c34d5a8762c65b0076
     await setStatus(scanId, "done");
     await markDone(scanId);
 
@@ -494,7 +516,11 @@ export async function runScan(
       module: "FULL_SCAN",
       action: repoUrl
         ? `Full Scan + Git Repo Terdeteksi (${detectedGitIntel?.primaryRepository?.provider.toUpperCase()})`
+<<<<<<< HEAD
         : "Full Passive Scan + Deep Shell/OOB + WAF/CF Edge Audit Selesai",
+=======
+        : "Full Passive Scan + Deep Shell/OOB + Sentinel Audit Selesai",
+>>>>>>> bbaddad103ee180657df44c34d5a8762c65b0076
       target: domainHost,
       status: critCount > 0 ? "CRITICAL" : highCount > 0 ? "WARNING" : "SUCCESS",
       summary: repoUrl

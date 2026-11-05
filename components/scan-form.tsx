@@ -76,9 +76,13 @@ export function ScanForm() {
               className="text-xs font-mono uppercase tracking-wider text-purple-300/90 font-semibold flex items-center justify-between"
             >
               <span>Domain / URL Target</span>
+<<<<<<< HEAD
               <span className="text-[11px] text-emerald-400 font-normal">
                 WAF &amp; CF Resilient · GDG Bandung Verified
               </span>
+=======
+              <span className="text-[11px] text-emerald-400 font-normal">GET-Only · GDG Bandung Verified</span>
+>>>>>>> bbaddad103ee180657df44c34d5a8762c65b0076
             </label>
             <div className="relative">
               <Globe className="h-4 w-4 text-purple-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -141,7 +145,11 @@ export function ScanForm() {
           <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] p-3 space-y-2">
             <div className="text-[11px] font-mono text-slate-400 flex items-center gap-1.5">
               <Sparkles className="h-3 w-3 text-purple-400" />
+<<<<<<< HEAD
               <span>Otomatis menjalankan 7 engine keamanan mendalam sekaligus:</span>
+=======
+              <span>Otomatis menjalankan 6 engine keamanan mendalam sekaligus:</span>
+>>>>>>> bbaddad103ee180657df44c34d5a8762c65b0076
             </div>
             <div className="flex flex-wrap gap-1.5 text-[10px] font-mono">
               <span className="rounded-md bg-purple-500/15 border border-purple-500/30 px-2 py-0.5 text-purple-200">
@@ -158,12 +166,18 @@ export function ScanForm() {
               </span>
               <span className="rounded-md bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 text-emerald-200">
                 5. Audit File Sensitif &amp; Vault AES-256-GCM
+<<<<<<< HEAD
               </span>
               <span className="rounded-md bg-sky-500/15 border border-sky-500/30 px-2 py-0.5 text-sky-200">
                 6. Cloudflare/WAF Edge &amp; DNS/DoH Intel
               </span>
               <span className="rounded-md bg-purple-500/15 border border-purple-500/30 px-2 py-0.5 text-purple-200">
                 7. Header &amp; OSV/NVD CVE Intel
+=======
+              </span>
+              <span className="rounded-md bg-purple-500/15 border border-purple-500/30 px-2 py-0.5 text-purple-200">
+                6. Header &amp; OSV/NVD CVE Intel
+>>>>>>> bbaddad103ee180657df44c34d5a8762c65b0076
               </span>
             </div>
           </div>
@@ -202,7 +216,11 @@ export function ScanForm() {
           <div className="flex items-center justify-center gap-2 text-[11px] font-mono text-slate-400 text-center">
             <ShieldCheck className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
             <span>
+<<<<<<< HEAD
               100% Passive GET-Only · Tetap berjalan walau ada Cloudflare/WAF · Terverifikasi Google Developer Bandung
+=======
+              100% Passive GET-Only · Bukti kritis otomatis masuk Encrypted Vault (AES-256-GCM) · Terverifikasi Google Developer Bandung
+>>>>>>> bbaddad103ee180657df44c34d5a8762c65b0076
             </span>
           </div>
         </form>

@@ -140,7 +140,15 @@ export const RCE_SPECS: Spec[] = [
     rce: true,
     marker: "phpunit eval-stdin endpoint",
     validate: (b, ct) =>
+<<<<<<< HEAD
       !html(ct) && /(?:PHPUnit|eval-stdin\.php|Fatal error.*eval-stdin\.php)/i.test(b)
+=======
+      !html(ct) &&
+      (b.trim() === "" || /eval\(\).*php:\/\/input|PHPUnit|Call Stack/i.test(b)) &&
+      ct.includes("text/html") === false
+        ? null // hindari false positive jika body kosong tanpa penanda PHPUnit
+        : /(?:PHPUnit|eval-stdin\.php|Fatal error.*eval-stdin\.php)/i.test(b)
+>>>>>>> bbaddad103ee180657df44c34d5a8762c65b0076
         ? "CRITICAL"
         : null,
     impact:
@@ -239,7 +247,11 @@ export const RCE_SPECS: Spec[] = [
     rce: false,
     marker: "Next.js original stack frame",
     validate: (b, ct) =>
+<<<<<<< HEAD
       json(ct, b) && /"originalStackFrame"|"originalCodeFrame"/i.test(b) ? "HIGH" : null,
+=======
+      (json(ct, b) && /"originalStackFrame"|"originalCodeFrame"/i.test(b)) ? "HIGH" : null,
+>>>>>>> bbaddad103ee180657df44c34d5a8762c65b0076
     impact:
       "Endpoint pengembangan Next.js aktif dan dapat membocorkan struktur kode sumber server-side serta konfigurasi runtime Node.js.",
     fix: "Pastikan aplikasi dijalankan menggunakan `next build && next start` (NODE_ENV=production), bukan `next dev`.",
@@ -272,8 +284,12 @@ export const RCE_SPECS: Spec[] = [
       notHtml(ct, b) &&
       b.length > 3 &&
       b.length < 4096 &&
+<<<<<<< HEAD
       /(\/usr\/|\/bin\/|\/app\/|\/opt\/|--config|--port|-env)/i.test(b) &&
       b.includes("\u0000")
+=======
+      (/(\/usr\/|\/bin\/|\/app\/|\/opt\/|--config|--port|-env)/i.test(b) && b.includes("\u0000"))
+>>>>>>> bbaddad103ee180657df44c34d5a8762c65b0076
         ? "HIGH"
         : null,
     impact:
@@ -366,7 +382,11 @@ export const RCE_SPECS: Spec[] = [
     marker: "V8 heap snapshot / nodes & edges",
     validate: (b, ct) =>
       (json(ct, b) && /"snapshot"\s*:\s*\{/.test(b) && /"nodes"\s*:\s*\[/.test(b)) ||
+<<<<<<< HEAD
       (ct.includes("octet-stream") && b.startsWith("JAVA PROFILE"))
+=======
+      ct.includes("octet-stream") && b.startsWith("JAVA PROFILE")
+>>>>>>> bbaddad103ee180657df44c34d5a8762c65b0076
         ? "CRITICAL"
         : null,
     impact:
@@ -510,7 +530,11 @@ export async function checkRceSurface(
       try {
         const res = await fetch(url, {
           method: "GET",
+<<<<<<< HEAD
           headers: chromeHeaders(origin, cfClearance),
+=======
+          headers: chromeHeaders(),
+>>>>>>> bbaddad103ee180657df44c34d5a8762c65b0076
           redirect: "manual",
           signal: ctl.signal,
         });

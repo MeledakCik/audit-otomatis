@@ -302,7 +302,11 @@ export function SentinelAudit({
               <code className="text-purple-300">.git/HEAD</code>, <code className="text-purple-300">backup.zip</code>,{" "}
               <code className="text-purple-300">wp-config.php.bak</code>, <code className="text-purple-300">AWS keys</code>) secara pasif. Nilai rahasia tidak pernah bocor ke publik dan disimpan terenkripsi di Vault Admin untuk diklaim pemilik sah domain.{" "}
               <span className="text-emerald-300 font-semibold">
+<<<<<<< HEAD
                 Sudah terverifikasi oleh Google Developer Bandung &amp; tetap dapat memeriksa walau ada Cloudflare/WAF.
+=======
+                Sudah terverifikasi oleh Google Developer Bandung.
+>>>>>>> bbaddad103ee180657df44c34d5a8762c65b0076
               </span>
             </p>
           </div>
@@ -343,7 +347,11 @@ export function SentinelAudit({
             </div>
             <span className="text-[11px] font-mono text-emerald-300 flex items-center gap-1">
               <Cpu className="h-3 w-3" />
+<<<<<<< HEAD
               WAF/CF Resilient · True-Positive Validated
+=======
+              Zero-Exploit · True-Positive Validated
+>>>>>>> bbaddad103ee180657df44c34d5a8762c65b0076
             </span>
           </div>
 
@@ -368,6 +376,7 @@ export function SentinelAudit({
 
         {/* Form Input (shown when not locked to initialDomain) */}
         {!initialDomain && (
+<<<<<<< HEAD
           <form onSubmit={onSubmitForm} className="pt-1 space-y-2.5">
             <div className="flex flex-col sm:flex-row gap-2.5">
               <div className="relative flex-1">
@@ -393,6 +402,11 @@ export function SentinelAudit({
               <span className="text-[11px] font-mono text-emerald-300 shrink-0">
                 CF Clearance Token Pemilik (Opsional):
               </span>
+=======
+          <form onSubmit={onSubmitForm} className="pt-1 flex flex-col sm:flex-row gap-2.5">
+            <div className="relative flex-1">
+              <Server className="h-4 w-4 text-purple-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+>>>>>>> bbaddad103ee180657df44c34d5a8762c65b0076
               <input
                 type="text"
                 value={cfClearance}
@@ -401,6 +415,16 @@ export function SentinelAudit({
                 className="flex-1 bg-transparent text-xs font-mono text-white placeholder:text-slate-500 outline-none"
               />
             </div>
+<<<<<<< HEAD
+=======
+            <button
+              type="submit"
+              disabled={busy}
+              className="h-11 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 px-6 text-xs font-bold uppercase tracking-wider text-white shadow-lg shadow-purple-600/25 disabled:opacity-50 cursor-pointer shrink-0"
+            >
+              {busy ? "Scanning Deep Vault…" : "Audit Deep & Simpan ke Vault →"}
+            </button>
+>>>>>>> bbaddad103ee180657df44c34d5a8762c65b0076
           </form>
         )}
 

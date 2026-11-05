@@ -48,6 +48,10 @@ export interface AuditResult {
   };
 }
 
+<<<<<<< HEAD
+=======
+const UA = "Sentinel-ID Passive Auditor/3.5 (+https://sentinel-id.net; Verified by Google Developer Bandung)";
+>>>>>>> bbaddad103ee180657df44c34d5a8762c65b0076
 const TIMEOUT_MS = 8000;
 const MAX_TEXT_BYTES = 64 * 1024;
 const CONCURRENCY = 6;
@@ -73,7 +77,11 @@ async function get(url: string, wantBytes = MAX_TEXT_BYTES, cfClearance?: string
     const reader = res.body?.getReader();
     const chunks: Uint8Array[] = [];
     let total = 0;
+<<<<<<< HEAD
     if (reader && (res.status === 200 || res.status === 405 || res.status === 403 || res.status === 503)) {
+=======
+    if (reader && (res.status === 200 || res.status === 405)) {
+>>>>>>> bbaddad103ee180657df44c34d5a8762c65b0076
       while (total < wantBytes) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -488,9 +496,14 @@ export async function auditDomain(input: string, cfClearance?: string): Promise<
 
   // 2) DEEP SHELL & OUT-OF-BOUNDS SURFACE PROBES (wp2shell, php2shell, node2shell, go2shell, py2shell, node-oob)
   await pool(RCE_SPECS, CONCURRENCY, async (spec) => {
+<<<<<<< HEAD
     const r = await get(at(spec.path), MAX_TEXT_BYTES, cfClearance);
     if (!r) return;
     if (detectCloudflareChallenge(r.status, r.headers, r.text.slice(0, 2000))) return;
+=======
+    const r = await get(at(spec.path), MAX_TEXT_BYTES);
+    if (!r) return;
+>>>>>>> bbaddad103ee180657df44c34d5a8762c65b0076
     const sev = evaluateRceSpec(spec, r.status, r.contentType, r.text);
     if (!sev) return;
 
@@ -513,6 +526,7 @@ export async function auditDomain(input: string, cfClearance?: string): Promise<
     });
   });
 
+<<<<<<< HEAD
   // 3) HIGH — security headers & WAF/Cloudflare Edge inspection dari homepage
   // Tetap diperiksa meskipun homepage merespons HTTP 403/503 karena proteksi WAF/Cloudflare!
   const home = await getHome(origin, cfClearance);
@@ -528,6 +542,11 @@ export async function auditDomain(input: string, cfClearance?: string): Promise<
       };
     }
 
+=======
+  // 3) HIGH — security headers & runtime leakage dari homepage
+  const home = await getHome(origin);
+  if (home && home.status >= 200 && home.status < 400) {
+>>>>>>> bbaddad103ee180657df44c34d5a8762c65b0076
     const h = home.headers;
     const csp = h.get("content-security-policy") ?? "";
     const edgeSuffix = wafInfo.challenged ? " (diperiksa langsung dari respons Edge WAF/Cloudflare)" : "";
