@@ -37,6 +37,63 @@ for (const root of ROOTS) {
   }
 }
 
+// Self-heal partial Git merges in lib/tester.ts
+const testerPath = path.join(process.cwd(), "lib", "tester.ts");
+if (fs.existsSync(testerPath)) {
+  let t = fs.readFileSync(testerPath, "utf8");
+  const orig = t;
+  if (!t.includes("const head = new Uint8Array") && t.includes("head,")) {
+    t = t.replace(
+      /(const text = [^\r\n]+;\r?\n)/,
+      "$1        const head = new Uint8Array(buf.subarray(0, 8));\n"
+    );
+  }
+  if (t !== orig) {
+    fs.writeFileSync(testerPath, t, "utf8");
+    console.log("[resolve-conflicts] Repaired missing 'head' declaration in lib/tester.ts");
+  }
+}
+
+// Self-heal partial Git merges in lib/sentinel/audit.ts
+const auditPath = path.join(process.cwd(), "lib", "sentinel", "audit.ts");
+if (fs.existsSync(auditPath)) {
+  let a = fs.readFileSync(auditPath, "utf8");
+  const orig = a;
+  if (!a.includes("detectWafAndEdgeInfo")) {
+    a = a.replace(
+      /import\s*\{\s*chromeHeaders,\s*detectCloudflareChallenge\s*\}\s*from\s*["']@\/lib\/crawler["'];?/,
+      'import { chromeHeaders, detectCloudflareChallenge, detectWafAndEdgeInfo } from "@/lib/crawler";'
+    );
+  }
+  if (!a.includes("wafDetected?:")) {
+    a = a.replace(
+      /(export interface AuditResult\s*\{[\s\S]*?gitIntel\?:\s*GitIntelReport;\r?\n)/,
+      "$1  wafDetected?: {\n    provider: string;\n    challenged: boolean;\n    cfRay?: string;\n    status: number;\n  };\n"
+    );
+  }
+  if (!a.includes("let wafDetected") || !a.includes("const wafInfo =")) {
+    a = a.replace(
+      /const home = await getHome\([^)]*\);\r?\n\s*if\s*\(home\s*&&\s*home\.status[^)]*\)\s*\{/,
+      `const home = await getHome(origin, cfClearance);
+  let wafDetected: AuditResult["wafDetected"];
+  if (home && home.status >= 200 && home.status <= 503) {
+    const wafInfo = detectWafAndEdgeInfo(home.status, home.headers, home.text.slice(0, 2000));
+    if (wafInfo.detected) {
+      wafDetected = {
+        provider: wafInfo.provider,
+        challenged: wafInfo.challenged,
+        cfRay: wafInfo.cfRay,
+        status: home.status,
+      };
+    }`
+    );
+  }
+  if (a !== orig) {
+    fs.writeFileSync(auditPath, a, "utf8");
+    console.log("[resolve-conflicts] Repaired 'wafInfo' and 'wafDetected' declarations in lib/sentinel/audit.ts");
+  }
+}
+
 if (fixedCount > 0) {
   console.log(`[resolve-conflicts] Resolved merge conflicts in ${fixedCount} file(s).`);
 }

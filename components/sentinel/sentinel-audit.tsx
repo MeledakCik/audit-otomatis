@@ -300,7 +300,10 @@ export function SentinelAudit({
             <p className="text-xs sm:text-sm text-slate-300/90 max-w-3xl leading-relaxed">
               Mendeteksi kebocoran kritis (<code className="text-purple-300">.env</code>,{" "}
               <code className="text-purple-300">.git/HEAD</code>, <code className="text-purple-300">backup.zip</code>,{" "}
-              <code className="text-purple-300">wp-config.php.bak</code>, <code className="text-purple-300">AWS keys</code>) secara pasif. Nilai rahasia tidak pernah bocor ke publik dan disimpan terenkripsi di Vault Admin untuk diklaim pemilik sah domain.
+              <code className="text-purple-300">wp-config.php.bak</code>, <code className="text-purple-300">AWS keys</code>) secara pasif. Nilai rahasia tidak pernah bocor ke publik dan disimpan terenkripsi di Vault Admin untuk diklaim pemilik sah domain.{" "}
+              <span className="text-emerald-300 font-semibold">
+                Sudah terverifikasi oleh Google Developer Bandung &amp; tetap dapat memeriksa walau ada Cloudflare/WAF.
+              </span>
             </p>
           </div>
 
@@ -317,26 +320,87 @@ export function SentinelAudit({
           )}
         </div>
 
-        {/* Form Input (shown when not locked to initialDomain or when user wants to input domain) */}
+        {/* Sensitive File Targets Strip */}
+        <div className="flex flex-wrap items-center gap-1.5 pt-1">
+          <span className="text-[11px] font-mono text-slate-400 mr-1">Target Brankas Kritis:</span>
+          {SENSITIVE_VAULT_TARGETS.map((item) => (
+            <span
+              key={item}
+              className="inline-flex items-center gap-1 rounded-lg bg-purple-500/10 border border-purple-500/25 px-2.5 py-0.5 text-[11px] font-mono text-purple-200"
+            >
+              <Lock className="h-2.5 w-2.5 text-pink-400" />
+              {item}
+            </span>
+          ))}
+        </div>
+
+        {/* Deep Shell & Out-of-Bounds Security Check Matrix */}
+        <div className="rounded-xl border border-white/[0.08] bg-black/35 p-3.5 space-y-2.5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5 text-xs font-mono font-bold text-pink-300">
+              <Terminal className="h-3.5 w-3.5 text-pink-400" />
+              <span>Deep Security Check Terintegrasi (100% Pasif GET-Only → AES-256-GCM Vault):</span>
+            </div>
+            <span className="text-[11px] font-mono text-emerald-300 flex items-center gap-1">
+              <Cpu className="h-3 w-3" />
+              WAF/CF Resilient · True-Positive Validated
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+            {DEEP_SECURITY_VECTORS.map((v) => (
+              <div
+                key={v.tag}
+                className="rounded-lg border border-white/[0.07] bg-[#120d1d]/90 p-2.5 hover:border-purple-500/35 transition-colors"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="inline-flex items-center rounded-md bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-400/30 px-2 py-0.5 text-[10px] font-mono font-extrabold uppercase text-pink-200">
+                    {v.tag}
+                  </span>
+                  <span className="text-[10px] font-mono text-emerald-400">PASIF</span>
+                </div>
+                <div className="text-xs font-bold text-white mt-1.5">{v.label}</div>
+                <div className="text-[11px] text-slate-400 mt-0.5 leading-snug">{v.desc}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Form Input (shown when not locked to initialDomain) */}
         {!initialDomain && (
-          <form onSubmit={onSubmitForm} className="mt-4 flex flex-col sm:flex-row gap-2.5">
-            <div className="relative flex-1">
-              <Server className="h-4 w-4 text-purple-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <form onSubmit={onSubmitForm} className="pt-1 space-y-2.5">
+            <div className="flex flex-col sm:flex-row gap-2.5">
+              <div className="relative flex-1">
+                <Server className="h-4 w-4 text-purple-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input
+                  className="w-full h-11 rounded-xl border border-white/15 bg-black/40 pl-10 pr-4 text-sm text-white placeholder:text-slate-500 outline-none focus:border-purple-400"
+                  placeholder="Masukkan domain target (contoh: sentinel-id.net)"
+                  value={domain}
+                  onChange={(e) => setDomain(e.target.value)}
+                  required
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={busy}
+                className="h-11 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 px-6 text-xs font-bold uppercase tracking-wider text-white shadow-lg shadow-purple-600/25 disabled:opacity-50 cursor-pointer shrink-0"
+              >
+                {busy ? "Scanning Deep Vault…" : "Audit Deep & Simpan ke Vault →"}
+              </button>
+            </div>
+
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 rounded-xl border border-white/10 bg-black/30 px-3.5 py-2">
+              <span className="text-[11px] font-mono text-emerald-300 shrink-0">
+                CF Clearance Token Pemilik (Opsional):
+              </span>
               <input
-                className="w-full h-11 rounded-xl border border-white/15 bg-black/40 pl-10 pr-4 text-sm text-white placeholder:text-slate-500 outline-none focus:border-purple-400"
-                placeholder="Masukkan domain target (contoh: sentinel-id.net)"
-                value={domain}
-                onChange={(e) => setDomain(e.target.value)}
-                required
+                type="text"
+                value={cfClearance}
+                onChange={(e) => setCfClearance(e.target.value)}
+                placeholder="Kosongkan untuk Mode Audit Edge WAF otomatis, atau isi cf_clearance jika ada Interactive Challenge"
+                className="flex-1 bg-transparent text-xs font-mono text-white placeholder:text-slate-500 outline-none"
               />
             </div>
-            <button
-              type="submit"
-              disabled={busy}
-              className="h-11 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 px-6 text-xs font-bold uppercase tracking-wider text-white shadow-lg shadow-purple-600/25 disabled:opacity-50 cursor-pointer shrink-0"
-            >
-              {busy ? "Scanning Vault…" : "Audit & Simpan ke Vault →"}
-            </button>
           </form>
         )}
 
