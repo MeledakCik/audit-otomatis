@@ -3,10 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "node scripts/resolve-conflicts.mjs",
     "dev": "next dev",
+    "prebuild": "node scripts/resolve-conflicts.mjs",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "fix:conflicts": "node scripts/resolve-conflicts.mjs"
   },
   "dependencies": {
     "@radix-ui/react-checkbox": "^1.3.8",

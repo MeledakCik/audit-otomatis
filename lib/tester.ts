@@ -1,5 +1,5 @@
 import type { Finding, Severity } from "./types";
-import { chromeHeaders, detectCloudflareChallenge } from "./crawler";
+import { chromeHeaders, detectCloudflareChallenge, detectWafAndEdgeInfo } from "./crawler";
 import { analyzeSecurityHeaders } from "./security-headers";
 import type { RequestBudget } from "./rate-limit";
 import {
@@ -24,14 +24,23 @@ const LEAK_PATTERNS: Array<{ pattern: RegExp; label: string }> = [
   {
     pattern:
       /(?:\n|^)\s+at\s+[\w$.<>]+\s+\((?:\/|file:|[A-Za-z]:\\)[^)\s]+:\d+:\d+\)(?:\s*\n\s+at\s+[^\n]+){2,}/,
-    label: "stack trace Node.js",
+    label: "[node2shell] stack trace Node.js",
+  },
+  {
+    pattern:
+      /RangeError:\s*(?:Index out of range|Attempt to access memory outside buffer bounds|offset is out of bounds)|ERR_BUFFER_OUT_OF_BOUNDS|ERR_OUT_OF_RANGE/i,
+    label: "[Node Out-of-Bounds] RangeError / Buffer OOB exception",
   },
   {
     pattern: /(?:Warning|Fatal error|Parse error):\s+[^<\n]{3,}\s+in\s+\/[^\s<]+\.php\s+on line\s+\d+/i,
-    label: "PHP error dengan path file",
+    label: "[php2shell / wp2shell] PHP error dengan path file",
+  },
+  {
+    pattern: /goroutine\s+\d+\s+\[(?:running|chan receive|select|IO wait)\]:[\s\S]{10,200}\.go:\d+/i,
+    label: "[go2shell] Go panic / goroutine stack trace",
   },
   { pattern: /\bORA-\d{5}\b/, label: "Oracle error code" },
-  { pattern: /Traceback \(most recent call last\)/, label: "Python traceback" },
+  { pattern: /Traceback \(most recent call last\)/, label: "[py2shell] Python traceback" },
   {
     pattern: /Server Error in '\/[^']*' Application|System\.(?:Data|NullReference)\w*Exception/,
     label: "ASP.NET error page",
@@ -41,6 +50,9 @@ const LEAK_PATTERNS: Array<{ pattern: RegExp; label: string }> = [
 const SENSITIVE_FILES = [
   "/robots.txt",
   "/.env",
+  "/.env.production",
+  "/.env.local",
+  "/.env.bak",
   "/.git/HEAD",
   "/.git/config",
   "/.git/config/.git",
@@ -50,6 +62,10 @@ const SENSITIVE_FILES = [
   "/.git/refs/heads/master",
   "/.git/packed-refs",
   "/.git/COMMIT_EDITMSG",
+  "/backup.zip",
+  "/wp-config.php.bak",
+  "/.aws/credentials",
+  "/dump.sql",
 ];
 
 function snippet(text: string, max = 100): string {
@@ -77,10 +93,12 @@ export interface CloudflareStop {
   reason: string;
 }
 
-export async function testResponseLeakage(url: string): Promise<Finding | null> {
+export async function testResponseLeakage(url: string, cfClearance?: string): Promise<Finding | null> {
   try {
-    const headers = chromeHeaders() as Record<string, string>;
-    const res = await fetch(url, { method: "GET", headers: { "User-Agent": headers["User-Agent"] } });
+    const res = await fetch(url, {
+      method: "GET",
+      headers: chromeHeaders(url, cfClearance),
+    });
     const text = await res.text();
     const cf = detectCloudflareChallenge(res.status, res.headers, text.slice(0, 2000));
     if (cf) return null;
@@ -98,8 +116,8 @@ export async function testResponseLeakage(url: string): Promise<Finding | null> 
           `Response leakage terdeteksi (${label})`,
           url,
           `HTTP ${res.status} — "…${snippet(body.slice(at, at + 140))}"`,
-          "Pesan error internal (query, stack trace, path server) bocor ke client, mempermudah reconnaissance penyerang.",
-          "Matikan mode debug di production, tampilkan pesan error generik ke client, log detail hanya di server."
+          "Pesan error internal (query, stack trace, buffer out-of-bounds, atau path server) bocor ke client, mempermudah reconnaissance penyerang.",
+          "Matikan mode debug di production, tampilkan pesan error generik ke client, dan simpan log detail hanya di server."
         );
       }
     }
@@ -145,7 +163,8 @@ export interface ExposedHit {
 export async function testExposedFiles(
   origin: string,
   budget: RequestBudget,
-  onHit?: (hit: ExposedHit) => void
+  onHit?: (hit: ExposedHit) => void,
+  cfClearance?: string
 ): Promise<Finding[]> {
   const findings: Finding[] = [];
   const domain = new URL(origin).hostname.toLowerCase();
@@ -154,12 +173,19 @@ export async function testExposedFiles(
     const url = new URL(path, origin).toString();
     const result = await budget.spend(async () => {
       try {
-        const res = await fetch(url, { method: "GET", headers: chromeHeaders(), redirect: "manual" });
-        const text = (await res.text()).slice(0, 64 * 1024);
+        const res = await fetch(url, {
+          method: "GET",
+          headers: chromeHeaders(origin, cfClearance),
+          redirect: "manual",
+        });
+        const buf = Buffer.from(await res.arrayBuffer());
+        const text = buf.subarray(0, 64 * 1024).toString("utf8");
+        const head = new Uint8Array(buf.subarray(0, 8));
         return {
           status: res.status,
           headers: res.headers,
           text,
+          head,
           contentType: (res.headers.get("content-type") ?? "").toLowerCase(),
         };
       } catch {
@@ -192,21 +218,25 @@ export async function testExposedFiles(
 
     const check = CRITICAL_CHECKS.find((c) => c.path === path);
     if (!check) continue;
-    const hit = evaluateCritical(check, { ...result, head: new Uint8Array(8) });
+    const hit = evaluateCritical(check, result);
     if (!hit) continue;
 
-    findings.push(
-      mkFinding(
+    findings.push({
+      ...mkFinding(
         "CRITICAL",
         `File sensitif ter-expose & terverifikasi: ${path}`,
         url,
-        `HTTP 200 — body berisi marker "${hit.marker}" (detail & JSON repo tersimpan terenkripsi di Admin Vault)`,
-        path === "/.env"
-          ? "File .env berisi kredensial/API key/secret — dampak kompromi penuh bila bocor."
+        `HTTP 200 — body berisi marker "${hit.marker}" (nilai rahasia tidak bocor ke publik & disimpan terenkripsi AES-256-GCM di Admin Vault)`,
+        path.startsWith("/.env") || path === "/wp-config.php.bak" || path === "/.aws/credentials"
+          ? "File konfigurasi/kredensial rahasia (.env, wp-config.php.bak, AWS keys) terbuka — dampak kompromi penuh bila bocor."
+          : path.endsWith(".zip") || path.endsWith(".sql")
+          ? "Arsip backup / database dump terbuka di publik — membocorkan kode sumber dan data sensitif."
           : "Metadata Git (.git/config, logs/HEAD, refs/heads) ter-expose sehingga URL repository GitHub/GitLab, riwayat commit, dan source code berpotensi bocor.",
         check.fix
-      )
-    );
+      ),
+      category: "sensitive-file",
+      confidence: "verified",
+    });
     onHit?.({
       finding: toPublicFinding(domain, check, hit.marker),
       raw: {
@@ -222,10 +252,32 @@ export async function testExposedFiles(
   return findings;
 }
 
-export async function testSecurityHeaders(origin: string): Promise<Finding[]> {
+export async function testSecurityHeaders(origin: string, cfClearance?: string): Promise<Finding[]> {
   try {
-    const res = await fetch(origin, { method: "GET", headers: chromeHeaders() });
-    return analyzeSecurityHeaders(res.headers, origin);
+    const res = await fetch(origin, {
+      method: "GET",
+      headers: chromeHeaders(undefined, cfClearance),
+    });
+    const text = (await res.text()).slice(0, 2000);
+    const waf = detectWafAndEdgeInfo(res.status, res.headers, text);
+    const headerFindings = analyzeSecurityHeaders(res.headers, origin);
+
+    if (waf.detected) {
+      headerFindings.unshift({
+        id: newId(),
+        severity: "INFO",
+        title: `Proteksi WAF / Edge Aktif: ${waf.provider}${waf.challenged ? " (Interactive Challenge Active)" : ""}`,
+        endpoint: origin,
+        evidence: `HTTP ${res.status}${waf.cfRay ? ` · CF-RAY: ${waf.cfRay}` : ""}${waf.serverHeader ? ` · Server: ${waf.serverHeader}` : ""}${waf.cacheStatus ? ` · Cache: ${waf.cacheStatus}` : ""}`,
+        impact: waf.challenged
+          ? "WAF mengaktifkan tantangan interaktif pada rute utama, namun pemeriksaan pasif pada Header Edge, DNS/CT Logs, serta path statis tetap berhasil dijalankan."
+          : "Domain berada di balik lapisan WAF/CDN yang membantu memitigasi serangan lapisan aplikasi dan DDoS.",
+        fix: "Pastikan origin server IP tidak bocor melalui record DNS langsung (SPF/MX/subdomain lama) dan terapkan HSTS serta CSP di level Edge.",
+        category: "passive-discovery",
+      });
+    }
+
+    return headerFindings;
   } catch {
     return [];
   }

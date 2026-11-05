@@ -21,6 +21,27 @@ export interface CrawlResult {
   inlineScripts: string[];
 }
 
+export type FindingCategory =
+  | "secret"
+  | "outdated-library"
+  | "generic"
+  | "dom-xss-sink"
+  | "open-redirect"
+  | "ssrf"
+  | "idor-candidate"
+  | "auth-bypass"
+  | "missing-rate-limit"
+  | "passive-discovery"
+  | "cve-match"
+  | "rce-surface"
+  | "wp2shell"
+  | "php2shell"
+  | "node2shell"
+  | "go2shell"
+  | "py2shell"
+  | "node-oob"
+  | "sensitive-file";
+
 export interface Finding {
   id: string;
   severity: Severity;
@@ -35,19 +56,7 @@ export interface Finding {
   rce?: boolean; // true = potensi eksekusi kode jarak jauh (indikator pasif, BUKAN bukti eksploitasi)
   confidence?: "verified" | "version-based"; // verified = isi respons tervalidasi; version-based = cocok dari versi terdeteksi
   poc?: string; // contoh request non-destruktif (curl), hanya ilustrasi
-  category?:
-    | "secret"
-    | "outdated-library"
-    | "generic"
-    | "dom-xss-sink"
-    | "open-redirect"
-    | "ssrf"
-    | "idor-candidate"
-    | "auth-bypass"
-    | "missing-rate-limit"
-    | "passive-discovery"
-    | "cve-match"
-    | "rce-surface";
+  category?: FindingCategory;
 }
 
 // --- Deep crawl: peta relasi page -> js -> endpoint ---

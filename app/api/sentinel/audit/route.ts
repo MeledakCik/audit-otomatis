@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { auditDomain } from "@/lib/sentinel/audit";
+import { sanitizeCfClearance } from "@/lib/crawler";
 import { clientIp, rateLimit } from "@/lib/sentinel/redis";
 import { getPublic, savePublic, saveVault } from "@/lib/sentinel/store";
 import { SsrfBlockedError } from "@/lib/ssrf-guard";
@@ -13,13 +14,14 @@ const FRESH_MS = 10 * 60 * 1000;
 export async function POST(req: Request) {
   const body = await req.json().catch(() => null);
   const input = typeof body?.domain === "string" ? body.domain : "";
+  const cfClearance = sanitizeCfClearance(typeof body?.cfClearance === "string" ? body.cfClearance : undefined);
   if (!input) return NextResponse.json({ error: "domain wajib diisi" }, { status: 400 });
 
   if (!(await rateLimit("audit", clientIp(req), 10, 3600)))
     return NextResponse.json({ error: "Rate limit: maks 10 audit/jam." }, { status: 429 });
 
   try {
-    const result = await auditDomain(input);
+    const result = await auditDomain(input, cfClearance);
     const cached = await getPublic(result.domain);
     const critCount = result.findings.filter((f) => f.severity === "CRITICAL").length;
     const highCount = result.findings.filter((f) => f.severity === "HIGH").length;
@@ -32,17 +34,19 @@ export async function POST(req: Request) {
       module: "SENTINEL_AUDIT",
       action: repoDetected
         ? `Sentinel Audit — Git Repo Terdeteksi (${repoProvider?.toUpperCase()})`
-        : "Menjalankan Sentinel Passive Vault & Git Audit",
+        : "Menjalankan Sentinel Passive Vault & Deep Shell/WAF Audit",
       target: result.domain,
       status: critCount > 0 ? "CRITICAL" : highCount > 0 ? "WARNING" : "SUCCESS",
       summary: repoDetected
         ? `${critCount} CRITICAL · Repo: ${repoDetected} · Branch: ${result.gitIntel?.head?.activeBranch ?? "-"}`
-        : `${result.findings.length} temuan (${critCount} CRITICAL masuk Vault, ${highCount} HIGH)`,
+        : `${result.findings.length} temuan (${critCount} CRITICAL masuk Vault, ${highCount} HIGH)${result.wafDetected ? ` · WAF: ${result.wafDetected.provider}` : ""}`,
       meta: {
         findingsCount: result.findings.length,
         criticalCount: critCount,
         highCount,
         vaultItemsSaved: result.raw.length,
+        wafProvider: result.wafDetected?.provider ?? null,
+        wafChallenged: result.wafDetected?.challenged ?? false,
         gitExposed: Boolean(result.gitIntel?.exposed),
         gitProvider: repoProvider,
         gitRepoUrl: repoDetected,
@@ -52,11 +56,13 @@ export async function POST(req: Request) {
       },
     });
 
-    if (cached && Date.now() - cached.scannedAt < FRESH_MS) return NextResponse.json(cached);
+    if (cached && !cfClearance && Date.now() - cached.scannedAt < FRESH_MS) {
+      return NextResponse.json({ ...cached, wafDetected: result.wafDetected });
+    }
 
     await saveVault(result.raw);
     const pub = await savePublic(result);
-    return NextResponse.json(pub);
+    return NextResponse.json({ ...pub, wafDetected: result.wafDetected });
   } catch (e) {
     const status = e instanceof SsrfBlockedError ? 403 : 400;
     await logUserActivity({

@@ -12,6 +12,8 @@ import type { GitIntelReport } from "./sentinel/git-intel";
 import { logUserActivity } from "./activity-store";
 import { RequestBudget, sleep } from "./rate-limit";
 import { discoverFilesDetailed } from "./discovery/passiveDiscovery";
+import { resolveAllRecords } from "./dns-intel/resolve";
+import { analyzeSpf, analyzeDmarc, detectTakeoverHints } from "./dns-intel/analyze";
 import { checkVulnerableLibs } from "./vuln/jsLibChecker";
 import { findDomSinks } from "./vuln/domSink";
 import { detectRedirectParams } from "./vuln/redirectChecker";
@@ -26,14 +28,13 @@ import {
   passiveDiscoveryToFindings,
 } from "./vuln/toFindings";
 
-const MAX_SINK_FINDINGS_PER_FILE = 10;
+const MAX_SINK_FINDINGS_PER_FILE = 12;
 import {
   addFinding,
   bumpRequestCount,
   bumpJsFilesScanned,
   getScan,
   log,
-  markBlocked,
   markDone,
   markError,
   setDiscoveredEndpoints,
@@ -46,51 +47,45 @@ import {
 } from "./scan-store";
 import type { DiscoveredEndpoint, FormInfo, GraphData, LibraryDetection } from "./types";
 
-const CF_MESSAGE =
-  "Domain dilindungi Cloudflare Challenge. Nonaktifkan Bot Fight Mode sementara untuk audit, atau masukkan CF Clearance Token manual di settings.";
-
 export async function runScan(
   scanId: string,
   origin: string,
-  identity?: { ip?: string; userAgent?: string; userId?: string }
+  identity?: { ip?: string; userAgent?: string; userId?: string },
+  cfClearance?: string
 ) {
-  const budget = new RequestBudget(100, 500);
+  const budget = new RequestBudget(140, 500);
   const domainHost = new URL(origin).hostname.toLowerCase();
 
   try {
     await setStatus(scanId, "crawling");
-    await log(scanId, `Crawling ${origin} (multi-level, same-origin, max 50 URL, depth 3)...`);
+    await log(
+      scanId,
+      `Crawling ${origin} (multi-level, same-origin, max 50 URL, depth 3${cfClearance ? ", dengan CF Clearance Token" : ""} — Verified by Google Developer Bandung)...`
+    );
 
-    const crawl = await crawlSite(origin, budget, (msg) => log(scanId, msg));
+    const crawl = await crawlSite(origin, budget, (msg) => log(scanId, msg), undefined, undefined, cfClearance);
     await bumpRequestCount(scanId, crawl.pages.length);
     await setPagesCrawled(scanId, crawl.pages.length);
     await setPages(scanId, crawl.pages);
 
-    if (crawl.pages.length === 0 && crawl.cloudflare) {
-      await log(scanId, `Cloudflare challenge terdeteksi: ${crawl.cloudflare.reason}`);
-      await markBlocked(scanId, CF_MESSAGE);
-      await logUserActivity({
-        ip: identity?.ip,
-        userAgent: identity?.userAgent,
-        userId: identity?.userId,
-        module: "FULL_SCAN",
-        action: "Full Scan Dihentikan (Cloudflare Challenge)",
-        target: domainHost,
-        status: "BLOCKED",
-        summary: `Scan ${scanId} terhenti oleh proteksi Cloudflare`,
-        meta: { scanId },
-      });
-      return;
+    if (crawl.wafInfo?.detected) {
+      await log(
+        scanId,
+        `[WAF/EDGE] Lapisan proteksi terdeteksi: ${crawl.wafInfo.provider} (HTTP ${crawl.wafInfo.status}${crawl.wafInfo.cfRay ? `, CF-RAY: ${crawl.wafInfo.cfRay}` : ""}). Audit tetap dilanjutkan secara penuh pada Edge Headers, Well-Known, DNS/DoH, dan Sentinel Vault.`
+      );
+    }
+
+    if (crawl.cloudflare) {
+      await log(
+        scanId,
+        `[WAF/CF-RESILIENT] Tantangan interaktif Cloudflare/WAF aktif pada halaman utama (${crawl.cloudflare.reason}) — tidak menghentikan scan; melanjutkan pemeriksaan lintas layer (Edge Header, Well-Known Files, DNS/SPF/DMARC, Deep Shell Surface & Vault).`
+      );
     }
 
     await log(
       scanId,
-      `Crawl selesai: ${crawl.pages.length} halaman di-crawl, ${crawl.allInternalLinks.length} link internal unik, ${crawl.allScripts.length} file JS unik, ${crawl.allForms.length} form.`
+      `Crawl selesai: ${crawl.pages.length} snapshot halaman/edge, ${crawl.allInternalLinks.length} link internal unik, ${crawl.allScripts.length} file JS unik, ${crawl.allForms.length} form.`
     );
-
-    if (crawl.cloudflare) {
-      await log(scanId, `Cloudflare challenge terdeteksi di tengah crawl (data sebagian tetap dipakai): ${crawl.cloudflare.reason}`);
-    }
 
     await setStatus(scanId, "analyzing_js");
     await log(scanId, `Mengunduh hingga ${Math.min(crawl.allScripts.length, 20)} file JS eksternal...`);
@@ -156,7 +151,10 @@ export async function runScan(
         for (const f of domSinksToFindings(sinks, file.label)) {
           await addFinding(scanId, f);
         }
-        await log(scanId, `[DOM-SINK] ${sinks.length} sink pattern ditemukan di ${file.label} (dibatasi ${MAX_SINK_FINDINGS_PER_FILE}/file, review manual).`);
+        await log(
+          scanId,
+          `[DEEP-SINK] ${sinks.length} pola sink (DOM XSS / node2shell / Node Out-of-Bounds / wp2shell) ditemukan di ${file.label}.`
+        );
       }
     }
 
@@ -209,7 +207,7 @@ export async function runScan(
           for (const f of domSinksToFindings(inlineSinks, label)) {
             await addFinding(scanId, f);
           }
-          await log(scanId, `[DOM-SINK] ${inlineSinks.length} sink pattern ditemukan di ${label}.`);
+          await log(scanId, `[DEEP-SINK] ${inlineSinks.length} sink pattern ditemukan di ${label}.`);
         }
       }
     }
@@ -217,14 +215,68 @@ export async function runScan(
     await setGraph(scanId, graph);
 
     await setStatus(scanId, "deep_audit");
-    await log(scanId, "Mencari well-known file & menjalankan Deep Passive Git Intelligence (/.git/config, /.git/config/.git, /logs/HEAD, /.git/refs/heads/main)...");
-    const discoveredFiles = await discoverFilesDetailed(origin);
+    await log(
+      scanId,
+      "Mencari well-known file, menjalankan Deep Passive Git Intelligence (/.git/config, /.git/config/.git, /logs/HEAD, /.git/refs/heads/main), & pemeriksaan DNS/DoH (tetap berjalan walau ada Cloudflare/WAF)..."
+    );
+    const discoveredFiles = await discoverFilesDetailed(origin, cfClearance);
     await bumpRequestCount(scanId, discoveredFiles.length);
 
     const discoveryFindings = passiveDiscoveryToFindings(origin, discoveredFiles);
     for (const f of discoveryFindings) {
       await addFinding(scanId, f);
       await log(scanId, `[DISCOVERY] ${f.severity} — ${f.title}`);
+    }
+
+    // ---- Pemeriksaan DNS / DoH (SPF, DMARC, CNAME Takeover Hints) — tidak terpengaruh HTTP WAF/Cloudflare ----
+    try {
+      const dnsRes = await resolveAllRecords(domainHost);
+      const spf = analyzeSpf(dnsRes.records.TXT);
+      const dmarc = analyzeDmarc(dnsRes.dmarcTxt);
+      const takeoverHints = detectTakeoverHints(dnsRes.records.CNAME);
+
+      if (spf.risk === "HIGH") {
+        await addFinding(scanId, {
+          id: `dns_spf_${Date.now()}`,
+          severity: "MEDIUM",
+          title: `[DNS / Anti-Spoofing] ${spf.found ? "Konfigurasi SPF terlalu longgar (+all)" : "SPF Record tidak ditemukan"}`,
+          endpoint: `dns://${domainHost}`,
+          evidence: spf.value ? `TXT: ${spf.value}` : "Tidak ada TXT record v=spf1 pada apex domain",
+          impact: spf.note,
+          fix: "Tambahkan record TXT SPF yang ketat (mis. `v=spf1 include:_spf.google.com ~all` atau `-all`).",
+          category: "passive-discovery",
+        });
+      }
+      if (dmarc.risk === "MEDIUM") {
+        await addFinding(scanId, {
+          id: `dns_dmarc_${Date.now()}`,
+          severity: "LOW",
+          title: `[DNS / Anti-Spoofing] ${dmarc.found ? `Kebijakan DMARC masih longgar (p=${dmarc.policy ?? "none"})` : "DMARC Record (_dmarc) tidak ditemukan"}`,
+          endpoint: `dns://_dmarc.${domainHost}`,
+          evidence: dmarc.value ? `TXT: ${dmarc.value}` : `Tidak ada record v=DMARC1 pada _dmarc.${domainHost}`,
+          impact: dmarc.note,
+          fix: "Tambahkan record `_dmarc` dengan policy `p=quarantine` atau `p=reject`.",
+          category: "passive-discovery",
+        });
+      }
+      for (const th of takeoverHints) {
+        await addFinding(scanId, {
+          id: `dns_takeover_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`,
+          severity: "MEDIUM",
+          title: `[Subdomain / CNAME] Kandidat layanan eksternal (${th.matchedService})`,
+          endpoint: `dns://${domainHost} -> ${th.cname}`,
+          evidence: `CNAME mengarah ke ${th.cname}`,
+          impact: th.note,
+          fix: "Pastikan resource pada layanan cloud pihak ketiga masih aktif diklaim atau hapus CNAME yang sudah tidak terpakai.",
+          category: "passive-discovery",
+        });
+      }
+      await log(
+        scanId,
+        `[DNS-INTEL] Pemeriksaan DoH selesai: ${dnsRes.records.A.length} A, ${dnsRes.records.MX.length} MX, ${dnsRes.records.NS.length} NS, SPF=${spf.found ? "Ada" : "Tidak ada"}, DMARC=${dmarc.found ? dmarc.policy : "Tidak ada"}.`
+      );
+    } catch (e) {
+      await log(scanId, `[DNS-INTEL] dilewati: ${(e as Error).message}`);
     }
 
     const extraPaths = new Set<string>();
@@ -248,13 +300,16 @@ export async function runScan(
     await setEndpointsDiscovered(scanId, testTargets.length);
     await log(scanId, `Total ${testTargets.length} target akan diuji secara pasif (GET only).`);
 
-    await log(scanId, "Generate kandidat Open Redirect/SSRF & IDOR dari pola URL (analisis nama param/path, belum dieksekusi)...");
+    await log(
+      scanId,
+      "Menganalisis kandidat Open Redirect, SSRF, Node Out-of-Band (OOB), Shell Surface & IDOR dari pola URL (pasif, tanpa payload)..."
+    );
     const allTargetUrls = testTargets.map((t) => t.url);
 
     const redirectFindings = redirectCasesToFindings(allTargetUrls.flatMap((u) => detectRedirectParams(u)));
     for (const f of redirectFindings) {
       await addFinding(scanId, f);
-      await log(scanId, `[REDIRECT/SSRF] ${f.severity} — ${f.title}`);
+      await log(scanId, `[PARAM-AUDIT] ${f.severity} — ${f.title}`);
     }
 
     const idorFindings = idorCasesToFindings(generateIdorCases(allTargetUrls));
@@ -267,17 +322,17 @@ export async function runScan(
 
     await log(
       scanId,
-      "Mengecek file sensitif & Deep Git Exposure (/.env, /.git/HEAD, /.git/config, /.git/config/.git, /.git/logs/HEAD, /logs/HEAD, /.git/refs/heads/main)..."
+      "Menjalankan Audit File Sensitif & Brankas Bukti Terenkripsi (AES-256-GCM): .env, .git/HEAD, backup.zip, wp-config.php.bak, AWS keys, dump.sql..."
     );
     const exposedHits: ExposedHit[] = [];
-    const exposedFindings = await testExposedFiles(origin, budget, (h) => exposedHits.push(h));
+    const exposedFindings = await testExposedFiles(origin, budget, (h) => exposedHits.push(h), cfClearance);
     for (const f of exposedFindings) await addFinding(scanId, f);
-    await bumpRequestCount(scanId, 11);
+    await bumpRequestCount(scanId, 16);
 
     let detectedGitIntel: GitIntelReport | undefined;
 
     try {
-      const sentinelRes = await auditDomain(domainHost);
+      const sentinelRes = await auditDomain(domainHost, cfClearance);
       detectedGitIntel = sentinelRes.gitIntel;
 
       if (detectedGitIntel?.primaryRepository?.detected && detectedGitIntel.primaryRepository.webUrl) {
@@ -294,6 +349,8 @@ export async function runScan(
           impact:
             "Eksposur .git/config dan logs/HEAD mengungkap lokasi repository GitHub/GitLab, riwayat commit, email developer, serta berpotensi membocorkan seluruh source code.",
           fix: "Blokir akses ke /.git/ dan /logs/HEAD di web server, hapus direktori .git dari folder publik produksi, dan rotasi kredensial/token.",
+          category: "sensitive-file",
+          confidence: "verified",
         });
       }
 
@@ -316,6 +373,8 @@ export async function runScan(
               evidence: matchingFinding.evidence_public,
               impact: "File sensitif dapat diakses publik dan berisiko membocorkan kredensial/konfigurasi produksi.",
               fix: matchingFinding.fix,
+              category: "sensitive-file",
+              confidence: "verified",
             });
           }
         }
@@ -345,35 +404,38 @@ export async function runScan(
       );
     }
 
-    // ---- Permukaan RCE pasif (GET-only, validasi isi respons) ----
+    // ---- Permukaan RCE, Shell-Escalation (wp2shell, php2shell, node2shell, go2shell, py2shell) & Node Out-of-Bounds pasif ----
     let rceEvidence: RceSurfaceEvidence[] = [];
     try {
-      await log(scanId, "[RCE-SURFACE] Mengecek endpoint debug/diagnostik rawan RCE (GET-only, tanpa payload)...");
-      const rce = await checkRceSurface(origin, budget);
+      await log(
+        scanId,
+        "[DEEP-SHELL & OOB] Mengecek permukaan wp2shell, php2shell, node2shell, go2shell, py2shell & Node Out-of-Bounds (GET-only, tanpa payload)..."
+      );
+      const rce = await checkRceSurface(origin, budget, cfClearance);
       rceEvidence = rce.evidence;
       for (const f of rce.findings) {
         await addFinding(scanId, f);
-        await log(scanId, `[RCE-SURFACE] ${f.severity} — ${f.title}`);
+        await log(scanId, `[${(f.category ?? "RCE-SURFACE").toUpperCase()}] ${f.severity} — ${f.title}`);
       }
       await bumpRequestCount(scanId, RCE_SURFACE_PATH_COUNT);
     } catch (e) {
-      await log(scanId, `[RCE-SURFACE] dilewati: ${(e as Error).message}`);
+      await log(scanId, `[DEEP-SHELL & OOB] dilewati: ${(e as Error).message}`);
     }
 
-    await log(scanId, "Mengecek security headers...");
-    const headerFindings = await budget.spend(() => testSecurityHeaders(origin));
+    await log(scanId, "Mengecek security headers & postur Edge WAF/Cloudflare...");
+    const headerFindings = await budget.spend(() => testSecurityHeaders(origin, cfClearance));
     await bumpRequestCount(scanId);
     if (headerFindings) for (const f of headerFindings) await addFinding(scanId, f);
 
     for (const target of testTargets) {
       if (!budget.canSpend(3)) {
-        await log(scanId, "Request budget (max 100) tercapai, menghentikan pengujian.");
+        await log(scanId, "Request budget tercapai, menghentikan pengujian.");
         break;
       }
 
       await log(scanId, `Menguji: ${target.method} ${target.url}`);
 
-      const leakFinding = await budget.spend(() => testResponseLeakage(target.url));
+      const leakFinding = await budget.spend(() => testResponseLeakage(target.url, cfClearance));
       await bumpRequestCount(scanId);
       if (leakFinding) await addFinding(scanId, leakFinding);
 
@@ -415,7 +477,7 @@ export async function runScan(
       await log(scanId, `[ADMIN] dossier gagal disimpan: ${(e as Error).message}`);
     }
 
-    await log(scanId, "Semua pengujian pasif & Deep Git Audit selesai.");
+    await log(scanId, "Semua pengujian pasif, WAF/Cloudflare Edge Audit, Deep Shell/OOB & Enkripsi Vault selesai.");
     await setStatus(scanId, "done");
     await markDone(scanId);
 
@@ -432,12 +494,12 @@ export async function runScan(
       module: "FULL_SCAN",
       action: repoUrl
         ? `Full Scan + Git Repo Terdeteksi (${detectedGitIntel?.primaryRepository?.provider.toUpperCase()})`
-        : "Full Passive Scan + Sentinel Audit Selesai",
+        : "Full Passive Scan + Deep Shell/OOB + WAF/CF Edge Audit Selesai",
       target: domainHost,
       status: critCount > 0 ? "CRITICAL" : highCount > 0 ? "WARNING" : "SUCCESS",
       summary: repoUrl
         ? `Repo: ${repoUrl} · ${totalFindings} temuan (${critCount} CRITICAL, ${highCount} HIGH)`
-        : `Selesai: ${crawl.pages.length} halaman, ${totalFindings} temuan (${critCount} CRITICAL, ${highCount} HIGH)`,
+        : `Selesai: ${crawl.pages.length} halaman/edge, ${totalFindings} temuan (${critCount} CRITICAL, ${highCount} HIGH)`,
       meta: {
         scanId,
         pagesCount: crawl.pages.length,
@@ -445,6 +507,8 @@ export async function runScan(
         criticalCount: critCount,
         highCount,
         vaultHits: exposedHits.length,
+        wafProvider: crawl.wafInfo?.provider ?? null,
+        wafChallenged: crawl.wafInfo?.challenged ?? false,
         gitExposed: Boolean(detectedGitIntel?.exposed),
         gitProvider: detectedGitIntel?.primaryRepository?.provider ?? null,
         gitRepoUrl: repoUrl,

@@ -1,17 +1,20 @@
 /**
  * lib/discovery/passiveDiscovery.ts
  *
- * CORS-safe passive discovery: coba fetch beberapa well-known file (sitemap,
- * robots.txt, swagger/openapi spec) dan tarik path baru dari isinya.
- * Semua fetch dibungkus try-catch per-request — kalau kena CORS/network
- * error, di-skip diam-diam, TIDAK melempar error ke pemanggil (spec: "jangan
- * errorin app").
- *
- * Pure-ish (satu-satunya side effect adalah network fetch, tidak ada
- * Node.js fs / backend dependency). Jalan penuh di browser.
+ * Passive discovery: coba fetch beberapa well-known file (sitemap.xml,
+ * robots.txt, swagger.json, openapi.json, .well-known/security.txt) dan tarik path baru dari isinya.
+ * Mendukung pemeriksaan tetap berjalan walau ada Cloudflare / WAF dengan validasi konten non-challenge.
  */
 
-const WELL_KNOWN_FILES = ["/sitemap.xml", "/robots.txt", "/swagger.json", "/openapi.json"] as const;
+import { chromeHeaders, detectCloudflareChallenge } from "@/lib/crawler";
+
+const WELL_KNOWN_FILES = [
+  "/sitemap.xml",
+  "/robots.txt",
+  "/.well-known/security.txt",
+  "/swagger.json",
+  "/openapi.json",
+] as const;
 
 export interface DiscoveredFileResult {
   path: string;
@@ -27,10 +30,8 @@ function normalizeBaseUrl(baseUrl: string): string {
 
 function toPath(rawUrlOrPath: string, origin: string): string | null {
   try {
-    // absolute URL (mis. <loc>https://site.com/page</loc>)
     if (/^https?:\/\//i.test(rawUrlOrPath)) {
       const u = new URL(rawUrlOrPath);
-      // hanya ambil kalau origin sama, biar tidak nyasar ke domain lain
       if (u.origin !== origin) return null;
       return u.pathname + u.search;
     }
@@ -41,7 +42,6 @@ function toPath(rawUrlOrPath: string, origin: string): string | null {
   }
 }
 
-/** Extract semua <loc>...</loc> dari sitemap.xml (regex, bukan XML parser, biar 0-dependency). */
 function parseSitemapXml(xml: string, origin: string): string[] {
   const out = new Set<string>();
   const locRe = /<loc>\s*([^<\s][^<]*?)\s*<\/loc>/gi;
@@ -53,7 +53,6 @@ function parseSitemapXml(xml: string, origin: string): string[] {
   return Array.from(out);
 }
 
-/** Extract path dari robots.txt: baris Allow:/Disallow: dan URL di baris Sitemap:. */
 function parseRobotsTxt(text: string, origin: string): string[] {
   const out = new Set<string>();
   const lines = text.split(/\r?\n/);
@@ -74,38 +73,52 @@ function parseRobotsTxt(text: string, origin: string): string[] {
   return Array.from(out);
 }
 
-async function tryFetchFile(url: string, origin: string): Promise<DiscoveredFileResult> {
+async function tryFetchFile(url: string, origin: string, cfClearance?: string): Promise<DiscoveredFileResult> {
   const path = new URL(url).pathname;
   try {
-    const res = await fetch(url, { mode: "cors" });
+    const res = await fetch(url, {
+      method: "GET",
+      headers: chromeHeaders(origin, cfClearance),
+      redirect: "follow",
+    });
     if (!res.ok) {
       return { path, found: false, status: res.status, extractedPaths: [] };
     }
     const text = await res.text();
+    if (detectCloudflareChallenge(res.status, res.headers, text.slice(0, 2000))) {
+      return { path, found: false, status: res.status, extractedPaths: [] };
+    }
     let extractedPaths: string[] = [];
-    if (path.endsWith("sitemap.xml")) extractedPaths = parseSitemapXml(text, origin);
-    else if (path.endsWith("robots.txt")) extractedPaths = parseRobotsTxt(text, origin);
-    // swagger.json / openapi.json sengaja tidak di-parse di sini (itu tugas
-    // module fingerprint/endpoint terpisah) — cukup dicatat "found" dulu.
+    if (path.endsWith("sitemap.xml")) {
+      if (!/<(?:urlset|sitemapindex)\b/i.test(text)) {
+        return { path, found: false, status: res.status, extractedPaths: [] };
+      }
+      extractedPaths = parseSitemapXml(text, origin);
+    } else if (path.endsWith("robots.txt")) {
+      if (!/^\s*(?:user-agent|disallow|allow|sitemap)\s*:/im.test(text)) {
+        return { path, found: false, status: res.status, extractedPaths: [] };
+      }
+      extractedPaths = parseRobotsTxt(text, origin);
+    } else if (path.endsWith("security.txt")) {
+      if (!/^\s*(?:contact|expires|encryption|policy)\s*:/im.test(text)) {
+        return { path, found: false, status: res.status, extractedPaths: [] };
+      }
+    } else if (path.endsWith(".json")) {
+      if (!/"(?:swagger|openapi)"\s*:/i.test(text)) {
+        return { path, found: false, status: res.status, extractedPaths: [] };
+      }
+    }
     return { path, found: true, status: res.status, extractedPaths };
   } catch {
-    // CORS error, network error, DNS fail, dll — skip diam-diam sesuai spec.
     return { path, found: false, extractedPaths: [] };
   }
 }
 
-/**
- * Coba fetch beberapa well-known file (sitemap.xml, robots.txt, swagger.json,
- * openapi.json) dari baseUrl dengan mode "cors". Setiap request di-try-catch
- * independen supaya satu file gagal (CORS/network) tidak menggagalkan yang
- * lain. Return array path unik gabungan: file yang berhasil ditemukan +
- * path baru yang berhasil diparse dari isi sitemap/robots.
- */
-export async function discoverFiles(baseUrl: string): Promise<string[]> {
+export async function discoverFiles(baseUrl: string, cfClearance?: string): Promise<string[]> {
   const origin = new URL(normalizeBaseUrl(baseUrl)).origin;
   const targets = WELL_KNOWN_FILES.map((f) => origin + f);
 
-  const results = await Promise.all(targets.map((url) => tryFetchFile(url, origin)));
+  const results = await Promise.all(targets.map((url) => tryFetchFile(url, origin, cfClearance)));
 
   const discovered = new Set<string>();
   for (const r of results) {
@@ -116,9 +129,11 @@ export async function discoverFiles(baseUrl: string): Promise<string[]> {
   return Array.from(discovered);
 }
 
-/** Variant yang mengembalikan detail per-file (status, apa yang berhasil diparse), untuk laporan. */
-export async function discoverFilesDetailed(baseUrl: string): Promise<DiscoveredFileResult[]> {
+export async function discoverFilesDetailed(
+  baseUrl: string,
+  cfClearance?: string
+): Promise<DiscoveredFileResult[]> {
   const origin = new URL(normalizeBaseUrl(baseUrl)).origin;
   const targets = WELL_KNOWN_FILES.map((f) => origin + f);
-  return Promise.all(targets.map((url) => tryFetchFile(url, origin)));
+  return Promise.all(targets.map((url) => tryFetchFile(url, origin, cfClearance)));
 }
