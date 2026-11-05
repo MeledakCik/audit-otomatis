@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { GitIntelReport } from "@/lib/sentinel/git-intel";
+import { dossierToMarkdown, type CveDossier } from "@/lib/sentinel/dossier";
 
 interface Item {
   key: string;
@@ -33,6 +34,7 @@ interface Ev {
   snippet: string;
   domain: string;
   gitIntel?: GitIntelReport;
+  cveIntel?: CveDossier;
 }
 
 const fmt = (s: number) => `${Math.floor(s / 3600)}j ${Math.floor((s % 3600) / 60)}m`;
@@ -94,6 +96,9 @@ export function VaultTable() {
     if (!open) return "";
     if (open.ev.gitIntel) {
       return JSON.stringify(open.ev.gitIntel, null, 2);
+    }
+    if (open.ev.cveIntel) {
+      return JSON.stringify(open.ev.cveIntel, null, 2);
     }
     try {
       const parsed = JSON.parse(open.ev.snippet);
@@ -309,6 +314,24 @@ export function VaultTable() {
                   Raw Evidence
                 </button>
               </div>
+              {open.ev.cveIntel && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const d = open.ev.cveIntel!;
+                    const blob = new Blob([dossierToMarkdown(d)], { type: "text/markdown;charset=utf-8" });
+                    const a = document.createElement("a");
+                    a.href = URL.createObjectURL(blob);
+                    a.download = `laporan-${d.domain}-${new Date(d.generatedAt).toISOString().slice(0, 10)}.md`;
+                    a.click();
+                    URL.revokeObjectURL(a.href);
+                  }}
+                  className="inline-flex items-center gap-1 rounded-lg bg-amber-500/20 px-3 py-1 font-bold text-amber-300 hover:bg-amber-500/30 cursor-pointer"
+                >
+                  <FileJson className="h-3.5 w-3.5" />
+                  Export laporan (.md)
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() =>

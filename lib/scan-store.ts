@@ -1,3 +1,4 @@
+import { withCwe } from "./vuln/cwe";
 import type {
   CrawledPage,
   DiscoveredEndpoint,
@@ -133,7 +134,7 @@ export async function log(id: string, message: string): Promise<void> {
 }
 
 export async function addFinding(id: string, finding: Finding): Promise<void> {
-  await emit(id, { type: "finding", finding });
+  await emit(id, { type: "finding", finding: withCwe(finding) });
 }
 
 export async function markDone(id: string): Promise<void> {

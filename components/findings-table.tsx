@@ -18,6 +18,8 @@ const CATEGORY_LABELS: Record<NonNullable<Finding["category"]>, string> = {
   "auth-bypass": "auth bypass",
   "missing-rate-limit": "no rate limit",
   "passive-discovery": "discovery",
+  "cve-match": "cve",
+  "rce-surface": "rce surface",
 };
 
 export function FindingsTable({ findings }: { findings: Finding[] }) {
@@ -64,6 +66,19 @@ export function FindingsTable({ findings }: { findings: Finding[] }) {
                   <Row label="Endpoint" value={f.endpoint} mono />
                   {f.category && <Row label="Kategori" value={CATEGORY_LABELS[f.category]} />}
                   <Row label="Bukti" value={f.evidence} mono />
+                  {(f.cve?.length || f.cwe || f.rce) && (
+                    <Row
+                      label="Referensi"
+                      value={[f.cve?.join(", "), f.cwe, f.rce ? "POTENSI RCE (indikator pasif)" : ""].filter(Boolean).join(" · ")}
+                      mono
+                    />
+                  )}
+                  {f.confidence && (
+                    <Row
+                      label="Keyakinan"
+                      value={f.confidence === "verified" ? "Terverifikasi dari isi respons" : "Berbasis versi terdeteksi (perlu verifikasi manual)"}
+                    />
+                  )}
                   {typeof f.cvss === "number" && (
                     <Row label="CVSS" value={`${f.cvss.toFixed(1)}${f.cwe ? ` · ${f.cwe}` : ""}`} mono />
                   )}

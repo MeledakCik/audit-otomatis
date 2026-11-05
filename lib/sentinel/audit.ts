@@ -1,5 +1,6 @@
 import { assertPublicHttpsTarget } from "@/lib/ssrf-guard";
 import { validateDomainInput } from "@/lib/validate-domain";
+import type { CveDossier } from "./dossier";
 import {
   GIT_PASSIVE_PROBES,
   validateGitProbeResponse,
@@ -28,6 +29,7 @@ export interface RawEvidence {
   marker: string;
   snippet: string; // ≤4 KB awal body atau JSON terstruktur
   gitIntel?: GitIntelReport;
+  cveIntel?: CveDossier; // dossier CVE/CWE/RCE lengkap — HANYA admin (vault terenkripsi)
 }
 
 export interface AuditResult {

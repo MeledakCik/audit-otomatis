@@ -3,7 +3,10 @@ import { analyzeJsSource, analyzeInlineScripts, fetchJsFiles } from "./js-analyz
 import { scanSecrets } from "./secret-scanner";
 import { fingerprintLibraries, libraryDetectionsToFindings, detectNextJs } from "./library-fingerprint";
 import { testResponseLeakage, testAntiAutomation, testExposedFiles, testSecurityHeaders, type ExposedHit } from "./tester";
-import { publishScanCriticals } from "./sentinel/publish";
+import { publishScanCriticals, publishDossier, dossierPublicFindings } from "./sentinel/publish";
+import { collectComponents, runCveIntel, cveHitsToFindings, emptyIntel, type CveIntelResult } from "./vuln/cve-intel";
+import { checkRceSurface, RCE_SURFACE_PATH_COUNT } from "./vuln/rce-surface";
+import { buildDossier, type RceSurfaceEvidence } from "./sentinel/dossier";
 import { auditDomain } from "./sentinel/audit";
 import type { GitIntelReport } from "./sentinel/git-intel";
 import { logUserActivity } from "./activity-store";
@@ -171,6 +174,21 @@ export async function runScan(
     await setLibrariesDetected(scanId, allLibraryDetections);
     await log(scanId, `Fingerprint library selesai: ${allLibraryDetections.length} versi terdeteksi, ${libFindings.length} CVE cocok.`);
 
+    // ---- CVE/CWE intel (pasif: versi terdeteksi → OSV/NVD). Tidak ada request ke target. ----
+    let cveIntel: CveIntelResult = emptyIntel();
+    try {
+      const comps = collectComponents(allLibraryDetections, crawl.pages);
+      await log(scanId, `[CVE-INTEL] ${comps.length} komponen bervers terdeteksi, mencocokkan ke OSV/NVD...`);
+      cveIntel = await runCveIntel(comps, (m) => log(scanId, String(m)));
+      const known = new Set(allLibraryDetections.map((d) => d.cve).filter(Boolean) as string[]);
+      for (const f of cveHitsToFindings(cveIntel.hits.filter((h) => !known.has(h.id)), 12)) {
+        await addFinding(scanId, f);
+        await log(scanId, `[CVE] ${f.severity} — ${f.title}`);
+      }
+    } catch (e) {
+      await log(scanId, `[CVE-INTEL] dilewati: ${(e as Error).message}`);
+    }
+
     const allInline = crawl.allInlineScripts.flatMap((p) => p.scripts);
     await log(scanId, `Menganalisis ${allInline.length} inline script (semua halaman)...`);
     const inlineResult = analyzeInlineScripts(allInline, (msg) => log(scanId, msg));
@@ -327,6 +345,21 @@ export async function runScan(
       );
     }
 
+    // ---- Permukaan RCE pasif (GET-only, validasi isi respons) ----
+    let rceEvidence: RceSurfaceEvidence[] = [];
+    try {
+      await log(scanId, "[RCE-SURFACE] Mengecek endpoint debug/diagnostik rawan RCE (GET-only, tanpa payload)...");
+      const rce = await checkRceSurface(origin, budget);
+      rceEvidence = rce.evidence;
+      for (const f of rce.findings) {
+        await addFinding(scanId, f);
+        await log(scanId, `[RCE-SURFACE] ${f.severity} — ${f.title}`);
+      }
+      await bumpRequestCount(scanId, RCE_SURFACE_PATH_COUNT);
+    } catch (e) {
+      await log(scanId, `[RCE-SURFACE] dilewati: ${(e as Error).message}`);
+    }
+
     await log(scanId, "Mengecek security headers...");
     const headerFindings = await budget.spend(() => testSecurityHeaders(origin));
     await bumpRequestCount(scanId);
@@ -358,6 +391,28 @@ export async function runScan(
       }
 
       await sleep(50);
+    }
+
+    // ---- Dossier lengkap untuk ADMIN (vault terenkripsi); user hanya melihat temuan ringkas di atas ----
+    try {
+      const st = await getScan(scanId);
+      const dossier = buildDossier({
+        domain: domainHost,
+        origin,
+        components: cveIntel.components,
+        hits: cveIntel.hits,
+        rceSurface: rceEvidence,
+        findings: (st?.findings ?? []).map((f) => ({ severity: f.severity, title: f.title, endpoint: f.endpoint, cwe: f.cwe })),
+      });
+      if (dossier.summary.cveTotal > 0 || dossier.summary.rceSurface > 0) {
+        await publishDossier(domainHost, dossier, dossierPublicFindings(dossier));
+        await log(
+          scanId,
+          `[ADMIN] Dossier CVE/CWE/RCE (${dossier.summary.cveTotal} CVE, ${dossier.summary.rcePotential} potensi RCE, ${dossier.summary.rceSurface} endpoint rawan) tersimpan terenkripsi di Sentinel Vault.`
+        );
+      }
+    } catch (e) {
+      await log(scanId, `[ADMIN] dossier gagal disimpan: ${(e as Error).message}`);
     }
 
     await log(scanId, "Semua pengujian pasif & Deep Git Audit selesai.");

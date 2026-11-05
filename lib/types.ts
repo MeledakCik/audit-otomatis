@@ -30,7 +30,10 @@ export interface Finding {
   impact: string;
   fix: string;
   cvss?: number; // estimasi CVSS 0-10, hanya untuk temuan gaya pentest (secret/CVE)
-  cwe?: string; // referensi CWE-xxx kalau relevan
+  cwe?: string; // referensi CWE-xxx kalau relevan (boleh beberapa, dipisah koma)
+  cve?: string[]; // CVE terkait (mis. hasil pencocokan versi)
+  rce?: boolean; // true = potensi eksekusi kode jarak jauh (indikator pasif, BUKAN bukti eksploitasi)
+  confidence?: "verified" | "version-based"; // verified = isi respons tervalidasi; version-based = cocok dari versi terdeteksi
   poc?: string; // contoh request non-destruktif (curl), hanya ilustrasi
   category?:
     | "secret"
@@ -42,7 +45,9 @@ export interface Finding {
     | "idor-candidate"
     | "auth-bypass"
     | "missing-rate-limit"
-    | "passive-discovery";
+    | "passive-discovery"
+    | "cve-match"
+    | "rce-surface";
 }
 
 // --- Deep crawl: peta relasi page -> js -> endpoint ---
