@@ -40,14 +40,9 @@ export interface AuditResult {
   findings: PublicFinding[];
   raw: RawEvidence[];
   gitIntel?: GitIntelReport;
-  wafDetected?: {
-    provider: string;
-    challenged: boolean;
-    cfRay?: string;
-    status: number;
-  };
 }
 
+const UA = "Sentinel-ID Passive Auditor/3.2 (+https://sentinel-id.net)";
 const TIMEOUT_MS = 8000;
 const MAX_TEXT_BYTES = 64 * 1024;
 const CONCURRENCY = 6;
@@ -73,7 +68,7 @@ async function get(url: string, wantBytes = MAX_TEXT_BYTES, cfClearance?: string
     const reader = res.body?.getReader();
     const chunks: Uint8Array[] = [];
     let total = 0;
-    if (reader && (res.status === 200 || res.status === 405 || res.status === 403 || res.status === 503)) {
+    if (reader && res.status === 200) {
       while (total < wantBytes) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -486,48 +481,9 @@ export async function auditDomain(input: string, cfClearance?: string): Promise<
     });
   }
 
-  // 2) DEEP SHELL & OUT-OF-BOUNDS SURFACE PROBES (wp2shell, php2shell, node2shell, go2shell, py2shell, node-oob)
-  await pool(RCE_SPECS, CONCURRENCY, async (spec) => {
-    const r = await get(at(spec.path), MAX_TEXT_BYTES, cfClearance);
-    if (!r) return;
-    if (detectCloudflareChallenge(r.status, r.headers, r.text.slice(0, 2000))) return;
-    const sev = evaluateRceSpec(spec, r.status, r.contentType, r.text);
-    if (!sev) return;
-
-    const mappedSev: Sev = sev === "CRITICAL" ? "CRITICAL" : "HIGH";
-    findings.push({
-      domain,
-      severity: mappedSev,
-      finding: `${spec.title}${spec.rce ? " — Potensi RCE" : ""}`,
-      evidence_public: `HTTP ${r.status}, penanda "${spec.marker}" terverifikasi secara pasif (bukti mentah dienkripsi AES-256-GCM di Admin Vault)`,
-      fix: spec.fix,
-    });
-
-    raw.push({
-      domain,
-      path: spec.path,
-      status: r.status,
-      contentType: r.contentType,
-      marker: `[${spec.vector.toUpperCase()}] ${spec.marker}`,
-      snippet: r.text.slice(0, 2048),
-    });
-  });
-
-  // 3) HIGH — security headers & WAF/Cloudflare Edge inspection dari homepage
-  // Tetap diperiksa meskipun homepage merespons HTTP 403/503 karena proteksi WAF/Cloudflare!
-  const home = await getHome(origin, cfClearance);
-  let wafDetected: AuditResult["wafDetected"];
-  if (home && home.status >= 200 && home.status <= 503) {
-    const wafInfo = detectWafAndEdgeInfo(home.status, home.headers, home.text.slice(0, 2000));
-    if (wafInfo.detected) {
-      wafDetected = {
-        provider: wafInfo.provider,
-        challenged: wafInfo.challenged,
-        cfRay: wafInfo.cfRay,
-        status: home.status,
-      };
-    }
-
+  // 2) HIGH — security headers dari homepage
+  const home = await getHome(origin);
+  if (home && home.status >= 200 && home.status < 400) {
     const h = home.headers;
     const csp = h.get("content-security-policy") ?? "";
     const edgeSuffix = wafInfo.challenged ? " (diperiksa langsung dari respons Edge WAF/Cloudflare)" : "";

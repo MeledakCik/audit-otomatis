@@ -173,14 +173,8 @@ export async function testExposedFiles(
     const url = new URL(path, origin).toString();
     const result = await budget.spend(async () => {
       try {
-        const res = await fetch(url, {
-          method: "GET",
-          headers: chromeHeaders(origin, cfClearance),
-          redirect: "manual",
-        });
-        const buf = Buffer.from(await res.arrayBuffer());
-        const text = buf.subarray(0, 64 * 1024).toString("utf8");
-        const head = new Uint8Array(buf.subarray(0, 8));
+        const res = await fetch(url, { method: "GET", headers: chromeHeaders(), redirect: "manual" });
+        const text = (await res.text()).slice(0, 64 * 1024);
         return {
           status: res.status,
           headers: res.headers,

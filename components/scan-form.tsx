@@ -76,9 +76,7 @@ export function ScanForm() {
               className="text-xs font-mono uppercase tracking-wider text-purple-300/90 font-semibold flex items-center justify-between"
             >
               <span>Domain / URL Target</span>
-              <span className="text-[11px] text-emerald-400 font-normal">
-                WAF &amp; CF Resilient · GDG Bandung Verified
-              </span>
+              <span className="text-[11px] text-emerald-400 font-normal">GET-Only · Aman</span>
             </label>
             <div className="relative">
               <Globe className="h-4 w-4 text-purple-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -141,7 +139,7 @@ export function ScanForm() {
           <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] p-3 space-y-2">
             <div className="text-[11px] font-mono text-slate-400 flex items-center gap-1.5">
               <Sparkles className="h-3 w-3 text-purple-400" />
-              <span>Otomatis menjalankan 7 engine keamanan mendalam sekaligus:</span>
+              <span>Otomatis menjalankan 5 engine sekaligus:</span>
             </div>
             <div className="flex flex-wrap gap-1.5 text-[10px] font-mono">
               <span className="rounded-md bg-purple-500/15 border border-purple-500/30 px-2 py-0.5 text-purple-200">
@@ -150,20 +148,11 @@ export function ScanForm() {
               <span className="rounded-md bg-purple-500/15 border border-purple-500/30 px-2 py-0.5 text-purple-200">
                 2. AST JS &amp; Secret Scan
               </span>
-              <span className="rounded-md bg-pink-500/15 border border-pink-500/30 px-2 py-0.5 text-pink-200">
-                3. wp2shell · php2shell · node2shell · go2shell · py2shell
-              </span>
-              <span className="rounded-md bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 text-amber-200">
-                4. Node Out-of-Bounds (OOB) &amp; Heap
-              </span>
-              <span className="rounded-md bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 text-emerald-200">
-                5. Audit File Sensitif &amp; Vault AES-256-GCM
-              </span>
-              <span className="rounded-md bg-sky-500/15 border border-sky-500/30 px-2 py-0.5 text-sky-200">
-                6. Cloudflare/WAF Edge &amp; DNS/DoH Intel
+              <span className="rounded-md bg-purple-500/15 border border-purple-500/30 px-2 py-0.5 text-purple-200">
+                3. Sentinel Vault (.env/.git)
               </span>
               <span className="rounded-md bg-purple-500/15 border border-purple-500/30 px-2 py-0.5 text-purple-200">
-                7. Header &amp; OSV/NVD CVE Intel
+                4. Header &amp; CVE Fingerprint
               </span>
             </div>
           </div>
@@ -199,11 +188,9 @@ export function ScanForm() {
             )}
           </Button>
 
-          <div className="flex items-center justify-center gap-2 text-[11px] font-mono text-slate-400 text-center">
-            <ShieldCheck className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
-            <span>
-              100% Passive GET-Only · Tetap berjalan walau ada Cloudflare/WAF · Terverifikasi Google Developer Bandung
-            </span>
+          <div className="flex items-center justify-center gap-2 text-[11px] font-mono text-slate-400">
+            <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
+            <span>100% Passive GET-Only · Bukti kritis otomatis masuk Encrypted Vault</span>
           </div>
         </form>
       ) : (
