@@ -18,6 +18,9 @@ import {
 import { cn } from "@/lib/utils";
 import type { GitIntelReport } from "@/lib/sentinel/git-intel";
 import { dossierToMarkdown, type CveDossier } from "@/lib/sentinel/dossier";
+import { sensitiveDossierToMarkdown } from "@/lib/sentinel/sensitive-dossier";
+import type { SensitiveDossier } from "@/lib/sentinel/sensitive-types";
+import { SelfTestPanel } from "./selftest-panel";
 
 interface Item {
   key: string;
@@ -35,6 +38,7 @@ interface Ev {
   domain: string;
   gitIntel?: GitIntelReport;
   cveIntel?: CveDossier;
+  sensitiveIntel?: SensitiveDossier;
 }
 
 const fmt = (s: number) => `${Math.floor(s / 3600)}j ${Math.floor((s % 3600) / 60)}m`;
@@ -100,6 +104,9 @@ export function VaultTable() {
     if (open.ev.cveIntel) {
       return JSON.stringify(open.ev.cveIntel, null, 2);
     }
+    if (open.ev.sensitiveIntel) {
+      return JSON.stringify(open.ev.sensitiveIntel, null, 2);
+    }
     try {
       const parsed = JSON.parse(open.ev.snippet);
       return JSON.stringify(
@@ -133,6 +140,7 @@ export function VaultTable() {
 
   return (
     <section className="space-y-4">
+      <SelfTestPanel />
       <div className="rounded-2xl border border-white/10 bg-[#120d1d] p-5 flex flex-wrap items-center justify-between gap-4">
         <div className="space-y-1">
           <div className="inline-flex items-center gap-1.5 rounded-full bg-pink-500/15 border border-pink-500/30 px-2.5 py-0.5 text-[10px] font-mono font-bold text-pink-300">
@@ -259,6 +267,48 @@ export function VaultTable() {
               </button>
             </div>
 
+            {open.ev.sensitiveIntel && (
+              <div
+                className={cn(
+                  "rounded-xl border p-3.5",
+                  open.ev.sensitiveIntel.summary.liveSecrets > 0
+                    ? "border-red-500/40 bg-red-500/10"
+                    : "border-amber-500/35 bg-amber-500/10"
+                )}
+              >
+                <p
+                  className={cn(
+                    "text-xs font-mono font-bold",
+                    open.ev.sensitiveIntel.summary.liveSecrets > 0 ? "text-red-300" : "text-amber-300"
+                  )}
+                >
+                  ⚠ Audit File Sensitif: {open.ev.sensitiveIntel.summary.totalFiles} file ditemukan ·{" "}
+                  {open.ev.sensitiveIntel.summary.criticalFiles} CRITICAL ·{" "}
+                  {open.ev.sensitiveIntel.summary.liveSecrets} kredensial nyata (live) ·{" "}
+                  {open.ev.sensitiveIntel.summary.placeholderSecrets} placeholder
+                </p>
+                {open.ev.sensitiveIntel.summary.awsAccountIds.length > 0 && (
+                  <p className="mt-1 text-[11px] font-mono text-slate-300">
+                    ID akun AWS (diturunkan offline): {open.ev.sensitiveIntel.summary.awsAccountIds.join(", ")}
+                  </p>
+                )}
+                <ul className="mt-2 space-y-1 text-[11px] font-mono text-slate-300 max-h-32 overflow-y-auto thin-scroll">
+                  {open.ev.sensitiveIntel.entries.slice(0, 12).map((e) => (
+                    <li key={e.path} className="flex flex-wrap items-center gap-x-2">
+                      <span className={e.severity === "CRITICAL" ? "text-red-300 font-bold" : "text-amber-300 font-bold"}>
+                        {e.severity}
+                      </span>
+                      <span className="text-white">{e.path}</span>
+                      <span className="text-slate-400">
+                        — {e.analysis.liveCount > 0 ? `${e.analysis.liveCount} nyata` : "tanpa kredensial nyata"}
+                        {e.confidence === "existence-only" ? " · indikasi" : ""}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
             {open.ev.gitIntel?.primaryRepository?.webUrl && (
               <div className="rounded-xl border border-emerald-500/35 bg-emerald-500/10 p-3.5 flex flex-wrap items-center justify-between gap-2">
                 <div className="text-xs font-mono">
@@ -327,6 +377,24 @@ export function VaultTable() {
                     URL.revokeObjectURL(a.href);
                   }}
                   className="inline-flex items-center gap-1 rounded-lg bg-amber-500/20 px-3 py-1 font-bold text-amber-300 hover:bg-amber-500/30 cursor-pointer"
+                >
+                  <FileJson className="h-3.5 w-3.5" />
+                  Export laporan (.md)
+                </button>
+              )}
+              {open.ev.sensitiveIntel && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const d = open.ev.sensitiveIntel!;
+                    const blob = new Blob([sensitiveDossierToMarkdown(d)], { type: "text/markdown;charset=utf-8" });
+                    const a = document.createElement("a");
+                    a.href = URL.createObjectURL(blob);
+                    a.download = `laporan-file-sensitif-${d.domain}-${new Date(d.generatedAt).toISOString().slice(0, 10)}.md`;
+                    a.click();
+                    URL.revokeObjectURL(a.href);
+                  }}
+                  className="inline-flex items-center gap-1 rounded-lg bg-red-500/20 px-3 py-1 font-bold text-red-300 hover:bg-red-500/30 cursor-pointer"
                 >
                   <FileJson className="h-3.5 w-3.5" />
                   Export laporan (.md)

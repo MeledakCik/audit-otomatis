@@ -5,7 +5,7 @@ import { cweName } from "@/lib/vuln/cwe";
 export interface Component {
   name: string;
   version: string;
-  kind: "npm" | "cpe";
+  kind: "npm" | "cpe" | "packagist";
   cpe?: { vendor: string; product: string };
   source: string;   // URL/halaman asal deteksi
   evidence: string; // nilai header / banner yang dipakai (hanya admin)

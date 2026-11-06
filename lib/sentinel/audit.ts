@@ -4,6 +4,17 @@ import { chromeHeaders, detectCloudflareChallenge, detectWafAndEdgeInfo } from "
 import type { CveDossier } from "./dossier";
 import { RCE_SPECS, evaluateRceSpec } from "@/lib/vuln/rce-surface";
 import {
+  buildCatalog,
+  evaluateSensitive,
+  publicSummaryLine,
+  extractListingFiles,
+  specForListedFile,
+  type SensitiveHit,
+  type SensitiveSpec,
+} from "./sensitive";
+import { buildSensitiveDossier } from "./sensitive-dossier";
+import type { SensitiveFileEntry } from "./sensitive-types";
+import {
   GIT_PASSIVE_PROBES,
   validateGitProbeResponse,
   buildGitIntelReport,
@@ -32,6 +43,7 @@ export interface RawEvidence {
   snippet: string; // ≤4 KB awal body atau JSON terstruktur
   gitIntel?: GitIntelReport;
   cveIntel?: CveDossier; // dossier CVE/CWE/RCE lengkap — HANYA admin (vault terenkripsi)
+  sensitiveIntel?: import("./sensitive-types").SensitiveDossier; // dossier Audit File Sensitif — HANYA admin
 }
 
 export interface AuditResult {
@@ -483,6 +495,87 @@ export async function auditDomain(input: string, cfClearance?: string): Promise<
         : `GIT_INTEL_JSON (${gitHits.length} files)`,
       snippet: JSON.stringify(gitIntel, null, 2),
       gitIntel,
+    });
+  }
+
+  // 1c) AUDIT FILE SENSITIF — katalog luas (env, config PHP, vendor/composer, SQL dump, arsip,
+  //     private key, kredensial, cloud state, dsb). Nilai rahasia TIDAK PERNAH masuk ke `findings`
+  //     publik; hanya jenis + jumlah (lihat publicSummaryLine). Nilai penuh hanya di Admin Vault.
+  const sensitiveEntries: SensitiveFileEntry[] = [];
+  const catalog = buildCatalog(domain, { deep: true, skipPaths: new Set(CRITICAL_CHECKS.map((c) => c.path)) });
+  let sensitivePathsChecked = catalog.length;
+
+  const runSensitive = async (spec: SensitiveSpec, baselineStatus?: number) => {
+    const r = await get(at(spec.path), spec.bytes ?? MAX_TEXT_BYTES, cfClearance);
+    if (!r) return;
+    if (detectCloudflareChallenge(r.status, r.headers, r.text.slice(0, 2000))) return;
+    const hit = evaluateSensitive(
+      spec,
+      { status: r.status, contentType: r.contentType, text: r.text, head: r.head, size: Number(r.headers.get("content-length")) || undefined, lastModified: r.headers.get("last-modified") ?? undefined, etag: r.headers.get("etag") ?? undefined },
+      spec.needsBaseline ? { baseline: { status: baselineStatus ?? -1, length: 0 } } : {},
+      at(spec.path)
+    );
+    if (!hit) return;
+
+    findings.push({
+      domain,
+      severity: hit.severity,
+      finding: hit.spec.title,
+      evidence_public: publicSummaryLine(hit, r.status),
+      fix: hit.spec.fix,
+    });
+    raw.push({ domain, path: spec.path, status: r.status, contentType: r.contentType, marker: hit.marker, snippet: hit.snippet });
+    sensitiveEntries.push({
+      path: spec.path,
+      url: at(spec.path),
+      title: hit.spec.title,
+      category: hit.spec.category,
+      severity: hit.severity,
+      fileKind: hit.fileKind,
+      marker: hit.marker,
+      status: r.status,
+      confidence: hit.spec.confidence ?? "verified",
+      analysis: hit.analysis,
+      cwe: hit.spec.cwe,
+      cve: hit.spec.cve,
+      rce: hit.spec.rce,
+      fix: hit.spec.fix,
+    });
+  };
+
+  // path acak (bukan dari katalog) untuk membedakan "200 selalu" (SPA catch-all) dari true positive
+  // pada spec yang butuh baseline (mis. indikasi eval-stdin.php).
+  let baselineStatus: number | undefined;
+  if (catalog.some((s) => s.needsBaseline)) {
+    const probe = await get(at(`/__sentinel-baseline-${Math.random().toString(36).slice(2, 10)}.php`), 256, cfClearance);
+    baselineStatus = probe?.status;
+  }
+  await pool(catalog, CONCURRENCY, (spec) => runSensitive(spec, baselineStatus));
+
+  // 1d) Dynamic discovery: file arsip/SQL/.env yang TERLIHAT NAMANYA di directory listing yang
+  //     sudah ditemukan HIGH_DIRS/ homepage, bukan tebakan nama — hindari duplikasi dengan katalog statis.
+  const listedSpecs: SensitiveSpec[] = [];
+  for (const dir of ["/", ...HIGH_DIRS]) {
+    const r = await get(at(dir), MAX_TEXT_BYTES, cfClearance);
+    if (!r || r.status !== 200 || !/(<title>|<h1>)\s*Index of \//i.test(r.text)) continue;
+    for (const name of extractListingFiles(r.text)) {
+      const spec = specForListedFile(dir, name);
+      if (!catalog.some((c) => c.path === spec.path) && !listedSpecs.some((c) => c.path === spec.path)) listedSpecs.push(spec);
+    }
+  }
+  sensitivePathsChecked += listedSpecs.length;
+  await pool(listedSpecs, CONCURRENCY, (spec) => runSensitive(spec));
+
+  if (sensitiveEntries.length) {
+    const sdossier = buildSensitiveDossier(domain, origin.toString(), sensitivePathsChecked, sensitiveEntries);
+    raw.unshift({
+      domain,
+      path: "/__sensitive-file-audit.json",
+      status: 200,
+      contentType: "application/json",
+      marker: `Audit File Sensitif — ${sdossier.summary.totalFiles} file, ${sdossier.summary.liveSecrets} kredensial nyata (live)`,
+      snippet: JSON.stringify(sdossier, null, 2),
+      sensitiveIntel: sdossier,
     });
   }
 

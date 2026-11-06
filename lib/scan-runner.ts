@@ -354,9 +354,15 @@ export async function runScan(
         });
       }
 
+      // Path internal beraplanda "/__" adalah dossier JSON agregat (git/cve/sensitive-file) untuk
+      // Admin Vault SAJA — tidak pernah bukti "path yang ter-expose" dan tidak boleh jadi Finding.
+      const isInternalAggregate = (p: string) => p.startsWith("/__") && p.endsWith(".json");
+
       for (const r of sentinelRes.raw) {
+        if (isInternalAggregate(r.path)) continue;
         if (!exposedHits.some((h) => h.raw.path === r.path)) {
-          const matchingFinding = sentinelRes.findings.find((f) => f.finding.includes(r.path)) ?? {
+          const bare = r.path.replace(/^\//, "");
+          const matchingFinding = sentinelRes.findings.find((f) => f.finding.includes(r.path) || f.finding.includes(bare)) ?? {
             domain: domainHost,
             severity: "CRITICAL" as const,
             finding: `Exposed sensitive path (${r.path})`,
