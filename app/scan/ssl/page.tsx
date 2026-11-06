@@ -1,17 +1,12 @@
-import type { Metadata } from "next";
 import { Suspense } from "react";
 import SSLScannerClient from "@/components/SSLScannerClient";
+import { buildPageMetadata } from "@/lib/seo-master";
 
-export const metadata: Metadata = {
-  title: "SSL/TLS Certificate Scanner — Sentinel-ID",
-  description:
-    "Passive SSL/TLS certificate intelligence scanner. Check certificate validity, security grade, and TLS configuration.",
-};
+export const metadata = buildPageMetadata("/scan/ssl");
 
 export default function SSLScanPage() {
   return (
     <div className="min-h-dvh bg-[#0B0F19] text-[#EAF0FA]">
-      {/* Hero Section */}
       <section className="relative overflow-hidden border-b border-[#232B3D] px-6 pb-12 pt-16">
         <div className="pointer-events-none absolute inset-0 opacity-[0.15]">
           <div className="ssl-sweep" />

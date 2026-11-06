@@ -1,12 +1,10 @@
 import { Suspense } from "react";
 import { HeaderArmorView } from "@/components/header-armor/header-armor-view";
+import { buildPageMetadata } from "@/lib/seo-master";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = {
-  title: "Header Armor Checker",
-  description: "Cek header keamanan HTTP domain kamu secara pasif — satu request GET, tanpa exploit.",
-};
+export const metadata = buildPageMetadata("/scan/headers");
 
 export default function HeaderArmorPage() {
   return (

@@ -29,6 +29,7 @@ import {
   Lock,
   Search,
   ShieldAlert,
+  TrendingUp,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { VerifiedBadge } from "./verified-badge";
@@ -50,6 +51,7 @@ const NAV_GROUPS: NavGroup[] = [
     title: "Core Audit & Scan",
     items: [
       { label: "Overview & Scan", icon: LayoutGrid, href: "/", badge: "VAULT" },
+      { label: "SEO Master & Rank #1", icon: TrendingUp, href: "/scan/seo-master", badge: "GLOBAL" },
       { label: "Sentinel Vault & Klaim", icon: Lock, href: "/scan/sentinel", badge: "AES" },
       { label: "QC Otomatis", icon: ClipboardCheck, href: "/qc" },
       { label: "Scan History", icon: History, href: "/history" },
@@ -102,7 +104,7 @@ export function AppSidebar() {
         <div className="h-9 w-9 grid place-items-center rounded-xl bg-gradient-to-br from-purple-500 via-fuchsia-500 to-pink-500 text-black shadow-lg shadow-purple-500/25 shrink-0">
           <Image
             src="/image/image.png"
-            alt=""
+            alt="Sentinel-ID Passive Website Security Auditor & SEO Master Logo"
             width={22}
             height={22}
             className="object-contain"
@@ -116,7 +118,7 @@ export function AppSidebar() {
             <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]" />
           </div>
           <div className="text-[10px] font-mono tracking-[0.22em] text-purple-300 uppercase">
-            SECURITY AUDITOR
+            SECURITY &amp; SEO MASTER
           </div>
         </div>
       </div>
@@ -189,6 +191,8 @@ export function AppSidebar() {
                           "rounded-md px-1.5 py-0.5 text-[9px] font-bold tracking-wider shrink-0",
                           item.badge === "ADMIN"
                             ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                            : item.badge === "GLOBAL"
+                            ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/35"
                             : "bg-purple-500/20 text-purple-300 border border-purple-500/30"
                         )}
                       >
