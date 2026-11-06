@@ -3,6 +3,11 @@ import Link from "next/link";
 import { ScanForm } from "@/components/scan-form";
 import { VerifiedBadge } from "@/components/verified-badge";
 import {
+  buildPageMetadata,
+  GLOBAL_SEO_FAQS,
+  INTERNATIONAL_HREFLANG_LOCALES,
+} from "@/lib/seo-master";
+import {
   Search,
   Code2,
   ShieldCheck,
@@ -25,9 +30,13 @@ import {
   Terminal,
   Cpu,
   ShieldAlert,
+  TrendingUp,
+  HelpCircle,
 } from "lucide-react";
 
 export const maxDuration = 300;
+
+export const metadata = buildPageMetadata("/");
 
 const DEEP_SHELL_ENGINES = [
   {
@@ -72,9 +81,30 @@ const DEEP_SHELL_ENGINES = [
     desc: "Deteksi snapshot memori V8 (/heapdump), alokasi Buffer.allocUnsafe & pembacaan TypedArray/DataView out-of-bounds, RangeError buffer leak, serta kandidat parameter Out-of-Band (OOB SSRF/Webhook).",
     targets: ["/heapdump", "Buffer.allocUnsafe", "TypedArray OOB", "OOB Callback/SSRF"],
   },
+  {
+    code: "webshell",
+    title: "Active WebShell & Stealth Backdoor Engine",
+    cwe: "CWE-434 · CWE-94 · CWE-506",
+    desc: "Deteksi tajam artefak WebShell aktif (WSO, FilesMan, b374k, ALFA Team, MariJUANA, Gel4y, IndoXploit, Mini Shell, c99/r57, p0wny), halaman login backdoor (single-input password gate), serta source PHP ter-obfuscate (eval/gzinflate/base64_decode).",
+    targets: ["/shell.php", "/wso.php", "/alfa.php", "/b374k.php", "WSO/Alfa/Mini UI"],
+  },
+  {
+    code: "filemanager-shell",
+    title: "FileManager WebShell & Connector Audit",
+    cwe: "CWE-434 · CWE-306 · CWE-284",
+    desc: "Inspeksi pasif panel Web File Manager yang terekspos atau disalahgunakan sebagai WebShell: TinyFileManager (CVE-2021-45010), Studio-42 elFinder & WP File Manager (CVE-2020-25213 / CVE-2021-32682), Responsive FileManager, KCFinder, Roxy Fileman & KodExplorer.",
+    targets: ["/tinyfilemanager.php", "/fm.php", "/elfinder/...", "/filemanager/dialog.php"],
+  },
 ];
 
 const QUICK_MODULES = [
+  {
+    title: "SEO Master & Global Rank #1",
+    desc: "Audit 35+ sinyal Google SERP, Hreflang Internasional, JSON-LD Schema.org, Keyword Density & Generator Kode SEO",
+    href: "/scan/seo-master",
+    icon: TrendingUp,
+    badge: "GLOBAL SEO",
+  },
   {
     title: "Sentinel Vault & Klaim",
     desc: "Audit File Sensitif (.env, .git/HEAD, backup.zip, wp-config.php.bak, AWS keys) & Brankas AES-256-GCM",
@@ -179,29 +209,30 @@ export default function Home() {
             <div className="flex flex-wrap items-center gap-2.5">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/15 border border-purple-500/30 text-xs font-mono tracking-wider uppercase text-purple-300">
                 <span className="h-2 w-2 rounded-full bg-purple-400 animate-pulse" />
-                SENTINEL-ID PASSIVE AUDITOR v3.5
+                SENTINEL-ID PASSIVE AUDITOR &amp; SEO MASTER v3.6
               </div>
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/[0.04] border border-white/10 text-xs font-mono text-slate-300">
-                <Lock className="h-3 w-3 text-pink-400" />
-                AES-256-GCM Vault Integrated
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/35 text-xs font-mono text-emerald-300">
+                <Globe2 className="h-3 w-3 text-emerald-400" />
+                Global Hreflang &amp; Schema.org Ready
               </span>
             </div>
 
             <div className="space-y-4">
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold leading-[1.12] tracking-tight text-white">
                 Platform Audit Keamanan Web{" "}
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-fuchsia-400 to-pink-400">
-                  Pasif, Mendalam &amp; Terpadu
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-fuchsia-400 to-emerald-400">
+                  Pasif, Mendalam &amp; SEO Master Global
                 </span>
               </h1>
               <p className="text-sm sm:text-base leading-relaxed text-slate-300/90 max-w-xl">
-                Analisis postur keamanan domain secara mendalam tanpa risiko merusak server. Menggabungkan{" "}
-                <strong className="text-white">Multi-Page Crawler</strong>,{" "}
+                Analisis postur keamanan domain &amp; kesiapan SERP Google Global secara mendalam tanpa risiko merusak server. Menggabungkan{" "}
+                <strong className="text-white">Multi-Page Passive Crawler</strong>,{" "}
                 <strong className="text-white">Deep Shell &amp; OOB Engine</strong> (
                 <code className="text-purple-300">wp2shell</code>, <code className="text-purple-300">php2shell</code>,{" "}
                 <code className="text-purple-300">node2shell</code>, <code className="text-purple-300">go2shell</code>,{" "}
                 <code className="text-purple-300">py2shell</code>, <code className="text-purple-300">node out of bound</code>
-                ), dan <strong className="text-white">Brankas Bukti Terenkripsi (AES-256-GCM)</strong>.
+                ), <strong className="text-white">Brankas Bukti Terenkripsi (AES-256-GCM)</strong>, dan{" "}
+                <strong className="text-emerald-300">SEO Master International Rank #1 Engine</strong>.
               </p>
             </div>
 
@@ -210,26 +241,26 @@ export default function Home() {
               <VerifiedBadge variant="hero" />
             </div>
 
-            {/* Highlighted Box: Audit File Sensitif & Brankas Bukti Terenkripsi (AES-256-GCM) */}
-            <div className="rounded-2xl border border-purple-500/35 bg-gradient-to-r from-purple-950/40 via-[#150f24] to-pink-950/30 p-4 sm:p-5 space-y-2.5 shadow-lg">
+            {/* Highlighted Box: Audit File Sensitif & Brankas Bukti Terenkripsi (AES-256-GCM) + SEO Master */}
+            <div className="rounded-2xl border border-purple-500/35 bg-gradient-to-r from-purple-950/40 via-[#150f24] to-emerald-950/25 p-4 sm:p-5 space-y-2.5 shadow-lg">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="inline-flex items-center gap-2 text-xs font-mono font-bold text-purple-300">
                   <Lock className="h-4 w-4 text-pink-400" />
-                  <span>PROTEKSI BUKTI KRITIS &amp; KLAIM DOMAIN SAH</span>
+                  <span>PROTEKSI BUKTI KRITIS · KLAIM DOMAIN · GLOBAL SEO MASTER</span>
                 </div>
                 <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 border border-emerald-500/35 px-2.5 py-0.5 text-[10px] font-mono font-bold text-emerald-300">
                   ✓ Sudah Terverifikasi oleh Google Developer Bandung
                 </span>
               </div>
               <h2 className="text-base sm:text-lg font-extrabold text-white">
-                Audit File Sensitif &amp; Brankas Bukti Terenkripsi (AES-256-GCM)
+                Audit File Sensitif, Brankas Bukti AES-256-GCM &amp; Optimasi Rank #1 Google Internasional
               </h2>
               <p className="text-xs sm:text-sm text-slate-200/90 leading-relaxed">
                 Mendeteksi kebocoran kritis (<code className="text-purple-300 font-semibold">.env</code>,{" "}
                 <code className="text-purple-300 font-semibold">.git/HEAD</code>,{" "}
                 <code className="text-purple-300 font-semibold">backup.zip</code>,{" "}
                 <code className="text-purple-300 font-semibold">wp-config.php.bak</code>,{" "}
-                <code className="text-purple-300 font-semibold">AWS keys</code>) secara pasif. Nilai rahasia tidak pernah bocor ke publik dan disimpan terenkripsi di Vault Admin untuk diklaim pemilik sah domain.
+                <code className="text-purple-300 font-semibold">AWS keys</code>) secara pasif dengan enkripsi Vault Admin, sekaligus mengaudit 35+ sinyal SEO Internasional (Hreflang, JSON-LD, Core Web Vitals, Security Trust).
               </p>
               <div className="flex flex-wrap items-center gap-2 pt-1">
                 <Link
@@ -237,6 +268,14 @@ export default function Home() {
                   className="inline-flex items-center gap-1.5 rounded-xl bg-purple-600/30 hover:bg-purple-600/45 border border-purple-400/40 px-3.5 py-1.5 text-xs font-mono font-bold text-purple-100 transition-colors"
                 >
                   <span>Buka Brankas Bukti &amp; Klaim Domain</span>
+                  <ArrowUpRight className="h-3.5 w-3.5" />
+                </Link>
+                <Link
+                  href="/scan/seo-master"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600/25 hover:bg-emerald-600/40 border border-emerald-400/40 px-3.5 py-1.5 text-xs font-mono font-bold text-emerald-100 transition-colors"
+                >
+                  <TrendingUp className="h-3.5 w-3.5 text-emerald-300" />
+                  <span>Buka SEO Master &amp; Global Rank #1</span>
                   <ArrowUpRight className="h-3.5 w-3.5" />
                 </Link>
               </div>
@@ -248,7 +287,7 @@ export default function Home() {
                 { label: "Deep Crawl", sub: "Max 50 URL · Depth 3", icon: Search },
                 { label: "Shell & OOB Check", sub: "wp/php/node/go/py", icon: Terminal },
                 { label: "Sentinel Vault", sub: "AES-256-GCM + Klaim", icon: Lock },
-                { label: "Laporan & Export", sub: "Markdown & Graph", icon: FileText },
+                { label: "SEO Master #1", sub: "13 Locale · JSON-LD", icon: TrendingUp },
               ].map((item) => (
                 <div
                   key={item.label}
@@ -272,7 +311,7 @@ export default function Home() {
               <span className="text-white/20">•</span>
               <span>SSRF Guard</span>
               <span className="text-white/20">•</span>
-              <span>Terverifikasi Google Developer Bandung</span>
+              <span>Global Hreflang &amp; JSON-LD</span>
             </div>
           </div>
 
@@ -411,10 +450,10 @@ export default function Home() {
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               <h2 className="text-lg font-extrabold text-white tracking-tight">
-                Modul Spesialis Keamanan &amp; Intelijen Siber
+                Modul Spesialis Keamanan Siber &amp; SEO Master Global
               </h2>
               <p className="text-xs text-slate-400">
-                Seluruh modul terintegrasi langsung dengan pusat monitoring aktivitas Admin &amp; Brankas AES-256-GCM
+                Seluruh 14 modul terindeks di Google Sitemap &amp; terintegrasi dengan monitoring aktivitas Admin serta Brankas AES-256-GCM
               </p>
             </div>
             <Link
@@ -460,6 +499,61 @@ export default function Home() {
             })}
           </div>
         </div>
+
+        {/* Bilingual Global SEO Authority & FAQ Section (Matches Schema.org FAQPage) */}
+        <section
+          aria-label="Global Security & International SEO FAQ"
+          className="rounded-2xl border border-white/10 bg-gradient-to-b from-[#130e1f] to-[#0d0a16] p-6 sm:p-8 space-y-6"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-5">
+            <div className="space-y-1">
+              <div className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider text-emerald-400 font-bold">
+                <Globe2 className="h-3.5 w-3.5" />
+                GLOBAL SERP &amp; INTERNATIONAL CYBERSECURITY KNOWLEDGE HUB (ID / EN)
+              </div>
+              <h2 className="text-lg sm:text-xl font-extrabold text-white">
+                Frequently Asked Questions — Passive Website Security Scanner &amp; SEO Master
+              </h2>
+              <p className="text-xs text-slate-400">
+                Terstruktur dengan Schema.org <code>FAQPage</code>, <code>SoftwareApplication</code>, dan 13 tag{" "}
+                <code>hreflang</code> internasional untuk visibilitas Google Global
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {INTERNATIONAL_HREFLANG_LOCALES.map((loc) => (
+                <span
+                  key={loc}
+                  className="rounded-md bg-white/[0.04] border border-white/10 px-2 py-0.5 text-[10px] font-mono text-emerald-300"
+                >
+                  {loc}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {GLOBAL_SEO_FAQS.map((faq, idx) => (
+              <div
+                key={idx}
+                className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-4 space-y-2.5"
+              >
+                <div className="flex items-start gap-2">
+                  <HelpCircle className="h-4 w-4 text-purple-400 shrink-0 mt-0.5" />
+                  <div className="space-y-1">
+                    <h3 className="text-xs sm:text-sm font-bold text-white">{faq.qId}</h3>
+                    <p className="text-xs text-slate-300 leading-relaxed">{faq.aId}</p>
+                  </div>
+                </div>
+                <div className="pt-2 border-t border-white/[0.06] pl-6 space-y-1">
+                  <div className="text-[11px] font-mono font-semibold text-emerald-300">
+                    EN: {faq.qEn}
+                  </div>
+                  <p className="text-[11px] text-slate-400 leading-relaxed">{faq.aEn}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
       </div>
     </div>
   );

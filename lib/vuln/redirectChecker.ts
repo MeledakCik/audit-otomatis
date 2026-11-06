@@ -5,6 +5,7 @@
  * 1. OPEN_REDIRECT & SSRF (url, redirect, next, dest, target, returnUrl)
  * 2. NODE_OOB (Out-of-Band interaction / webhook / callback / XML / pingback kandidat)
  * 3. SHELL_SURFACE (kandidat parameter command/code/file-inclusion: cmd, exec, shell, php, file, path, template)
+ * 4. FILEMANAGER_SHELL (kandidat parameter kontrol WebShell / FileManager: dir, cwd, chmod, mkdir, unlink, rename, act, upfile, d, f, p)
  *
  * Pure function.
  */
@@ -35,13 +36,28 @@ const SHELL_PARAM_NAMES = [
   "include",
   "file",
   "path",
+  "passthru",
+  "system",
+] as const;
+const FILEMANAGER_PARAM_NAMES = [
+  "dir",
+  "cwd",
+  "chmod",
+  "mkdir",
+  "unlink",
+  "rename",
+  "upfile",
+  "upload",
+  "fm_usr",
+  "fm_pwd",
+  "elfinder",
 ] as const;
 
 const OPEN_REDIRECT_PAYLOAD = "https://evil.com";
 const SSRF_PAYLOADS = ["http://127.0.0.1", "http://169.254.169.254"] as const;
 
 export interface TestCase extends AuditFinding {
-  type: "OPEN_REDIRECT" | "SSRF" | "NODE_OOB" | "SHELL_SURFACE";
+  type: "OPEN_REDIRECT" | "SSRF" | "NODE_OOB" | "SHELL_SURFACE" | "FILEMANAGER_SURFACE";
   originalUrl: string;
   param: string;
   payload: string;
@@ -56,7 +72,8 @@ function safeParseUrl(raw: string): URL | null {
 }
 
 function severityFor(type: TestCase["type"]): AuditSeverity {
-  if (type === "SSRF" || type === "SHELL_SURFACE" || type === "NODE_OOB") return "high";
+  if (type === "SSRF" || type === "SHELL_SURFACE" || type === "FILEMANAGER_SURFACE" || type === "NODE_OOB")
+    return "high";
   return "medium";
 }
 
@@ -71,6 +88,7 @@ export function detectRedirectParams(url: string): TestCase[] {
   const redirectSet = new Set(REDIRECT_PARAM_NAMES.map((p) => p.toLowerCase()));
   const oobSet = new Set(OOB_PARAM_NAMES.map((p) => p.toLowerCase()));
   const shellSet = new Set(SHELL_PARAM_NAMES.map((p) => p.toLowerCase()));
+  const fmSet = new Set(FILEMANAGER_PARAM_NAMES.map((p) => p.toLowerCase()));
 
   for (const key of parsed.searchParams.keys()) {
     const k = key.toLowerCase();
@@ -119,7 +137,19 @@ export function detectRedirectParams(url: string): TestCase[] {
         originalUrl: url,
         param: key,
         payload: "<passive-review-only>",
-        evidence: `param "${key}" pada ${url} memiliki penamaan kandidat eksekusi perintah/template/file (wp2shell/php2shell/node2shell/py2shell/go2shell)`,
+        evidence: `param "${key}" pada ${url} memiliki penamaan kandidat eksekusi perintah/webshell/file (wp2shell/php2shell/node2shell/py2shell/go2shell/webshell)`,
+      });
+    }
+
+    if (fmSet.has(k)) {
+      cases.push({
+        type: "FILEMANAGER_SURFACE",
+        severity: severityFor("FILEMANAGER_SURFACE"),
+        url,
+        originalUrl: url,
+        param: key,
+        payload: "<passive-review-only>",
+        evidence: `param "${key}" pada ${url} merupakan parameter khas operasi Web FileManager / WebShell (navigasi direktori, chmod, upload, atau manipulasi file)`,
       });
     }
   }

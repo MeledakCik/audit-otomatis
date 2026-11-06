@@ -3,7 +3,7 @@
  *
  * Adapter: konversi output modul passive-audit (jsLibChecker, domSink,
  * redirectChecker, idorDetector, authChecker) ke `Finding` (lib/types.ts).
- * Mendukung klasifikasi mendalam: wp2shell, php2shell, node2shell, go2shell, py2shell, node-oob.
+ * Mendukung klasifikasi mendalam: wp2shell, php2shell, node2shell, go2shell, py2shell, node-oob, webshell, filemanager-shell.
  */
 
 import type { Finding } from "../types";
@@ -123,6 +123,21 @@ export function domSinksToFindings(sinks: Sink[], sourceLabel: string): Finding[
         category: "wp2shell",
       };
     }
+    if (s.type === "webshell_filemanager_bridge") {
+      return {
+        id: newId(),
+        severity: "HIGH",
+        title: `[FileManager / WebShell Bridge] Referensi endpoint File Manager / WebShell di kode JS`,
+        endpoint: sourceLabel,
+        evidence: s.evidence,
+        impact:
+          "Ditemukan referensi langsung ke konektor Web File Manager (elFinder connector.minimal.php, TinyFileManager, Responsive FileManager, KCFinder, Roxy) atau penanda WebShell (FilesMan/Alfa) di kode client-side.",
+        fix: "Pastikan endpoint konektor File Manager tidak dapat diakses tanpa autentikasi admin penuh, atau hapus plugin/file manager tersebut dari server produksi.",
+        cwe: "CWE-434, CWE-306",
+        rce: true,
+        category: "filemanager-shell",
+      };
+    }
 
     return {
       id: newId(),
@@ -162,16 +177,33 @@ export function redirectCasesToFindings(cases: TestCase[]): Finding[] {
       return {
         id: newId(),
         severity: toLegacySeverity(c.severity),
-        title: `[Shell Surface] Kandidat parameter sensitif "${c.param}" (wp2shell/php2shell/node2shell/py2shell/go2shell)`,
+        title: `[WebShell & RCE Surface] Kandidat parameter eksekusi "${c.param}"`,
         endpoint: c.originalUrl,
         evidence: c.evidence,
         impact:
-          "Parameter dengan nama seperti cmd/exec/shell/code/template/file/include berisiko tinggi terhadap Command Injection, Code Injection, SSTI, atau LFI/RFI jika diteruskan ke interpreter sistem.",
-        fix: "Jangan pernah meneruskan nilai query parameter langsung ke fungsi eksekusi shell/eval/include; gunakan pemetaan statis (allowlist key) di sisi server.",
+          "Parameter dengan nama seperti cmd/exec/shell/passthru/system/code/eval/file/include sangat identik dengan backdoor WebShell atau berisiko tinggi terhadap Command Injection, Code Injection, maupun LFI/RFI.",
+        fix: "Periksa file endpoint terkait untuk memastikan bukan backdoor WebShell, dan jangan pernah meneruskan nilai query parameter langsung ke fungsi eksekusi shell/eval/include.",
         poc: `Analisis pasif (tidak dieksekusi otomatis): audit handler backend untuk parameter "${c.param}" guna memastikan tidak ada pemanggilan shell/eval/file inclusion dinamis.`,
         cwe: "CWE-78, CWE-94, CWE-98",
         rce: true,
-        category: "rce-surface",
+        category: "webshell",
+      };
+    }
+
+    if (c.type === "FILEMANAGER_SURFACE") {
+      return {
+        id: newId(),
+        severity: toLegacySeverity(c.severity),
+        title: `[FileManager WebShell] Kandidat parameter operasi filesystem "${c.param}"`,
+        endpoint: c.originalUrl,
+        evidence: c.evidence,
+        impact:
+          "Parameter seperti dir/cwd/chmod/mkdir/unlink/rename/upfile merupakan tanda operasi manipulasi sistem file pada Web File Manager atau FileManager WebShell yang berpotensi memodifikasi file server.",
+        fix: "Pastikan endpoint ini bukan FileManager WebShell liar, batasi path dengan realpath allowlist (cegah Path Traversal ../), dan wajibkan autentikasi ketat.",
+        poc: `Analisis pasif (tidak dieksekusi otomatis): tinjau kontrol otorisasi dan sanitasi path pada endpoint yang menerima parameter "${c.param}".`,
+        cwe: "CWE-22, CWE-434, CWE-306",
+        rce: true,
+        category: "filemanager-shell",
       };
     }
 

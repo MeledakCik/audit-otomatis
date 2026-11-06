@@ -1,12 +1,10 @@
 import { Suspense } from "react";
 import { SubdomainWatchView } from "@/components/subdomain-watch/subdomain-watch-view";
+import { buildPageMetadata } from "@/lib/seo-master";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = {
-  title: "Subdomain Takeover Watch",
-  description: "Temukan subdomain via crt.sh dan cek indikasi subdomain takeover secara pasif — tanpa DNS bruteforce.",
-};
+export const metadata = buildPageMetadata("/scan/subdomain");
 
 export default function SubdomainWatchPage() {
   return (

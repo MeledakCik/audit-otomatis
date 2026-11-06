@@ -1,17 +1,12 @@
-import type { Metadata } from "next";
 import { Suspense } from "react";
 import JSScannerClient from "@/components/JSScannerClient";
+import { buildPageMetadata } from "@/lib/seo-master";
 
-export const metadata: Metadata = {
-  title: "JS Library & 3rd-party Tracker Fingerprint — Sentinel-ID",
-  description:
-    "Scan JavaScript dependencies and third-party trackers. Detect outdated libraries, known vulnerabilities, and privacy risks in your supply chain.",
-};
+export const metadata = buildPageMetadata("/scan/js");
 
 export default function JSScanPage() {
   return (
     <div className="min-h-dvh bg-[#0B0F19] text-[#EAF0FA]">
-      {/* Hero Section - Minimalis seperti gambar kedua */}
       <section className="border-b border-[#232B3D] px-6 pb-12 pt-16">
         <div className="mx-auto max-w-4xl">
           <div className="flex items-center gap-3 mb-3">

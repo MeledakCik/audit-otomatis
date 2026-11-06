@@ -1,22 +1,57 @@
 import type { MetadataRoute } from "next";
+import { SITE_URL } from "@/lib/seo-master";
 
 export default function robots(): MetadataRoute.Robots {
-  const baseUrl = "https://www.sentinel-id.net";
-
   return {
     rules: [
       {
         userAgent: "*",
-        allow: "/",
+        allow: [
+          "/",
+          "/scan/seo-master",
+          "/scan/sentinel",
+          "/scan/headers",
+          "/scan/secrets",
+          "/scan/exposure",
+          "/scan/js",
+          "/scan/ssl",
+          "/scan/map",
+          "/scan/subdomain",
+          "/scan/dns",
+          "/scan/stack",
+          "/scan/breach",
+          "/scan/osint",
+          "/scan/shield-status",
+          "/qc",
+          "/docs",
+          "/api-docs",
+          "/history",
+          "/maintenance-log",
+        ],
         disallow: [
-          "/api/",      // Blokir endpoint API internal dari crawling
+          "/api/",
           "/admin/",
-          "/scan/",    // Blokir panel admin jika ada
-          "/requests/", // Blokir halaman permintaan jika ada
-          "/_next/",   // Blokir file internal Next.js
+          "/requests/",
+          "/_next/",
         ],
       },
+      {
+        userAgent: [
+          "Googlebot",
+          "Googlebot-Image",
+          "Bingbot",
+          "Applebot",
+          "DuckDuckBot",
+          "OAI-SearchBot",
+          "ChatGPT-User",
+          "PerplexityBot",
+          "ClaudeBot",
+        ],
+        allow: ["/"],
+        disallow: ["/api/", "/admin/", "/requests/"],
+      },
     ],
-    sitemap: `${baseUrl}/sitemap.xml`,
+    host: SITE_URL,
+    sitemap: `${SITE_URL}/sitemap.xml`,
   };
 }

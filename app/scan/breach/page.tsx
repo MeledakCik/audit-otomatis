@@ -1,12 +1,10 @@
 import { Suspense } from "react";
 import { BreachPeekView } from "@/components/breach-peek/breach-peek-view";
+import { buildPageMetadata } from "@/lib/seo-master";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = {
-  title: "Breach Peek — Free OSINT Breach Checker",
-  description: "Check if an email or domain appears in known data breaches. 100% passive, free, no API key required.",
-};
+export const metadata = buildPageMetadata("/scan/breach");
 
 export default function BreachPeekPage() {
   return (

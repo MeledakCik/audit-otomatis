@@ -59,6 +59,10 @@ const PRESET_PATHS = [
   { label: "Go pprof", path: "/debug/pprof/", tag: "go2shell" },
   { label: "Werkzeug Console", path: "/console", tag: "py2shell" },
   { label: "Node Heapdump", path: "/heapdump", tag: "node out of bound" },
+  { label: "WSO / Alfa Shell", path: "/wso.php", tag: "webshell" },
+  { label: "b374k / Mini Shell", path: "/b374k.php", tag: "webshell" },
+  { label: "TinyFileManager", path: "/tinyfilemanager.php", tag: "filemanager" },
+  { label: "elFinder Connector", path: "/elfinder/php/connector.minimal.php", tag: "filemanager" },
 ];
 
 const SEVERITY_STYLES: Record<
