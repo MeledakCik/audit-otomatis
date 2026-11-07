@@ -94,6 +94,16 @@ const DEEP_SECURITY_VECTORS = [
     label: "Node Out-of-Bounds (OOB) & Memory",
     desc: "V8 /heapdump snapshot, Buffer.allocUnsafe, TypedArray OOB read/write & OOB SSRF callbacks",
   },
+  {
+    tag: "webshell",
+    label: "Active WebShell Backdoor Detector",
+    desc: "WSO, b374k, Alfa Team, MariJUANA, Gel4y, IndoXploit, Mini Shell, c99/r57 & Stealth Password Gates",
+  },
+  {
+    tag: "filemanager-shell",
+    label: "FileManager WebShell & Connector Audit",
+    desc: "TinyFileManager, Studio-42 elFinder, Responsive FileManager, KCFinder, Roxy Fileman & WP File Manager",
+  },
 ];
 
 const SENSITIVE_VAULT_TARGETS = [

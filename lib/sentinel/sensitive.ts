@@ -1,5 +1,5 @@
 /**
- * Audit File Sensitif — mesin analisis & katalog (PASIF, GET-only).
+ * Audit File Sensitif, WebShell & FileManager — mesin analisis & katalog (PASIF, GET-only).
  *
  * Prinsip:
  *  - TRUE POSITIVE: status 200 + isi cocok penanda nyata (bukan SPA/soft-404/artikel).
@@ -8,11 +8,13 @@
  */
 import { createHash } from "node:crypto";
 import type { Component } from "./dossier";
+import { matchWebshellSignature, matchFileManagerSignature } from "@/lib/vuln/rce-surface";
 import {
   BACKUP_REMEDIATION,
   COMMON_REMEDIATION,
   REMEDIATION,
   SECRET_LABELS,
+  WEBSHELL_REMEDIATION,
   type ComposerSummary,
   type SecretFinding,
   type SecretType,
@@ -213,7 +215,10 @@ export function analyzeText(text: string, category: SensitiveCategory, fileKind:
   const showKeys = category === "env" || category === "config" || category === "credentials";
   const keyNames = showKeys ? [...new Set(pairs.map((p) => p.key))].slice(0, 80) : [];
   const live = secrets.filter((s) => s.live);
-  const remediation = [...new Set([...live.flatMap((s) => REMEDIATION[s.type]), ...COMMON_REMEDIATION])];
+  const remediation =
+    category === "webshell" || category === "filemanager"
+      ? [...WEBSHELL_REMEDIATION]
+      : [...new Set([...live.flatMap((s) => REMEDIATION[s.type]), ...COMMON_REMEDIATION])];
 
   return {
     category, fileKind, secrets,
@@ -329,6 +334,20 @@ const phpSource: V = (r) => {
     : null;
 };
 
+const webshellLike: V = (r) => {
+  if (r.status !== 200 || !r.text) return null;
+  const ws = matchWebshellSignature(r.text);
+  if (!ws) return null;
+  return { marker: `${ws.family} (${ws.marker})`, fileKind: "webshell-backdoor" };
+};
+
+const filemanagerLike: V = (r) => {
+  if (r.status !== 200 || !r.text) return null;
+  const fm = matchFileManagerSignature(r.text, r.contentType);
+  if (!fm) return null;
+  return { marker: `${fm.name} (${fm.marker})`, fileKind: "web-filemanager" };
+};
+
 const kvSecrets = (extra: RegExp, marker: string, fileKind: string): V => (r) =>
   okText(r, false) && extra.test(r.text) && extractPairs(r.text).some((p) => SECRET_KEY_RE.test(p.key)) ? { marker, fileKind } : null;
 
@@ -423,6 +442,26 @@ function staticCatalog(): SensitiveSpec[] {
     out.push(T(p, "Panel phpMyAdmin terbuka", "php-diag", 2, "HIGH", (r) => (r.status === 200 && /<title>phpMyAdmin<\/title>/i.test(r.text) ? { marker: "halaman login phpMyAdmin", fileKind: "phpmyadmin" } : null),
       "Batasi phpMyAdmin ke IP internal/VPN dan ganti path default.", ["CWE-306", "CWE-284"], { analyze: false }));
 
+  // --- WebShell Backdoors & Stealth Shells (WSO, b374k, Alfa, MariJUANA, Gel4y, Mini Shell, c99, r57, uploader) ---
+  for (const [p, tier] of [
+    ["/shell.php", 1], ["/wso.php", 1], ["/alfa.php", 1], ["/b374k.php", 1],
+    ["/mini.php", 1], ["/marijuana.php", 2], ["/gel4y.php", 2], ["/indoxploit.php", 2],
+    ["/c99.php", 2], ["/r57.php", 2], ["/cmd.php", 1], ["/up.php", 2], ["/uploader.php", 2],
+    ["/wp-content/uploads/shell.php", 1], ["/wp-content/uploads/alfa.php", 2], ["/wp-content/uploads/wso.php", 2],
+    ["/wp-includes/wp-class.php", 2], ["/uploads/shell.php", 2], ["/images/shell.php", 2],
+  ] as const)
+    out.push(T(p, `WebShell / Backdoor aktif terdeteksi (${p})`, "webshell", tier, "CRITICAL", webshellLike, WEBSHELL_REMEDIATION[0], ["CWE-434", "CWE-94", "CWE-506"], { rce: true, analyze: false }));
+
+  // --- Standalone Web FileManager Shells (TinyFileManager, elFinder, ResponsiveFM, KCFinder, Roxy Fileman, KodExplorer) ---
+  for (const [p, tier] of [
+    ["/tinyfilemanager.php", 1], ["/filemanager.php", 1], ["/fm.php", 1], ["/files.php", 1], ["/manager.php", 2],
+    ["/filemanager/dialog.php", 1], ["/assets/filemanager/dialog.php", 2],
+    ["/elfinder/elfinder.html", 1], ["/elfinder/php/connector.minimal.php", 1],
+    ["/wp-content/plugins/wp-file-manager/lib/php/connector.minimal.php", 1],
+    ["/kcfinder/browse.php", 2], ["/fileman/index.html", 2], ["/roxyfileman/index.html", 2],
+  ] as const)
+    out.push(T(p, `Panel FileManager WebShell terbuka (${p})`, "filemanager", tier, "CRITICAL", filemanagerLike, WEBSHELL_REMEDIATION[0], ["CWE-434", "CWE-306", "CWE-284"], { rce: true, analyze: false }));
+
   // --- log ---
   const phpErr = /\[\d{2}-[A-Za-z]{3}-\d{4} \d{2}:\d{2}:\d{2} [A-Za-z/_]+\] PHP (?:Warning|Notice|Fatal error|Parse error|Deprecated)/;
   for (const p of ["/error_log", "/php_errorlog"]) out.push(T(p, "PHP error log terbuka", "log", 1, "HIGH", when(phpErr, "baris PHP error log dengan path server", "php error log"), FIX_LOG, ["CWE-532", "CWE-209"], { analyze: false }));
@@ -502,8 +541,8 @@ function domainCatalog(domain: string): SensitiveSpec[] {
   zip(`${apex}.zip`, 1);
   if (sld !== apex) zip(`${sld}.zip`, 1);
   zip(`${sld}.tar.gz`, 2); zip(`${sld}_backup.zip`, 2); zip(`${sld}-backup.zip`, 2);
-  for (const [n, tier] of [[`${sld}.sql`, 1], [`${apex}.sql`, 2]] as const)
-    out.push(T(`/${n}`, "SQL dump terbuka (nama dari domain)", "sql-dump", tier, "CRITICAL", sqlDump, BACKUP_REMEDIATION[0], ["CWE-530", "CWE-200"], { bytes: 4096, analyze: false }));
+  for (const [n, tier] of [[`${sld}.sql`, 1], [`/${apex}.sql`, 2]] as const)
+    out.push(T(n.startsWith("/") ? n : `/${n}`, "SQL dump terbuka (nama dari domain)", "sql-dump", tier, "CRITICAL", sqlDump, BACKUP_REMEDIATION[0], ["CWE-530", "CWE-200"], { bytes: 4096, analyze: false }));
   out.push(T(`/${sld}.sql.gz`, "Dump SQL terkompresi terbuka (nama dari domain)", "sql-dump", 2, "CRITICAL", archive, BACKUP_REMEDIATION[0], ["CWE-530"], { binary: true, bytes: 4096, analyze: false }));
   return out;
 }
@@ -514,14 +553,16 @@ export function buildCatalog(domain: string, opts: { deep: boolean; skipPaths?: 
   return all.filter((s) => (seen.has(s.path) ? false : (seen.add(s.path), true)));
 }
 
-// ---- spesifikasi dinamis dari directory listing ----
-const LISTING_EXT = /\.(?:zip|tar\.gz|tgz|tar|7z|rar|sql|sql\.gz|bak|old|sqlite|env|pem|key)$/i;
+// ---- spesifikasi dinamis dari directory listing (termasuk deteksi file .php/.phtml mencurigakan) ----
+const LISTING_EXT = /\.(?:zip|tar\.gz|tgz|tar|7z|rar|sql|sql\.gz|bak|old|sqlite|env|pem|key|php|phtml|php5|php7|phar)$/i;
+const SUSPICIOUS_PHP_NAME = /(?:shell|wso|alfa|b374k|c99|r57|mini|marijuana|gel4y|indoxploit|cmd|up|upload|uploader|fm|filemanager|tinyfilemanager|bypass|backdoor|x|1|test|eval)/i;
 
-export function extractListingFiles(html: string, max = 8): string[] {
+export function extractListingFiles(html: string, max = 10): string[] {
   const out: string[] = [];
   for (const m of html.matchAll(/href="([^"?#/][^"?#]*)"/gi)) {
     const f = decodeURIComponent(m[1]);
     if (f.includes("/") || f.startsWith("..") || !LISTING_EXT.test(f)) continue;
+    if (/\.(?:php|phtml|php5|php7|phar)$/i.test(f) && !SUSPICIOUS_PHP_NAME.test(f)) continue;
     if (!out.includes(f)) out.push(f);
     if (out.length >= max) break;
   }
@@ -531,6 +572,12 @@ export function extractListingFiles(html: string, max = 8): string[] {
 export function specForListedFile(dir: string, name: string): SensitiveSpec {
   const path = `${dir.endsWith("/") ? dir : dir + "/"}${name}`;
   const lower = name.toLowerCase();
+  if (/\.(?:php|phtml|php5|php7|phar)$/.test(lower)) {
+    if (/(?:fm|filemanager|tinyfilemanager|elfinder)/.test(lower)) {
+      return T(path, "FileManager WebShell ditemukan via directory listing", "filemanager", 2, "CRITICAL", filemanagerLike, WEBSHELL_REMEDIATION[0], ["CWE-548", "CWE-434", "CWE-94"], { rce: true, analyze: false });
+    }
+    return T(path, "WebShell / Backdoor PHP ditemukan via directory listing", "webshell", 2, "CRITICAL", webshellLike, WEBSHELL_REMEDIATION[0], ["CWE-548", "CWE-434", "CWE-94"], { rce: true, analyze: false });
+  }
   if (/\.(?:zip|tar\.gz|tgz|tar|7z|rar|sql\.gz)$/.test(lower))
     return T(path, "Arsip/backup terbuka via directory listing", "archive", 2, "CRITICAL", archive, BACKUP_REMEDIATION[0], ["CWE-548", "CWE-530"], { binary: true, bytes: 4096, analyze: false });
   if (/\.sql$/.test(lower))
@@ -563,7 +610,16 @@ export function evaluateSensitive(spec: SensitiveSpec, r: SensitiveResponse, ctx
   let analysis: SensitiveAnalysis;
   let components: Component[] | undefined;
   if (spec.analyze !== false && !spec.binary) analysis = analyzeText(r.text, spec.category, v.fileKind);
-  else analysis = { category: spec.category, fileKind: v.fileKind, secrets: [], liveCount: 0, placeholderCount: 0, keyNames: [], remediation: [...COMMON_REMEDIATION], summaryPublic: "" };
+  else analysis = {
+    category: spec.category,
+    fileKind: v.fileKind,
+    secrets: [],
+    liveCount: 0,
+    placeholderCount: 0,
+    keyNames: [],
+    remediation: spec.category === "webshell" || spec.category === "filemanager" ? [...WEBSHELL_REMEDIATION] : [...COMMON_REMEDIATION],
+    summaryPublic: "",
+  };
 
   analysis.sizeBytes = r.size;
   analysis.lastModified = r.lastModified;
@@ -594,7 +650,7 @@ export function publicSummaryLine(hit: SensitiveHit, status: number): string {
   if (hit.analysis.summaryPublic) parts.push(hit.analysis.summaryPublic);
   if (hit.analysis.sizeBytes) parts.push(`ukuran ≈ ${humanSize(hit.analysis.sizeBytes)}`);
   if (hit.spec.confidence === "existence-only") parts.push("indikasi berbasis keberadaan file, belum diverifikasi eksekusinya");
-  return `${parts.join("; ")} (nilai tidak ditampilkan)`;
+  return `${parts.join("; ")} (detail diamankan di Sentinel Vault)`;
 }
 
 // ---- analisis untuk hit CRITICAL_CHECKS yang sudah ada ----
@@ -621,6 +677,6 @@ export function analyzeExistingHit(path: string, text: string, headers?: Headers
 /** Perketat severity untuk file env/config: tanpa kredensial nyata → HIGH. */
 export function severityFromAnalysis(a: SensitiveAnalysis | undefined): "CRITICAL" | "HIGH" {
   if (!a) return "CRITICAL";
-  if (a.category === "private-key" || a.category === "sql-dump") return "CRITICAL";
+  if (a.category === "private-key" || a.category === "sql-dump" || a.category === "webshell" || a.category === "filemanager") return "CRITICAL";
   return a.liveCount > 0 ? "CRITICAL" : "HIGH";
 }

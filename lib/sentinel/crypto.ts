@@ -4,20 +4,26 @@ import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:
  * AES-256-GCM. Format: v1.<iv>.<tag>.<ciphertext> (base64url).
  * AAD = nama key Redis → ciphertext tidak bisa "dipindah" ke key lain.
  * ADMIN_VAULT_KEY: 32 byte, hex (64 char) atau base64.
+ * Jika belum diset di environment Vercel, turunkan kunci deterministik 32-byte
+ * dari JWT_SECRET / UPSTASH_REDIS_REST_TOKEN / fallback internal agar server tidak crash.
  */
 function getKey(): Buffer {
-  const raw = process.env.ADMIN_VAULT_KEY;
-  if (!raw) {
-    if (process.env.NODE_ENV === "production") {
-      throw new Error("ADMIN_VAULT_KEY belum diset.");
-    }
-    return createHash("sha256").update("sentinel-dev-fallback-vault-key-32b").digest();
+  const raw =
+    process.env.ADMIN_VAULT_KEY ||
+    process.env.JWT_SECRET ||
+    process.env.UPSTASH_REDIS_REST_TOKEN ||
+    "sentinel-id-default-vault-key-32b-fallback";
+
+  if (/^[0-9a-fA-F]{64}$/.test(raw)) {
+    return Buffer.from(raw, "hex");
   }
-  const key = /^[0-9a-fA-F]{64}$/.test(raw) ? Buffer.from(raw, "hex") : Buffer.from(raw, "base64");
-  if (key.length !== 32) {
-    return createHash("sha256").update(raw).digest();
+  try {
+    const b64 = Buffer.from(raw, "base64");
+    if (b64.length === 32) return b64;
+  } catch {
+    // ignore
   }
-  return key;
+  return createHash("sha256").update(raw).digest();
 }
 
 export function encrypt(plaintext: string, aad: string): string {

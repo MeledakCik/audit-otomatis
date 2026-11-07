@@ -1,12 +1,10 @@
 import { SentinelAudit } from "@/components/sentinel/sentinel-audit";
 import { VerifiedBadge } from "@/components/verified-badge";
+import { buildPageMetadata } from "@/lib/seo-master";
 import Link from "next/link";
 import { ArrowLeft, ShieldCheck } from "lucide-react";
 
-export const metadata = {
-  title: "Scan — Sentinel Vault Audit & Klaim Domain",
-  description: "Audit pasif file sensitif (.env, .git, backup) dengan penyimpanan bukti terenkripsi AES-256-GCM di Vault Admin.",
-};
+export const metadata = buildPageMetadata("/scan/sentinel");
 
 export default function ScanSentinelPage() {
   return (

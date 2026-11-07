@@ -415,7 +415,7 @@ export async function runScan(
     try {
       await log(
         scanId,
-        "[DEEP-SHELL & OOB] Mengecek permukaan wp2shell, php2shell, node2shell, go2shell, py2shell & Node Out-of-Bounds (GET-only, tanpa payload)..."
+        "[DEEP-SHELL, WEBSHELL & FILEMANAGER] Mengecek permukaan wp2shell, php2shell, node2shell, go2shell, py2shell, Node Out-of-Bounds, Active WebShell (WSO/b374k/Alfa/Mini) & FileManager WebShell (TinyFileManager/elFinder/ResponsiveFM) (GET-only, tanpa payload)..."
       );
       const rce = await checkRceSurface(origin, budget, cfClearance);
       rceEvidence = rce.evidence;

@@ -1,36 +1,24 @@
 // app/sitemap.ts
 import type { MetadataRoute } from "next";
+import {
+  SITE_URL,
+  SEO_ROUTES_REGISTRY,
+  buildLanguageAlternates,
+} from "@/lib/seo-master";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = "https://www.sentinel-id.net";
   const lastModified = new Date();
-  
-  const routes = [
-    "",
-    "/qc",
-    "/history",
-    "/requests",
-    "/maintenance-log",
-    "/docs",
-    "/api-docs",
-    "/scan/headers",
-    "/scan/secrets",
-    "/scan/map",
-    "/scan/breach",
-    "/scan/subdomain",
-    "/scan/stack",
-    "/scan/shield-status",
-    "/scan/dns",
-    "/scan/exposure",
-    "/scan/js",
-    "/scan/ssl",
-    "/scan/osint",
-  ];
 
-  return routes.map((route) => ({
-    url: `${baseUrl}${route}`,
-    lastModified,
-    changeFrequency: route === "" ? "daily" : "weekly",
-    priority: route === "" ? 1.0 : 0.8,
-  }));
+  return Object.values(SEO_ROUTES_REGISTRY).map((route) => {
+    const fullUrl = `${SITE_URL}${route.path}`;
+    return {
+      url: fullUrl,
+      lastModified,
+      changeFrequency: route.changeFrequency,
+      priority: route.priority,
+      alternates: {
+        languages: buildLanguageAlternates(route.path),
+      },
+    };
+  });
 }

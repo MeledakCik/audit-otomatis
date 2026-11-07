@@ -7,6 +7,7 @@ export type ActivityModule =
   | "SENTINEL_CLAIM"
   | "SENTINEL_VIEW"
   | "QC_SCAN"
+  | "SEO_MASTER"
   | "HEADER_ARMOR"
   | "SECRET_HUNTER"
   | "ATTACK_MAP"
@@ -70,6 +71,7 @@ export const MODULE_LABELS: Record<ActivityModule, string> = {
   SENTINEL_CLAIM: "Klaim Kepemilikan Domain",
   SENTINEL_VIEW: "Buka Evidence Vault (1x)",
   QC_SCAN: "QC Otomatis (SEO/Perf)",
+  SEO_MASTER: "SEO Master & Global Rank #1",
   HEADER_ARMOR: "Header Armor",
   SECRET_HUNTER: "Secret Hunter",
   ATTACK_MAP: "Attack Surface Map",

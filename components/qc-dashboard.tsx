@@ -51,11 +51,17 @@ export function QcDashboard({
             >
               <span className="h-2 w-2 rounded-full bg-accent shrink-0 shadow-[0_0_8px_1px_var(--accent)] animate-pulse" />
               <span className="text-sm font-bold tracking-wide uppercase text-gradient-accent group-hover:brightness-125 transition-all truncate">
-                QC OTOMATIS
+                QC OTOMATIS &amp; SEO MASTER
               </span>
             </Link>
           </div>
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <Link
+              href={`/scan/seo-master?domain=${encodeURIComponent(domain)}`}
+              className="rounded-lg border border-purple-500/35 bg-purple-500/15 hover:bg-purple-500/25 px-2.5 py-1 text-[11px] font-mono text-purple-200 transition-colors"
+            >
+              Buka SEO Master →
+            </Link>
             <span className="text-xs text-muted truncate max-w-[40vw] sm:max-w-none">
               {domain}
             </span>
@@ -93,7 +99,7 @@ export function QcDashboard({
           <div className="flex flex-wrap items-center justify-around gap-6 px-6 py-6">
             {modules.seo && (
               <QcScoreDonut
-                label="SEO"
+                label="SEO Master"
                 score={result.seo?.score ?? null}
                 loading={isLoading && !result.seo}
               />
@@ -122,16 +128,26 @@ export function QcDashboard({
           {modules.seo && (
             <Card className="flex flex-col min-h-0">
               <CardHeader>
-                <CardTitle>QC SEO Otomatis</CardTitle>
+                <CardTitle>QC SEO Master &amp; International</CardTitle>
                 {result.seo && (
                   <span className="text-xs text-muted-dim">
-                    {result.seo.issues.length} issue
+                    {result.seo.issues.length} issue · Intl {result.seo.internationalScore}/100
                   </span>
                 )}
               </CardHeader>
-              <div className="overflow-y-auto thin-scroll max-h-[40vh] px-3 py-2">
+              <div className="overflow-y-auto thin-scroll max-h-[45vh] px-3 py-2 flex flex-col gap-3">
                 {result.seo ? (
-                  <QcIssueList issues={result.seo.issues} />
+                  <>
+                    <div className="grid grid-cols-3 gap-2 text-xs font-mono px-1">
+                      <MetricCell label="Tech & Schema" value={`${result.seo.technicalScore}/100`} />
+                      <MetricCell label="International" value={`${result.seo.internationalScore}/100`} />
+                      <MetricCell label="Content/KW" value={`${result.seo.contentScore}/100`} />
+                      <MetricCell label="Hreflang" value={`${result.seo.meta.hreflangTags.length} tag`} />
+                      <MetricCell label="JSON-LD" value={`${result.seo.meta.jsonLdCount} schema`} />
+                      <MetricCell label="Words / H1" value={`${result.seo.meta.wordCount}w / ${result.seo.meta.h1Count} H1`} />
+                    </div>
+                    <QcIssueList issues={result.seo.issues} />
+                  </>
                 ) : (
                   <p className="text-xs text-muted-dim italic px-1 py-2">
                     {isLoading ? "Sedang berjalan…" : "Modul tidak dijalankan."}
@@ -153,7 +169,7 @@ export function QcDashboard({
                   </span>
                 )}
               </CardHeader>
-              <div className="overflow-y-auto thin-scroll max-h-[40vh] px-3 py-2 flex flex-col gap-3">
+              <div className="overflow-y-auto thin-scroll max-h-[45vh] px-3 py-2 flex flex-col gap-3">
                 {result.perf ? (
                   <>
                     <div className="grid grid-cols-2 gap-2 text-xs font-mono px-1">
