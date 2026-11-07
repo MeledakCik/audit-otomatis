@@ -1,3 +1,4 @@
+// lib/scan-runner.ts
 import { crawlSite, endpointNodeId, jsNodeId } from "./site-crawler";
 import { analyzeJsSource, analyzeInlineScripts, fetchJsFiles } from "./js-analyzer";
 import { scanSecrets } from "./secret-scanner";
@@ -94,12 +95,15 @@ export async function runScan(
     // ---- Inspeksi Struktural DOM pada Setiap Halaman Hasil Crawl untuk WebShell & FileManager ----
     let crawledShellCount = 0;
     for (const page of crawl.pages) {
-      const pageShellFindings = inspectCrawledPageForShellOrFileManager(page);
-      for (const f of pageShellFindings) {
-        crawledShellCount++;
-        await addFinding(scanId, f);
-        await log(scanId, `[${(f.category ?? "WEBSHELL").toUpperCase()}] ${f.severity} — ${f.title} (${f.endpoint})`);
-      }
+      const pageShellFinding = inspectCrawledPageForShellOrFileManager(page);
+      if (!pageShellFinding) continue;
+
+      crawledShellCount++;
+      await addFinding(scanId, pageShellFinding);
+      await log(
+        scanId,
+        `[${(pageShellFinding.category ?? "WEBSHELL").toUpperCase()}] ${pageShellFinding.severity} — ${pageShellFinding.title} (${pageShellFinding.endpoint})`
+      );
     }
     if (crawledShellCount > 0) {
       await log(
