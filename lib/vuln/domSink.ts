@@ -6,6 +6,7 @@
  * 2. node2shell sinks (child_process.exec/spawn, vm.runInNewContext, deserialization unserialize/node-serialize, prototype pollution __proto__)
  * 3. node-oob (Node Out-of-Bounds / Memory Buffer sinks: Buffer.allocUnsafe, new Buffer(), DataView/TypedArray unchecked byteOffset)
  * 4. wp2shell / php2shell client-side bridge indicators (wp_ajax_nopriv dynamic action / admin-ajax.php)
+ * 5. webshell_filemanager_bridge (referensi ke elFinder connector, TinyFileManager, Responsive FileManager, WSO/Alfa/b374k bridge di JS)
  */
 
 import type { AuditFinding, AuditSeverity } from "./types";
@@ -23,7 +24,8 @@ export type SinkType =
   | "node2shell_deserialization"
   | "node2shell_prototype_pollution"
   | "node_oob_buffer"
-  | "wp2shell_admin_ajax";
+  | "wp2shell_admin_ajax"
+  | "webshell_filemanager_bridge";
 
 export interface Sink extends AuditFinding {
   type: SinkType;
@@ -82,6 +84,12 @@ const SINK_PATTERNS: SinkPatternDef[] = [
     regex: /\/wp-admin\/admin-ajax\.php\b|\bwp_ajax_nopriv_[a-zA-Z0-9_]+/g,
     severity: "medium",
   },
+  // webshell / filemanager connector bridge in JS
+  {
+    type: "webshell_filemanager_bridge",
+    regex: /connector\.minimal\.php|tinyfilemanager\.php|filemanager\/dialog\.php|roxyfileman|kcfinder\/browse\.php|\bFilesMan\b|\balfacgiapi\b/gi,
+    severity: "high",
+  },
 ];
 
 function lineNumberAt(content: string, index: number): number {
@@ -100,7 +108,7 @@ function snippetAround(content: string, index: number, radius = 40): string {
 }
 
 /**
- * Cari sink DOM-XSS, node2shell, node-oob buffer, dan wp2shell AJAX di raw JS text.
+ * Cari sink DOM-XSS, node2shell, node-oob buffer, wp2shell AJAX, dan jembatan WebShell/FileManager di raw JS text.
  */
 export function findDomSinks(jsContent: string): Sink[] {
   if (!jsContent) return [];

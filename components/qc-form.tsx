@@ -31,13 +31,14 @@ export function QcForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ domain, modules: { seo, perf, content } }),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.ok) {
         setError(data.error ?? "Gagal memulai QC.");
         setPending(false);
         return;
       }
-      router.push(`/qc/${data.id}`);
+      const targetDomain = data.domain || domain.trim().replace(/^https?:\/\//i, "").replace(/\/.*$/, "");
+      router.push(`/qc/${data.id}?domain=${encodeURIComponent(targetDomain)}`);
     } catch {
       setError("Gagal terhubung ke server.");
       setPending(false);
@@ -60,7 +61,7 @@ export function QcForm() {
         <span className="text-xs uppercase tracking-widest text-muted-dim">Modul QC</span>
         <label className="flex items-center gap-2.5 cursor-pointer group">
           <Checkbox checked={seo} onCheckedChange={(v) => setSeo(v === true)} disabled={pending} />
-          <span className="text-xs text-muted group-hover:text-foreground">SEO Otomatis</span>
+          <span className="text-xs text-muted group-hover:text-foreground">SEO Master &amp; International</span>
         </label>
         <label className="flex items-center gap-2.5 cursor-pointer group">
           <Checkbox checked={perf} onCheckedChange={(v) => setPerf(v === true)} disabled={pending} />
@@ -78,7 +79,7 @@ export function QcForm() {
         </div>
       )}
 
-      <Button disabled={pending} className="w-full h-10">
+      <Button type="submit" disabled={pending} className="w-full h-10">
         {pending ? "STARTING..." : "RUN QC →"}
       </Button>
 

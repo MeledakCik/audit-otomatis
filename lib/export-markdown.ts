@@ -19,6 +19,17 @@ const CATEGORY_LABELS: Record<string, string> = {
   "auth-bypass": "Auth Bypass Potential",
   "missing-rate-limit": "Missing Rate Limit",
   "passive-discovery": "Passive Discovery",
+  "cve-match": "CVE Match",
+  "rce-surface": "RCE Surface",
+  wp2shell: "wp2shell (WordPress RCE Surface)",
+  php2shell: "php2shell (PHP Eval/Ignition/Profiler)",
+  node2shell: "node2shell (Node.js V8/SSR Sinks)",
+  go2shell: "go2shell (Go pprof/Expvar)",
+  py2shell: "py2shell (Python Werkzeug/Jupyter/Celery)",
+  "node-oob": "Node Out-of-Bounds / Memory",
+  webshell: "Active WebShell Backdoor",
+  "filemanager-shell": "FileManager WebShell",
+  "sensitive-file": "Sensitive File (Sentinel Vault)",
 };
 
 function isoDate(ts: number): string {

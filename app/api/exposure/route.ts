@@ -3,10 +3,11 @@ import { assertPublicHttpsTarget, isSameOrigin, SsrfBlockedError } from "@/lib/s
 import { findHeaderLeaks, findSourcePatterns, Finding, severityRank } from "@/lib/findings";
 import { logUserActivity } from "@/lib/activity-store";
 import { publishScanCriticals } from "@/lib/sentinel/publish";
+import { matchWebshellSignature, matchFileManagerSignature } from "@/lib/vuln/rce-surface";
 
 export const runtime = "nodejs";
 
-const USER_AGENT = "Sentinel-ID Scanner/3.5 (+https://sentinel-id.net/scan/exposure; Verified by Google Developer Bandung)";
+const USER_AGENT = "Sentinel-ID Scanner/3.6 (+https://www.sentinel-id.net/scan/exposure; Verified by Google Developer Bandung)";
 const FETCH_TIMEOUT_MS = 10000;
 const MAX_BODY_BYTES = 3_000_000;
 const MAX_REDIRECTS = 3;
@@ -37,6 +38,15 @@ const SECRET_PATTERNS: Array<{ name: string; re: RegExp }> = [
   { name: "GO2SHELL_PPROF_OR_EXPVAR", re: /Types of profiles available|"memstats"\s*:\s*\{/i },
   { name: "PY2SHELL_WERKZEUG_OR_JUPYTER", re: /<title>[^<]*Werkzeug|"execution_state"\s*:\s*"(?:idle|busy)"/i },
   { name: "NODE_OOB_HEAPDUMP_OR_BUFFER", re: /"snapshot"\s*:\s*\{[\s\S]*"nodes"\s*:\s*\[|ERR_BUFFER_OUT_OF_BOUNDS/i },
+  // WebShell & FileManager WebShell Signatures
+  {
+    name: "WEBSHELL_WSO_B374K_ALFA_MINI",
+    re: /(?:WSO\s+\d+\.\d+|FilesMan|b374k\s+\d+\.\d+|ALFA\s+TEaM\s+Shell|alfacgiapi|MariJUANA\s+Shell|Gel4y\s+Mini\s+Shell|IndoXploit\s+Shell|c99shell|r57shell|p0wny@shell)/i,
+  },
+  {
+    name: "FILEMANAGER_TINYFM_ELFINDER_ROXY",
+    re: /(?:Tiny\s*File\s*Manager|tinyfilemanager\.github\.io|fm_usr|fm_pwd|elFinderConnector|errUnknownCmd|Responsive\s+FileManager|Roxy\s+Fileman|KCFinder)/i,
+  },
 ];
 
 interface ScanRequestBody {
@@ -332,6 +342,15 @@ export async function POST(req: NextRequest) {
             }
           });
 
+          const wsHit = matchWebshellSignature(text);
+          if (wsHit && !matchedPatterns.includes(`WEBSHELL:${wsHit.family}`)) {
+            matchedPatterns.push(`WEBSHELL:${wsHit.family}`);
+          }
+          const fmHit = matchFileManagerSignature(text, contentType.toLowerCase());
+          if (fmHit && !matchedPatterns.includes(`FILEMANAGER:${fmHit.name}`)) {
+            matchedPatterns.push(`FILEMANAGER:${fmHit.name}`);
+          }
+
           const exposed = (res.status === 200 || res.status === 405) && matchedPatterns.length > 0;
           let vaultStored = false;
 
@@ -344,9 +363,9 @@ export async function POST(req: NextRequest) {
                   {
                     domain: domainHost,
                     severity: "CRITICAL",
-                    finding: `Sensitive Path Exposed (${revalidated.url.pathname})`,
+                    finding: `Sensitive Path / WebShell Exposed (${revalidated.url.pathname})`,
                     evidence_public: `HTTP ${res.status} — cocok pola [${matchedPatterns.join(", ")}] (nilai rahasia dienkripsi AES-256-GCM di Admin Vault)`,
-                    fix: "Hapus file dari webroot, blokir akses di web server, dan rotasi seluruh kredensial.",
+                    fix: "Hapus file/webshell dari webroot segera, blokir akses di web server, dan rotasi seluruh kredensial.",
                   },
                 ],
                 [
@@ -375,7 +394,7 @@ export async function POST(req: NextRequest) {
             contentType,
             matchedPatterns: matchedPatterns.length > 0 ? matchedPatterns : undefined,
             preview: exposed
-              ? `[REDACTED PUBLIC VIEW — Nilai rahasia tidak pernah bocor ke publik. Bukti mentah (${matchedPatterns.join(
+              ? `[REDACTED PUBLIC VIEW — Nilai rahasia & artefak WebShell/FileManager tidak pernah bocor ke publik. Bukti mentah (${matchedPatterns.join(
                   ", "
                 )}) telah dienkripsi dengan AES-256-GCM dan disimpan di Brankas Vault Admin untuk diklaim pemilik sah domain.]`
               : undefined,
@@ -388,7 +407,7 @@ export async function POST(req: NextRequest) {
               evidence: `${revalidated.url.pathname} mengembalikan HTTP ${res.status} dengan penanda [${matchedPatterns.join(", ")}] — bukti dienkripsi AES-256-GCM ke Admin Vault`,
               location: revalidated.url.toString(),
               recommendation:
-                "Segera hapus file/endpoint dari akses publik, rotasi seluruh kredensial yang terdampak, dan klaim bukti terenkripsi melalui panel Sentinel Vault.",
+                "Segera hapus file/webshell/filemanager dari akses publik, rotasi seluruh kredensial yang terdampak, dan klaim bukti terenkripsi melalui panel Sentinel Vault.",
             });
           }
         }
@@ -413,7 +432,7 @@ export async function POST(req: NextRequest) {
   await logUserActivity({
     req,
     module: "EXPOSURE_CHECK",
-    action: "Pemeriksaan Eksposur File Sensitif & Deep Shell Surface",
+    action: "Pemeriksaan Eksposur File Sensitif, WebShell & FileManager",
     target: originUrl.hostname,
     status: criticalFindings.length > 0 ? "CRITICAL" : mediumFindings.length > 0 ? "WARNING" : "SUCCESS",
     summary: `${findings.length} temuan (${criticalFindings.length} critical masuk Vault AES-256-GCM, ${mediumFindings.length} medium)`,

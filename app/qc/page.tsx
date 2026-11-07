@@ -1,7 +1,11 @@
 import { QcForm } from "@/components/qc-form";
-import { Search, Gauge, Link2, FileText } from "lucide-react";
+import { buildPageMetadata } from "@/lib/seo-master";
+import Link from "next/link";
+import { Search, Gauge, Link2, FileText, TrendingUp, ArrowUpRight } from "lucide-react";
 
 export const maxDuration = 300;
+
+export const metadata = buildPageMetadata("/qc");
 
 export default function QcPage() {
   return (
@@ -10,18 +14,18 @@ export default function QcPage() {
         <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_0.85fr] gap-10 items-start">
           <div className="pt-2 space-y-6">
             <div className="inline-flex items-center px-3 py-1 rounded-md bg-purple-500/10 border border-purple-500/20 text-xs font-mono tracking-[0.2em] uppercase text-purple-400">
-              $ QC --DOMAIN
+              $ QC --DOMAIN --SEO-MASTER
             </div>
 
             <div className="space-y-3">
               <h1 className="text-3xl lg:text-5xl font-extrabold leading-[1.1] tracking-tight text-white">
                 QC Otomatis <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">
-                  SEO · Performance · Content
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-emerald-400">
+                  SEO Master · Performance · Content
                 </span>
               </h1>
               <p className="text-sm leading-relaxed text-slate-400 max-w-xl">
-                Jalankan quality control otomatis untuk domainmu: audit SEO on-page,
+                Jalankan quality control otomatis untuk domainmu: audit 35+ indikator SEO Master &amp; International Hreflang/JSON-LD,
                 skor performance via PageSpeed Insights, dan cek broken link + a11y
                 dasar — dalam satu kali jalan.
               </p>
@@ -29,7 +33,7 @@ export default function QcPage() {
 
             <div className="flex flex-wrap gap-2 pt-1">
               <div className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.02] px-3 py-1 text-xs text-slate-300 font-mono">
-                <Search className="h-3 w-3 text-purple-400" /> SEO
+                <Search className="h-3 w-3 text-purple-400" /> SEO Master (35+ Checks)
               </div>
               <div className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.02] px-3 py-1 text-xs text-slate-300 font-mono">
                 <Gauge className="h-3 w-3 text-purple-400" /> Performance
@@ -37,6 +41,14 @@ export default function QcPage() {
               <div className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.02] px-3 py-1 text-xs text-slate-300 font-mono">
                 <Link2 className="h-3 w-3 text-purple-400" /> Content/Link
               </div>
+              <Link
+                href="/scan/seo-master"
+                className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/35 bg-emerald-500/15 hover:bg-emerald-500/25 px-3 py-1 text-xs text-emerald-200 font-mono transition-colors"
+              >
+                <TrendingUp className="h-3 w-3 text-emerald-400" />
+                <span>SEO Master &amp; Code Generator</span>
+                <ArrowUpRight className="h-3 w-3" />
+              </Link>
             </div>
           </div>
 
@@ -55,7 +67,7 @@ export default function QcPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {[
             { n: "01", t: "Crawl", d: "homepage + link internal", icon: Search },
-            { n: "02", t: "QC SEO", d: "title · meta · h1 · alt · OG", icon: Search },
+            { n: "02", t: "QC SEO Master", d: "hreflang · JSON-LD · meta · OG · KW", icon: TrendingUp },
             { n: "03", t: "QC Performance", d: "PageSpeed Insights + fallback", icon: Gauge },
             { n: "04", t: "QC Content", d: "broken link · a11y · export .md", icon: FileText },
           ].map((c) => (

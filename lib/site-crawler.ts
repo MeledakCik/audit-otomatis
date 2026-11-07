@@ -12,7 +12,7 @@ import type { RequestBudget } from "./rate-limit";
 
 export const MAX_CRAWL_URLS = 50;
 export const DEFAULT_MAX_DEPTH = 3; // level 0 (homepage) .. level 3
-export const MAX_STORED_HTML_CHARS = 20_000;
+export const MAX_STORED_HTML_CHARS = 4_000;
 
 interface PageParseResult {
   internalLinks: string[];

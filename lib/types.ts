@@ -40,6 +40,8 @@ export type FindingCategory =
   | "go2shell"
   | "py2shell"
   | "node-oob"
+  | "webshell"
+  | "filemanager-shell"
   | "sensitive-file";
 
 export interface Finding {

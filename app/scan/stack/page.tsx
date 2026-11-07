@@ -1,12 +1,10 @@
 import { Suspense } from "react";
 import { StackFingerprintView } from "@/components/stack-fingerprint/stack-fingerprint-view";
+import { buildPageMetadata } from "@/lib/seo-master";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = {
-  title: "Tech Stack Fingerprint",
-  description: "Deteksi tech stack dari homepage secara pasif — header + HTML marker publik saja, untuk asset inventory edukatif.",
-};
+export const metadata = buildPageMetadata("/scan/stack");
 
 export default function StackFingerprintPage() {
   return (

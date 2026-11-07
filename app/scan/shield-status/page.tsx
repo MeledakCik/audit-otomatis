@@ -1,14 +1,12 @@
 import { Suspense } from "react";
-import  ThreatLab  from "@/components/shield-status/thread";
+import ThreatLab from "@/components/shield-status/thread";
+import { buildPageMetadata } from "@/lib/seo-master";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = {
-  title: "Threat Lab",
-  description: "Pantau status proteksi dan keamanan aplikasi web Anda secara real-time. Lihat apakah ada masalah dengan Shield, latency, dan status guard.",
-};
+export const metadata = buildPageMetadata("/scan/shield-status");
 
-export default function SubdomainWatchPage() {
+export default function ShieldStatusPage() {
   return (
     <Suspense fallback={null}>
       <ThreatLab />

@@ -115,6 +115,8 @@ const CATEGORY_RULES: Record<string, string> = {
   go2shell: "CWE-215",
   py2shell: "CWE-489",
   "node-oob": "CWE-119",
+  webshell: "CWE-434",
+  "filemanager-shell": "CWE-434",
   "sensitive-file": "CWE-538",
 };
 

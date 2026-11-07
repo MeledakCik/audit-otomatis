@@ -26,6 +26,8 @@ const CATEGORY_LABELS: Record<NonNullable<Finding["category"]>, string> = {
   go2shell: "go2shell",
   py2shell: "py2shell",
   "node-oob": "node out-of-bounds",
+  webshell: "webshell backdoor",
+  "filemanager-shell": "filemanager shell",
   "sensitive-file": "vault encrypted",
 };
 

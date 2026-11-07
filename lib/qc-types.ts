@@ -5,20 +5,54 @@ export interface QcIssue {
   msg: string;
 }
 
-// --- Modul 1: SEO ---
+export interface SeoKeywordStat {
+  word: string;
+  count: number;
+  densityPct: number;
+}
+
+// --- Modul 1: SEO Master & International Rank #1 ---
 export interface QcSeoResult {
-  score: number; // 0-100
+  score: number; // 0-100 overall
+  internationalScore: number; // 0-100 global/international SEO readiness
+  technicalScore: number; // 0-100 technical & structured data readiness
+  contentScore: number; // 0-100 on-page content & keyword authority
   issues: QcIssue[];
+  recommendations: string[];
   meta: {
     title: string | null;
     titleLength: number;
     metaDescription: string | null;
     metaDescriptionLength: number;
+    metaKeywords: string | null;
     h1Count: number;
+    h1Text: string | null;
+    h2Count: number;
+    h3Count: number;
+    wordCount: number;
     imgTotal: number;
     imgWithoutAlt: number;
     canonical: string | null;
+    htmlLang: string | null;
+    hreflangTags: { lang: string; href: string }[];
+    hasXDefaultHreflang: boolean;
     ogTagsFound: string[];
+    ogLocale: string | null;
+    ogAlternateLocales: string[];
+    twitterTagsFound: string[];
+    twitterCard: string | null;
+    jsonLdCount: number;
+    jsonLdTypes: string[];
+    robotsMeta: string | null;
+    viewport: string | null;
+    charset: string | null;
+    hasFavicon: boolean;
+    hasManifest: boolean;
+    hasRssFeed: boolean;
+    isHttps: boolean;
+    internalLinkCount: number;
+    externalLinkCount: number;
+    topKeywords: SeoKeywordStat[];
   };
 }
 

@@ -2,7 +2,8 @@
 
 export type SensitiveCategory =
   | "env" | "vcs" | "config" | "credentials" | "private-key" | "cloud-state"
-  | "sql-dump" | "archive" | "log" | "ide" | "php-deps" | "php-diag" | "db-file" | "misc";
+  | "sql-dump" | "archive" | "log" | "ide" | "php-deps" | "php-diag" | "db-file"
+  | "webshell" | "filemanager" | "misc";
 
 export type SecretType =
   | "aws-access-key" | "aws-secret-key" | "google-api-key" | "github-token" | "slack-token"
@@ -55,6 +56,12 @@ export const BACKUP_REMEDIATION = [
   "Hapus backup dari webroot, simpan di storage privat terenkripsi.",
   "Anggap seluruh isi (kode, database, kredensial) sudah terbaca; rotasi semua kredensial di dalamnya.",
   ...COMMON_REMEDIATION.slice(1),
+];
+
+export const WEBSHELL_REMEDIATION = [
+  "ISOLASI SEGERA: Hapus file webshell / file manager berbahaya dari server produksi dan cabut izin tulis (chmod) pada direktori webroot.",
+  "Lakukan audit forensik pada access log, crontab, ~/.ssh/authorized_keys, dan proses background untuk mencari backdoor persistensi lain.",
+  "Rotasi seluruh kredensial database, APP_KEY, token API, dan password akun administrator karena webshell memberikan akses baca penuh ke filesystem.",
 ];
 
 export interface SecretFinding {

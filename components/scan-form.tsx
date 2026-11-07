@@ -1,16 +1,13 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { startScanAction, type StartScanResult } from "@/lib/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { SentinelAudit } from "@/components/sentinel/sentinel-audit";
 import { Globe, Lock, Radar, ShieldCheck, Sparkles, ArrowRight, KeyRound, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-const initialState: StartScanResult = { ok: false };
 
 export function ScanForm() {
   const router = useRouter();
@@ -21,10 +18,8 @@ export function ScanForm() {
   const [domainVal, setDomainVal] = useState("");
   const [showWafOpts, setShowWafOpts] = useState(false);
   const [cfClearance, setCfClearance] = useState("");
-  const [state, formAction, pending] = useActionState(
-    (_p: StartScanResult, fd: FormData) => startScanAction(fd),
-    initialState
-  );
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (searchParams?.get("tab") === "sentinel") {
@@ -32,9 +27,44 @@ export function ScanForm() {
     }
   }, [searchParams]);
 
-  useEffect(() => {
-    if (state.ok && state.scanId) router.push(`/scan/${state.scanId}`);
-  }, [state, router]);
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+
+    if (!checked) {
+      setError("Anda harus mencentang konfirmasi kepemilikan/izin sebelum scan dimulai.");
+      return;
+    }
+
+    if (!domainVal.trim()) {
+      setError("Masukkan domain atau URL target terlebih dahulu.");
+      return;
+    }
+
+    setPending(true);
+    try {
+      const res = await fetch("/api/scan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          domain: domainVal.trim(),
+          permission: checked,
+          cfClearance: cfClearance.trim() || undefined,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok || !data.scanId) {
+        setError(data.error ?? "Gagal memulai pemindaian. Silakan coba lagi.");
+        setPending(false);
+        return;
+      }
+      const targetDomain = data.domain || domainVal.trim().replace(/^https?:\/\//i, "").replace(/\/.*$/, "");
+      router.push(`/scan/${data.scanId}?domain=${encodeURIComponent(targetDomain)}`);
+    } catch {
+      setError("Gagal terhubung ke server. Periksa koneksi internet Anda lalu coba lagi.");
+      setPending(false);
+    }
+  }
 
   return (
     <div className="space-y-5">
@@ -69,7 +99,7 @@ export function ScanForm() {
       </div>
 
       {mode === "full" ? (
-        <form action={formAction} className="flex flex-col gap-4">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="space-y-1.5">
             <label
               htmlFor="scan-domain-input"
@@ -94,9 +124,6 @@ export function ScanForm() {
               />
             </div>
           </div>
-
-          <input type="hidden" name="permission" value={checked ? "on" : ""} />
-          <input type="hidden" name="cfClearance" value={cfClearance} />
 
           {/* Optional WAF / Cloudflare Owner Token Settings */}
           <div className="rounded-xl border border-emerald-500/25 bg-emerald-500/[0.04] p-3 space-y-2">
@@ -141,7 +168,7 @@ export function ScanForm() {
           <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] p-3 space-y-2">
             <div className="text-[11px] font-mono text-slate-400 flex items-center gap-1.5">
               <Sparkles className="h-3 w-3 text-purple-400" />
-              <span>Otomatis menjalankan 7 engine keamanan mendalam sekaligus:</span>
+              <span>Otomatis menjalankan 8 engine keamanan mendalam sekaligus:</span>
             </div>
             <div className="flex flex-wrap gap-1.5 text-[10px] font-mono">
               <span className="rounded-md bg-purple-500/15 border border-purple-500/30 px-2 py-0.5 text-purple-200">
@@ -153,17 +180,20 @@ export function ScanForm() {
               <span className="rounded-md bg-pink-500/15 border border-pink-500/30 px-2 py-0.5 text-pink-200">
                 3. wp2shell · php2shell · node2shell · go2shell · py2shell
               </span>
+              <span className="rounded-md bg-rose-500/15 border border-rose-500/30 px-2 py-0.5 text-rose-200">
+                4. Active WebShell &amp; FileManager Detector
+              </span>
               <span className="rounded-md bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 text-amber-200">
-                4. Node Out-of-Bounds (OOB) &amp; Heap
+                5. Node Out-of-Bounds (OOB) &amp; Heap
               </span>
               <span className="rounded-md bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 text-emerald-200">
-                5. Audit File Sensitif &amp; Vault AES-256-GCM
+                6. Audit File Sensitif &amp; Vault AES-256-GCM
               </span>
               <span className="rounded-md bg-sky-500/15 border border-sky-500/30 px-2 py-0.5 text-sky-200">
-                6. Cloudflare/WAF Edge &amp; DNS/DoH Intel
+                7. Cloudflare/WAF Edge &amp; DNS/DoH Intel
               </span>
               <span className="rounded-md bg-purple-500/15 border border-purple-500/30 px-2 py-0.5 text-purple-200">
-                7. Header &amp; OSV/NVD CVE Intel
+                8. Header &amp; OSV/NVD CVE Intel
               </span>
             </div>
           </div>
@@ -179,13 +209,14 @@ export function ScanForm() {
             </span>
           </label>
 
-          {state.error && (
+          {error && (
             <div className="rounded-xl border border-red-500/40 bg-red-500/10 p-3 text-xs text-red-300">
-              {state.error}
+              {error}
             </div>
           )}
 
           <Button
+            type="submit"
             disabled={pending || !checked}
             className="w-full h-11 bg-gradient-to-r from-purple-600 via-fuchsia-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold tracking-wider rounded-xl shadow-[0_0_25px_-5px_rgba(168,85,247,0.6)] cursor-pointer"
           >
