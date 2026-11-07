@@ -14,6 +14,23 @@ import { getKv, REDIS_CONFIGURED } from "./redis";
 const MAX_LOGS_KEPT = 300;
 const QC_TTL_SECONDS = 30 * 60; // sama seperti scan: auto-bersih 30 menit
 
+/** QC non-terminal lebih tua dari ini dianggap macet dan di-reap jadi "error". */
+const QC_STALE_MS = 6 * 60_000;
+const QC_TERMINAL = new Set<QcStatus>(["done", "error"]);
+const deletedQc = new Set<string>(); // tombstone in-memory: runner yang masih jalan berhenti menulis
+
+export class QcAbortedError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "QcAbortedError";
+  }
+}
+
+/** Dipakai sebagai guard RequestBudget di runner QC. */
+export async function qcCheckpoint(id: string): Promise<void> {
+  if (deletedQc.has(id)) throw new QcAbortedError("QC dihapus oleh admin.");
+}
+
 const metaKey = (id: string) => `trout:qc:${id}:meta`;
 const logsKey = (id: string) => `trout:qc:${id}:logs`;
 // Setiap modul QC (seo/perf/content) punya key hasil sendiri-sendiri —
@@ -76,10 +93,17 @@ export async function createQc(
 }
 
 export async function getQc(id: string): Promise<QcState | undefined> {
+  if (deletedQc.has(id)) return undefined;
   if (REDIS_CONFIGURED) {
     const kv = getKv();
     const meta = await kv.getJSON<QcMeta>(metaKey(id));
     if (!meta) return undefined;
+
+    if (!QC_TERMINAL.has(meta.status) && Date.now() - meta.createdAt > QC_STALE_MS) {
+      await markQcError(id, "QC macet/melewati batas waktu — dihentikan otomatis.");
+      meta.status = "error";
+      meta.error = "QC macet/melewati batas waktu — dihentikan otomatis.";
+    }
 
     const [logs, seo, perf, content] = await Promise.all([
       getQcLogsSince(id, 0),
@@ -110,6 +134,7 @@ export async function getQcLogsSince(id: string, fromIndex: number): Promise<QcL
 }
 
 async function updateMeta(id: string, mutate: (state: QcMeta) => void): Promise<void> {
+  if (deletedQc.has(id)) return;
   if (REDIS_CONFIGURED) {
     const kv = getKv();
     const meta = await kv.getJSON<QcMeta>(metaKey(id));
@@ -124,6 +149,7 @@ async function updateMeta(id: string, mutate: (state: QcMeta) => void): Promise<
 }
 
 export async function emitQc(id: string, event: Omit<QcLogEvent, "timestamp">): Promise<void> {
+  if (deletedQc.has(id)) return;
   const full: QcLogEvent = { ...event, timestamp: Date.now() };
 
   if (REDIS_CONFIGURED) {
@@ -139,6 +165,7 @@ export async function emitQc(id: string, event: Omit<QcLogEvent, "timestamp">): 
 
   if (event.type === "status" && event.status) {
     await updateMeta(id, (s) => {
+      if (s.status === "error") return; // sudah dihentikan/gagal: jangan dihidupkan lagi
       s.status = event.status!;
     });
   }
@@ -193,6 +220,7 @@ export async function markQcDone(id: string): Promise<void> {
 export async function markQcError(id: string, message: string): Promise<void> {
   await updateMeta(id, (s) => {
     s.error = message;
+    s.status = "error";
   });
   await emitQc(id, { type: "error", message });
 }
@@ -229,11 +257,48 @@ export async function listQcs(limit = 50): Promise<QcSummary[]> {
       domain: m.domain,
       origin: m.origin,
       createdAt: m.createdAt,
-      status: m.status,
+      status: (!QC_TERMINAL.has(m.status) && Date.now() - m.createdAt > QC_STALE_MS ? "error" : m.status) as QcStatus,
       overallScore: m.result?.overallScore,
       modules: m.modules,
       requestsMade: m.requestsMade ?? 0,
     }))
     .sort((a, b) => b.createdAt - a.createdAt)
     .slice(0, limit);
+}
+
+
+/** Hentikan QC (admin): tandai terminal "error" supaya stream/polling berhenti. */
+export async function stopQc(id: string, reason = "Dihentikan oleh admin."): Promise<void> {
+  const meta = await getKv().getJSON<QcMeta>(metaKey(id));
+  if (!meta || QC_TERMINAL.has(meta.status)) return;
+  await markQcError(id, reason);
+  await updateMeta(id, (s) => {
+    s.status = "error";
+  });
+}
+
+/** Hapus QC sepenuhnya (admin). */
+export async function deleteQc(id: string): Promise<void> {
+  deletedQc.add(id);
+  memQc.delete(id);
+  setTimeout(() => deletedQc.delete(id), 10 * 60_000).unref?.();
+  await getKv().del(
+    metaKey(id),
+    logsKey(id),
+    resultKey(id, "seo"),
+    resultKey(id, "perf"),
+    resultKey(id, "content")
+  );
+}
+
+/** Hentikan semua QC yang masih berjalan. */
+export async function stopAllRunningQcs(reason = "Dihentikan oleh admin."): Promise<number> {
+  const list = await listQcs(200);
+  let n = 0;
+  for (const q of list) {
+    if (QC_TERMINAL.has(q.status)) continue;
+    await stopQc(q.id, reason);
+    n++;
+  }
+  return n;
 }

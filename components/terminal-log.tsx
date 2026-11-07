@@ -11,6 +11,7 @@ const TYPE_COLOR: Record<ScanLogEvent["type"], string> = {
   done: "text-emerald-400",
   error: "text-rose-400",
   blocked: "text-rose-400",
+  stopped: "text-amber-400",
   endpoints: "text-cyan-300",
 };
 
@@ -21,6 +22,7 @@ const TYPE_ROW_HIGHLIGHT: Record<ScanLogEvent["type"], string> = {
   done: "bg-emerald-500/10 border-l-2 border-emerald-500 rounded-r-md px-2 -mx-2 py-0.5",
   error: "bg-rose-500/10 border-l-2 border-rose-500 rounded-r-md px-2 -mx-2 py-0.5",
   blocked: "bg-rose-500/10 border-l-2 border-rose-500 rounded-r-md px-2 -mx-2 py-0.5",
+  stopped: "bg-amber-500/10 border-l-2 border-amber-500 rounded-r-md px-2 -mx-2 py-0.5",
   endpoints: "bg-cyan-500/10 border-l-2 border-cyan-500 rounded-r-md px-2 -mx-2 py-0.5",
 };
 

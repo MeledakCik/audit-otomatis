@@ -23,6 +23,8 @@ export interface Kv {
   lrangeJSON<T>(key: string, start: number, stop: number): Promise<T[]>;
   /** Cari semua key yang cocok dengan glob pattern (mis. "trout:scan:*:meta"). */
   keys(pattern: string): Promise<string[]>;
+  /** Hapus key (string maupun list) dari L1, Redis, dan Turso. */
+  del(...keys: string[]): Promise<void>;
 }
 
 function getUpstashCredentials(): { url: string; token: string } | null {
@@ -500,6 +502,45 @@ class MultiLayerHybridKv implements Kv {
       return list.slice(s, e).map((r) => JSON.parse(r) as T);
     }
     return [];
+  }
+
+  async del(...keys: string[]): Promise<void> {
+    if (keys.length === 0) return;
+    for (const k of keys) {
+      memItems.delete(k);
+      memLists.delete(k);
+    }
+
+    const upstash = getUpstashClient();
+    if (upstash) {
+      try {
+        await upstash.del(...keys);
+      } catch {
+        markUpstashTemporarilyDead();
+      }
+    } else {
+      const tcp = await getNodeRedisClient();
+      if (tcp) {
+        try {
+          await tcp.del(keys);
+        } catch {
+          globalForHybridKv.__troutNodeRedisDeadUntil = Date.now() + 60_000;
+        }
+      }
+    }
+
+    try {
+      if (await ensureTursoSchema()) {
+        await tursoPipeline(
+          keys.flatMap((k) => [
+            { sql: "DELETE FROM sentinel_kv WHERE k = ?", args: [sqlArg(k)] },
+            { sql: "DELETE FROM sentinel_list WHERE k = ?", args: [sqlArg(k)] },
+          ])
+        );
+      }
+    } catch {
+      // ignore
+    }
   }
 
   async keys(pattern: string): Promise<string[]> {

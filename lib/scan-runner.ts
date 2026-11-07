@@ -11,6 +11,7 @@ import {
   inspectCrawledPageForShellOrFileManager,
   RCE_SURFACE_PATH_COUNT,
 } from "./vuln/rce-surface";
+import { checkPhpUploadSurface } from "./vuln/php-upload-surface";
 import { buildDossier, type RceSurfaceEvidence } from "./sentinel/dossier";
 import { auditDomain } from "./sentinel/audit";
 import type { GitIntelReport } from "./sentinel/git-intel";
@@ -38,10 +39,15 @@ import {
   addFinding,
   bumpRequestCount,
   bumpJsFilesScanned,
+  checkpoint,
+  finalizeAborted,
   getScan,
   log,
   markDone,
   markError,
+  markStopped,
+  ScanAbortedError,
+  SCAN_MAX_MS,
   setDiscoveredEndpoints,
   setEndpointsDiscovered,
   setGraph,
@@ -58,8 +64,16 @@ export async function runScan(
   identity?: { ip?: string; userAgent?: string; userId?: string },
   cfClearance?: string
 ) {
-  const budget = new RequestBudget(140, 500);
+  // Setiap request lewat budget otomatis memanggil checkpoint → berhenti bila timeout / di-stop admin.
+  const budget = new RequestBudget(140, 500, () => checkpoint(scanId));
   const domainHost = new URL(origin).hostname.toLowerCase();
+
+  // Watchdog: kalau ada await yang menggantung (tidak pernah melewati checkpoint), paksa status
+  // "stopped" supaya stream/polling client berhenti dan tulisan Redis dari runner zombie diabaikan.
+  const watchdog = setTimeout(() => {
+    void markStopped(scanId, "Scan macet — dihentikan otomatis oleh watchdog.").catch(() => {});
+  }, SCAN_MAX_MS + 15_000);
+  watchdog.unref?.();
 
   try {
     await setStatus(scanId, "crawling");
@@ -458,7 +472,33 @@ export async function runScan(
       }
       await bumpRequestCount(scanId, RCE_SURFACE_PATH_COUNT);
     } catch (e) {
+      if (e instanceof ScanAbortedError) throw e;
       await log(scanId, `[DEEP-SHELL & OOB] dilewati: ${(e as Error).message}`);
+    }
+
+    // ---- PHP Upload Surface & Upload-Dir Backdoor (pasif, GET only, tidak ada upload) ----
+    try {
+      await log(
+        scanId,
+        "[PHP-UPLOAD] Mengaudit form upload, direktori upload (directory listing), file .php/.phtml/.phar yang terlihat & kebuka, .htaccess/.user.ini persistensi — pasif, tanpa upload..."
+      );
+      const pu = await checkPhpUploadSurface(
+        origin,
+        crawl.pages,
+        crawl.allForms,
+        budget,
+        cfClearance,
+        (m) => log(scanId, m)
+      );
+      rceEvidence = [...rceEvidence, ...pu.evidence];
+      for (const f of pu.findings) {
+        await addFinding(scanId, f);
+        await log(scanId, `[${(f.category ?? "PHP-UPLOAD").toUpperCase()}] ${f.severity} — ${f.title}`);
+      }
+      await bumpRequestCount(scanId, pu.requests);
+    } catch (e) {
+      if (e instanceof ScanAbortedError) throw e;
+      await log(scanId, `[PHP-UPLOAD] dilewati: ${(e as Error).message}`);
     }
 
     await log(scanId, "Mengecek security headers & postur Edge WAF/Cloudflare...");
@@ -557,6 +597,23 @@ export async function runScan(
       },
     });
   } catch (err) {
+    if (err instanceof ScanAbortedError) {
+      await finalizeAborted(scanId, err);
+      if (!err.deleted) {
+        await logUserActivity({
+          ip: identity?.ip,
+          userAgent: identity?.userAgent,
+          userId: identity?.userId,
+          module: "FULL_SCAN",
+          action: "Full Scan Dihentikan",
+          target: domainHost,
+          status: "WARNING",
+          summary: err.message,
+          meta: { scanId },
+        }).catch(() => {});
+      }
+      return;
+    }
     await markError(scanId, `Scan gagal: ${(err as Error).message}`);
     await logUserActivity({
       ip: identity?.ip,
@@ -569,6 +626,8 @@ export async function runScan(
       summary: (err as Error).message,
       meta: { scanId },
     });
+  } finally {
+    clearTimeout(watchdog);
   }
 }
 

@@ -86,7 +86,27 @@ function parsePage(origin: string, pageUrl: string, html: string): PageParseResu
       const name = $(inputEl).attr("name");
       if (name) inputs.push(name);
     });
-    forms.push({ action: resolvedAction, method, inputs });
+    const fileInputs: NonNullable<FormInfo["fileInputs"]> = [];
+    $form.find("input[type=file]").each((_, fi) => {
+      fileInputs.push({
+        name: $(fi).attr("name") || "",
+        accept: $(fi).attr("accept") || undefined,
+        multiple: $(fi).attr("multiple") !== undefined,
+      });
+    });
+    let hasCsrfToken = false;
+    $form.find("input[type=hidden][name]").each((_, hi) => {
+      if (/csrf|xsrf|token|nonce|authenticity/i.test($(hi).attr("name") || "")) hasCsrfToken = true;
+    });
+    forms.push({
+      action: resolvedAction,
+      method,
+      inputs,
+      pageUrl,
+      enctype: $form.attr("enctype") || undefined,
+      fileInputs: fileInputs.length ? fileInputs : undefined,
+      hasCsrfToken,
+    });
   });
 
   const inlineScripts: string[] = [];

@@ -11,6 +11,14 @@ export interface FormInfo {
   action: string;
   method: string;
   inputs: string[];
+  /** Halaman tempat form ditemukan (diisi oleh site-crawler). */
+  pageUrl?: string;
+  /** enctype form, mis. "multipart/form-data". */
+  enctype?: string;
+  /** Input file pada form (hanya metadata atribut, tidak ada upload yang dilakukan). */
+  fileInputs?: { name: string; accept?: string; multiple?: boolean }[];
+  /** true bila ada input hidden bernama csrf/token/nonce. */
+  hasCsrfToken?: boolean;
 }
 
 export interface CrawlResult {
@@ -42,6 +50,7 @@ export type FindingCategory =
   | "node-oob"
   | "webshell"
   | "filemanager-shell"
+  | "php-upload"
   | "sensitive-file";
 
 export interface Finding {
@@ -110,11 +119,12 @@ export type ScanStatus =
   | "deep_audit"
   | "testing"
   | "blocked_cloudflare"
+  | "stopped" // dihentikan otomatis (timeout/macet) atau manual oleh admin
   | "done"
   | "error";
 
 export interface ScanLogEvent {
-  type: "log" | "status" | "finding" | "done" | "error" | "blocked" | "endpoints";
+  type: "log" | "status" | "finding" | "done" | "error" | "blocked" | "stopped" | "endpoints";
   message?: string;
   status?: ScanStatus;
   finding?: Finding;
@@ -134,6 +144,7 @@ export interface ScanState {
   endpointsDiscovered: number;
   requestsMade: number;
   blockedReason?: string;
+  stoppedReason?: string;
   graph: GraphData;
   pagesCrawled: number;
   jsFilesScanned: number;

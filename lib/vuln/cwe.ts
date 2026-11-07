@@ -117,6 +117,7 @@ const CATEGORY_RULES: Record<string, string> = {
   "node-oob": "CWE-119",
   webshell: "CWE-434",
   "filemanager-shell": "CWE-434",
+  "php-upload": "CWE-434",
   "sensitive-file": "CWE-538",
 };
 

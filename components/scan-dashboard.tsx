@@ -56,7 +56,7 @@ export function ScanDashboard({
   }, [findings]);
 
   const isTerminal =
-    status === "done" || status === "error" || status === "blocked_cloudflare";
+    status === "done" || status === "error" || status === "blocked_cloudflare" || status === "stopped";
 
   return (
     <div className="flex flex-1 flex-col min-h-full">

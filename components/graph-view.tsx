@@ -24,6 +24,7 @@ const TERMINAL: (ScanStatus | "connecting")[] = [
   "done",
   "error",
   "blocked_cloudflare",
+  "stopped",
 ];
 
 export function GraphView({

@@ -16,6 +16,9 @@ interface ScanStreamState {
 }
 
 let currentSource: EventSource | null = null;
+// Batas reconnect beruntun tanpa event: cegah loop reconnect tanpa akhir yang menguras Redis.
+const MAX_CONSECUTIVE_ERRORS = 6;
+let consecutiveErrors = 0;
 
 export const useScanStream = create<ScanStreamState>((set, get) => ({
   scanId: null,
@@ -43,9 +46,11 @@ export const useScanStream = create<ScanStreamState>((set, get) => ({
     const source = new EventSource(`/api/scan/${scanId}/stream`);
     currentSource = source;
 
+    consecutiveErrors = 0;
     source.onopen = () => set({ connected: true });
 
     source.onmessage = (msg) => {
+      consecutiveErrors = 0;
       try {
         const evt: ScanLogEvent = JSON.parse(msg.data);
         set((state) => {
@@ -63,11 +68,12 @@ export const useScanStream = create<ScanStreamState>((set, get) => ({
             next.status = "blocked_cloudflare";
             next.blockedReason = evt.message;
           }
+          if (evt.type === "stopped") next.status = "stopped";
           if (evt.type === "done") next.status = "done";
           if (evt.type === "error") next.status = "error";
           return next;
         });
-        if (evt.type === "done" || evt.type === "error" || evt.type === "blocked") {
+        if (evt.type === "done" || evt.type === "error" || evt.type === "blocked" || evt.type === "stopped") {
           source.close();
           if (currentSource === source) currentSource = null;
           set({ connected: false });
@@ -78,8 +84,25 @@ export const useScanStream = create<ScanStreamState>((set, get) => ({
     };
 
     source.onerror = () => {
-      // EventSource will retry automatically; if scan already terminal
-      // this is a no-op since we've closed the connection ourselves.
+      // EventSource akan retry otomatis. Kalau gagal berkali-kali berturut-turut
+      // (server mati / scan sudah dihapus), berhenti supaya tidak looping selamanya.
+      consecutiveErrors++;
+      if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS || source.readyState === EventSource.CLOSED) {
+        source.close();
+        if (currentSource === source) currentSource = null;
+        set((state) => ({
+          connected: false,
+          status: ["done", "error", "blocked_cloudflare", "stopped"].includes(state.status) ? state.status : "stopped",
+          logs: [
+            ...state.logs,
+            {
+              type: "stopped",
+              message: "Koneksi ke scan terputus/scan sudah tidak ada — pemantauan dihentikan.",
+              timestamp: Date.now(),
+            },
+          ],
+        }));
+      }
     };
   },
 

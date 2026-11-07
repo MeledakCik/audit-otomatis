@@ -11,6 +11,7 @@ const LABELS: Record<ScanStatus | "connecting", string> = {
   deep_audit: "deep passive audit",
   testing: "testing",
   blocked_cloudflare: "blocked",
+  stopped: "stopped",
   done: "done",
   error: "error",
 };
@@ -25,6 +26,7 @@ const STYLES: Record<ScanStatus | "connecting", string> = {
   deep_audit: "text-accent border-accent/50 bg-accent/10",
   testing: "text-accent border-accent/50 bg-accent/10",
   blocked_cloudflare: "text-sev-high border-sev-high/50 bg-sev-high/10",
+  stopped: "text-sev-high border-sev-high/50 bg-sev-high/10",
   done: "text-accent-fg border-transparent bg-gradient-accent shadow-[0_0_16px_-4px_var(--accent)]",
   error: "text-sev-critical border-sev-critical/50 bg-sev-critical/10",
 };

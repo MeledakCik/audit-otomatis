@@ -22,6 +22,8 @@ import {
   Copy,
   Check,
   Download,
+  Square,
+  Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { UserActivityRecord, UserProfileSummary } from "@/lib/activity-store";
@@ -138,6 +140,40 @@ export function ActivitiesDashboard() {
       setLoading(false);
     }
   }, []);
+
+  const [busyKey, setBusyKey] = useState<string | null>(null);
+
+  const isRunning = (status: string) =>
+    !["done", "error", "blocked_cloudflare", "stopped"].includes(status);
+
+  async function runAction(
+    action: "stop" | "delete" | "stop_all",
+    kind: "scan" | "qc",
+    id?: string
+  ) {
+    if (action === "delete" && !window.confirm(`Hapus ${kind === "qc" ? "QC" : "scan"} ${id} beserta datanya dari Redis?`)) return;
+    if (action === "stop_all" && !window.confirm("Hentikan SEMUA scan & QC yang sedang berjalan?")) return;
+    const key = `${action}:${kind}:${id ?? "*"}`;
+    setBusyKey(key);
+    try {
+      const r = await fetch("/api/admin/scans", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, kind, id }),
+      });
+      if (r.status === 401) {
+        window.location.href = "/admin/login";
+        return;
+      }
+      if (!r.ok) {
+        const d = await r.json().catch(() => ({}));
+        window.alert(d.error ?? "Gagal memproses permintaan");
+      }
+    } finally {
+      setBusyKey(null);
+      await load();
+    }
+  }
 
   useEffect(() => {
     load();
@@ -726,6 +762,15 @@ export function ActivitiesDashboard() {
               <h2 className="text-sm font-bold text-white">
                 Semua Sesi Full Passive Scan ({scans.length})
               </h2>
+              <button
+                type="button"
+                disabled={busyKey !== null || !(scans.some((s) => isRunning(s.status)) || qcs.some((q) => isRunning(q.status)))}
+                onClick={() => runAction("stop_all", "scan")}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-amber-500/40 bg-amber-500/15 px-3 py-1.5 font-mono text-[11px] text-amber-200 hover:bg-amber-500/25 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <Square className="h-3 w-3" />
+                <span>Hentikan semua yang berjalan</span>
+              </button>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
@@ -737,7 +782,7 @@ export function ActivitiesDashboard() {
                     <th className="p-3.5">Status</th>
                     <th className="p-3.5">Halaman</th>
                     <th className="p-3.5">Temuan (CRIT / HIGH / Total)</th>
-                    <th className="p-3.5 text-right">Buka</th>
+                    <th className="p-3.5 text-right">Aksi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/[0.06]">
@@ -755,7 +800,27 @@ export function ActivitiesDashboard() {
                         {" · "}
                         <span className="text-slate-300">{s.findingsCount} total</span>
                       </td>
-                      <td className="p-3.5 text-right space-x-2">
+                      <td className="p-3.5 text-right space-x-2 whitespace-nowrap">
+                        {isRunning(s.status) && (
+                          <button
+                            type="button"
+                            disabled={busyKey !== null}
+                            onClick={() => runAction("stop", "scan", s.id)}
+                            className="inline-flex items-center gap-1 rounded-lg border border-amber-500/40 bg-amber-500/15 px-3 py-1 font-mono text-[11px] text-amber-200 hover:bg-amber-500/25 disabled:opacity-40"
+                          >
+                            <Square className="h-3 w-3" />
+                            <span>Stop</span>
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          disabled={busyKey !== null}
+                          onClick={() => runAction("delete", "scan", s.id)}
+                          className="inline-flex items-center gap-1 rounded-lg border border-red-500/40 bg-red-500/15 px-3 py-1 font-mono text-[11px] text-red-200 hover:bg-red-500/25 disabled:opacity-40"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                          <span>Hapus</span>
+                        </button>
                         <Link
                           href={`/scan/${s.id}`}
                           className="inline-flex items-center gap-1 rounded-lg border border-purple-500/30 bg-purple-500/15 px-3 py-1 font-mono text-[11px] text-purple-200 hover:bg-purple-500/25"
@@ -793,7 +858,7 @@ export function ActivitiesDashboard() {
                     <th className="p-3.5">Waktu</th>
                     <th className="p-3.5">Status</th>
                     <th className="p-3.5">Skor Overall</th>
-                    <th className="p-3.5 text-right">Buka</th>
+                    <th className="p-3.5 text-right">Aksi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/[0.06]">
@@ -806,7 +871,27 @@ export function ActivitiesDashboard() {
                       <td className="p-3.5 font-mono font-bold text-emerald-400">
                         {q.overallScore ?? "—"}
                       </td>
-                      <td className="p-3.5 text-right">
+                      <td className="p-3.5 text-right space-x-2 whitespace-nowrap">
+                        {isRunning(q.status) && (
+                          <button
+                            type="button"
+                            disabled={busyKey !== null}
+                            onClick={() => runAction("stop", "qc", q.id)}
+                            className="inline-flex items-center gap-1 rounded-lg border border-amber-500/40 bg-amber-500/15 px-3 py-1 font-mono text-[11px] text-amber-200 hover:bg-amber-500/25 disabled:opacity-40"
+                          >
+                            <Square className="h-3 w-3" />
+                            <span>Stop</span>
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          disabled={busyKey !== null}
+                          onClick={() => runAction("delete", "qc", q.id)}
+                          className="inline-flex items-center gap-1 rounded-lg border border-red-500/40 bg-red-500/15 px-3 py-1 font-mono text-[11px] text-red-200 hover:bg-red-500/25 disabled:opacity-40"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                          <span>Hapus</span>
+                        </button>
                         <Link
                           href={`/qc/${q.id}`}
                           className="inline-flex items-center gap-1 rounded-lg border border-purple-500/30 bg-purple-500/15 px-3 py-1 font-mono text-[11px] text-purple-200 hover:bg-purple-500/25"

@@ -28,6 +28,7 @@ const CATEGORY_LABELS: Record<NonNullable<Finding["category"]>, string> = {
   "node-oob": "node out-of-bounds",
   webshell: "webshell backdoor",
   "filemanager-shell": "filemanager shell",
+  "php-upload": "php upload",
   "sensitive-file": "vault encrypted",
 };
 

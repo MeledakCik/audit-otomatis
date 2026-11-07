@@ -10,6 +10,7 @@ import {
   logQc,
   markQcDone,
   markQcError,
+  qcCheckpoint,
   setModuleResult,
   setOverallScore,
   setQcStatus,
@@ -71,7 +72,7 @@ async function fetchHomepageOnce(origin: string): Promise<HomepageFetch> {
 }
 
 export async function runQc(qcId: string, origin: string, modules: QcModulesSelection) {
-  const budget = new RequestBudget(100, 300);
+  const budget = new RequestBudget(100, 300, () => qcCheckpoint(qcId));
 
   try {
     await setQcStatus(qcId, "crawling");

@@ -10,10 +10,12 @@ export const runtime = "nodejs";
 export const maxDuration = 300;
 
 const POLL_INTERVAL_MS = 1000;
+// Backoff: kalau tidak ada log baru berturut-turut, perlambat polling (hemat command Redis).
+const MAX_POLL_INTERVAL_MS = 4000;
 const HEARTBEAT_INTERVAL_MS = 15000;
 const MAX_STREAM_MS = 280_000; // tutup sedikit sebelum maxDuration
 
-const TERMINAL_STATUSES = new Set(["done", "error", "blocked_cloudflare"]);
+const TERMINAL_STATUSES = new Set(["done", "error", "blocked_cloudflare", "stopped"]);
 
 function sseFrame(id: number, event: ScanLogEvent): string {
   return `id: ${id}\ndata: ${JSON.stringify(event)}\n\n`;
@@ -63,6 +65,7 @@ export async function GET(
       };
 
       let lastHeartbeat = Date.now();
+      let idlePolls = 0;
 
       try {
         // Replay log yang sudah ada dulu (dari cursor) supaya client yang
@@ -70,10 +73,12 @@ export async function GET(
         while (!closed && !cancelled) {
           const logs = await getLogsSince(id, cursor);
 
+          idlePolls = logs.length > 0 ? 0 : idlePolls + 1;
+
           for (const evt of logs) {
             controller.enqueue(encoder.encode(sseFrame(cursor, evt)));
             cursor++;
-            if (evt.type === "done" || evt.type === "error" || evt.type === "blocked") {
+            if (evt.type === "done" || evt.type === "error" || evt.type === "blocked" || evt.type === "stopped") {
               safeClose();
               return;
             }
@@ -99,7 +104,8 @@ export async function GET(
             lastHeartbeat = Date.now();
           }
 
-          await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
+          const wait = Math.min(MAX_POLL_INTERVAL_MS, POLL_INTERVAL_MS * (1 + Math.floor(idlePolls / 5)));
+          await new Promise((resolve) => setTimeout(resolve, wait));
         }
       } catch (err) {
         if (!closed) {

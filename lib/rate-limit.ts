@@ -33,12 +33,21 @@ export async function checkAndRegisterCooldown(
 
 export class RequestBudget {
   private used = 0;
-  constructor(private readonly max = 100, private readonly delayMs = 500) {}
+  /**
+   * `guard` dipanggil sebelum SETIAP request. Lempar error di dalamnya untuk menghentikan scan
+   * (mis. timeout atau permintaan stop dari admin) — semua modul yang memakai budget ikut berhenti.
+   */
+  constructor(
+    private readonly max = 100,
+    private readonly delayMs = 500,
+    private readonly guard?: () => Promise<void>
+  ) {}
   get remaining() { return Math.max(0, this.max - this.used); }
   get count() { return this.used; }
   canSpend(n = 1): boolean { return this.used + n <= this.max; }
   async spend<T>(fn: () => Promise<T>): Promise<T | null> {
     if (!this.canSpend()) return null;
+    if (this.guard) await this.guard();
     this.used++;
     const result = await fn();
     await sleep(this.delayMs);
