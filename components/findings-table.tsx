@@ -29,6 +29,8 @@ const CATEGORY_LABELS: Record<NonNullable<Finding["category"]>, string> = {
   webshell: "webshell backdoor",
   "filemanager-shell": "filemanager shell",
   "sensitive-file": "vault encrypted",
+  webshell: "",
+  "filemanager-shell": ""
 };
 
 export function FindingsTable({ findings }: { findings: Finding[] }) {
