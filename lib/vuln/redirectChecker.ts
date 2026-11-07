@@ -5,7 +5,7 @@
  * 1. OPEN_REDIRECT & SSRF (url, redirect, next, dest, target, returnUrl)
  * 2. NODE_OOB (Out-of-Band interaction / webhook / callback / XML / pingback kandidat)
  * 3. SHELL_SURFACE (kandidat parameter command/code/file-inclusion: cmd, exec, shell, php, file, path, template)
- * 4. FILEMANAGER_SHELL (kandidat parameter kontrol WebShell / FileManager: dir, cwd, chmod, mkdir, unlink, rename, act, upfile, d, f, p)
+ * 4. FILEMANAGER_SURFACE (kandidat parameter kontrol WebShell / FileManager: dir, cwd, chmod, mkdir, unlink, rename, upfile, fm_usr, fm_pwd, elfinder)
  *
  * Pure function.
  */
@@ -22,8 +22,6 @@ const OOB_PARAM_NAMES = [
   "wsdl",
   "xml",
   "uri",
-  "host",
-  "domain",
 ] as const;
 const SHELL_PARAM_NAMES = [
   "cmd",
@@ -104,17 +102,16 @@ export function detectRedirectParams(url: string): TestCase[] {
         evidence: `param "${key}" terlihat seperti redirect target di ${url}`,
       });
 
-      for (const ssrfPayload of SSRF_PAYLOADS) {
-        cases.push({
-          type: "SSRF",
-          severity: severityFor("SSRF"),
-          url,
-          originalUrl: url,
-          param: key,
-          payload: ssrfPayload,
-          evidence: `param "${key}" berpotensi dipakai server buat fetch balik ke internal/metadata endpoint`,
-        });
-      }
+      // Cukup 1 kandidat SSRF per parameter agar tidak duplikat di laporan
+      cases.push({
+        type: "SSRF",
+        severity: severityFor("SSRF"),
+        url,
+        originalUrl: url,
+        param: key,
+        payload: SSRF_PAYLOADS[0],
+        evidence: `param "${key}" berpotensi dipakai server buat fetch balik ke internal/metadata endpoint`,
+      });
     }
 
     if (oobSet.has(k)) {

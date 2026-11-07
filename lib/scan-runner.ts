@@ -5,7 +5,11 @@ import { fingerprintLibraries, libraryDetectionsToFindings, detectNextJs } from 
 import { testResponseLeakage, testAntiAutomation, testExposedFiles, testSecurityHeaders, type ExposedHit } from "./tester";
 import { publishScanCriticals, publishDossier, dossierPublicFindings } from "./sentinel/publish";
 import { collectComponents, runCveIntel, cveHitsToFindings, emptyIntel, type CveIntelResult } from "./vuln/cve-intel";
-import { checkRceSurface, RCE_SURFACE_PATH_COUNT } from "./vuln/rce-surface";
+import {
+  checkRceSurface,
+  inspectCrawledPageForShellOrFileManager,
+  RCE_SURFACE_PATH_COUNT,
+} from "./vuln/rce-surface";
 import { buildDossier, type RceSurfaceEvidence } from "./sentinel/dossier";
 import { auditDomain } from "./sentinel/audit";
 import type { GitIntelReport } from "./sentinel/git-intel";
@@ -86,6 +90,23 @@ export async function runScan(
       scanId,
       `Crawl selesai: ${crawl.pages.length} snapshot halaman/edge, ${crawl.allInternalLinks.length} link internal unik, ${crawl.allScripts.length} file JS unik, ${crawl.allForms.length} form.`
     );
+
+    // ---- Inspeksi Struktural DOM pada Setiap Halaman Hasil Crawl untuk WebShell & FileManager ----
+    let crawledShellCount = 0;
+    for (const page of crawl.pages) {
+      const pageShellFindings = inspectCrawledPageForShellOrFileManager(page);
+      for (const f of pageShellFindings) {
+        crawledShellCount++;
+        await addFinding(scanId, f);
+        await log(scanId, `[${(f.category ?? "WEBSHELL").toUpperCase()}] ${f.severity} — ${f.title} (${f.endpoint})`);
+      }
+    }
+    if (crawledShellCount > 0) {
+      await log(
+        scanId,
+        `[DOM-SHELL-AUDIT] ${crawledShellCount} halaman terverifikasi secara struktural memiliki komponen WebShell / FileManager aktif.`
+      );
+    }
 
     await setStatus(scanId, "analyzing_js");
     await log(scanId, `Mengunduh hingga ${Math.min(crawl.allScripts.length, 20)} file JS eksternal...`);
@@ -193,15 +214,23 @@ export async function runScan(
     for (const ep of inlineResult.endpoints) {
       jsEndpoints.push(ep);
     }
+
+    // Deduplikasi inline script lintas halaman agar layout script yang identik tidak di-scan berulang kali
+    const seenInlineBodies = new Set<string>();
     for (const p of crawl.allInlineScripts) {
       for (const src of p.scripts) {
-        const secretFindings = scanSecrets(src, `inline-script@${p.pageUrl}`);
+        const trimmed = src.trim();
+        if (!trimmed || trimmed.startsWith("(self.__next_f=self.__next_f||[]).push")) continue;
+        if (seenInlineBodies.has(trimmed)) continue;
+        seenInlineBodies.add(trimmed);
+
+        const secretFindings = scanSecrets(trimmed, `inline-script@${p.pageUrl}`);
         for (const f of secretFindings) {
           await addFinding(scanId, f);
           await log(scanId, `[SECRET] ${f.severity} — ${f.title} (${f.endpoint})`);
         }
 
-        const inlineSinks = findDomSinks(src).slice(0, MAX_SINK_FINDINGS_PER_FILE);
+        const inlineSinks = findDomSinks(trimmed).slice(0, MAX_SINK_FINDINGS_PER_FILE);
         if (inlineSinks.length > 0) {
           const label = `inline-script@${p.pageUrl}`;
           for (const f of domSinksToFindings(inlineSinks, label)) {
@@ -354,7 +383,7 @@ export async function runScan(
         });
       }
 
-      // Path internal beraplanda "/__" adalah dossier JSON agregat (git/cve/sensitive-file) untuk
+      // Path internal berawalan "/__" adalah dossier JSON agregat (git/cve/sensitive-file) untuk
       // Admin Vault SAJA — tidak pernah bukti "path yang ter-expose" dan tidak boleh jadi Finding.
       const isInternalAggregate = (p: string) => p.startsWith("/__") && p.endsWith(".json");
 
@@ -415,7 +444,7 @@ export async function runScan(
     try {
       await log(
         scanId,
-        "[DEEP-SHELL, WEBSHELL & FILEMANAGER] Mengecek permukaan wp2shell, php2shell, node2shell, go2shell, py2shell, Node Out-of-Bounds, Active WebShell (WSO/b374k/Alfa/Mini) & FileManager WebShell (TinyFileManager/elFinder/ResponsiveFM) (GET-only, tanpa payload)..."
+        "[DEEP-SHELL, WEBSHELL & FILEMANAGER] Mengecek permukaan wp2shell, php2shell, node2shell, go2shell, py2shell, Node Out-of-Bounds, Active WebShell (WSO/b374k/Alfa/Mini) & FileManager WebShell (TinyFileManager/elFinder/ResponsiveFM) dengan verifikasi DOM/JSON struktural..."
       );
       const rce = await checkRceSurface(origin, budget, cfClearance);
       rceEvidence = rce.evidence;
@@ -472,7 +501,7 @@ export async function runScan(
         rceSurface: rceEvidence,
         findings: (st?.findings ?? []).map((f) => ({ severity: f.severity, title: f.title, endpoint: f.endpoint, cwe: f.cwe })),
       });
-      if (dossier.summary.cveTotal > 0 || dossier.summary.rceSurface > 0) {
+      if (dossier.summary.cveTotal > 0 || dossier.summary.rcePotential > 0 || dossier.summary.rceSurface > 0) {
         await publishDossier(domainHost, dossier, dossierPublicFindings(dossier));
         await log(
           scanId,

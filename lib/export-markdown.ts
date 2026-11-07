@@ -1,4 +1,4 @@
-import type { ScanState } from "./types";
+import type { Finding, ScanState } from "./types";
 
 const SEVERITY_EMOJI: Record<string, string> = {
   CRITICAL: "🟥",
@@ -8,7 +8,7 @@ const SEVERITY_EMOJI: Record<string, string> = {
   INFO: "⬜",
 };
 
-const CATEGORY_LABELS: Record<string, string> = {
+const CATEGORY_LABELS: Record<NonNullable<Finding["category"]>, string> = {
   secret: "Secret",
   "outdated-library": "Outdated Library / CVE",
   generic: "Generic",
@@ -35,14 +35,24 @@ const CATEGORY_LABELS: Record<string, string> = {
 function isoDate(ts: number): string {
   return new Date(ts).toISOString().slice(0, 19).replace("T", " ");
 }
+
 export function exportScanToObsidianMarkdown(scan: ScanState): string {
   const severityOrder = ["CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"];
-  const sorted = [...scan.findings].sort(
+  const seenKeys = new Set<string>();
+  const uniqueFindings: Finding[] = [];
+  for (const f of scan.findings) {
+    const key = `${f.severity}|${f.category ?? ""}|${f.title.trim()}|${f.endpoint.trim()}|${f.evidence.trim().slice(0, 120)}`;
+    if (seenKeys.has(key)) continue;
+    seenKeys.add(key);
+    uniqueFindings.push(f);
+  }
+
+  const sorted = [...uniqueFindings].sort(
     (a, b) => severityOrder.indexOf(a.severity) - severityOrder.indexOf(b.severity)
   );
 
   const counts = severityOrder.reduce<Record<string, number>>((acc, sev) => {
-    acc[sev] = scan.findings.filter((f) => f.severity === sev).length;
+    acc[sev] = uniqueFindings.filter((f) => f.severity === sev).length;
     return acc;
   }, {});
 
@@ -75,7 +85,7 @@ export function exportScanToObsidianMarkdown(scan: ScanState): string {
   }
   lines.push("");
 
-  const categoryCounts = scan.findings.reduce<Record<string, number>>((acc, f) => {
+  const categoryCounts = uniqueFindings.reduce<Record<string, number>>((acc, f) => {
     const key = f.category ?? "generic";
     acc[key] = (acc[key] ?? 0) + 1;
     return acc;
@@ -87,7 +97,7 @@ export function exportScanToObsidianMarkdown(scan: ScanState): string {
     lines.push("| Kategori | Jumlah |");
     lines.push("|---|---|");
     for (const key of categoryKeys.sort((a, b) => categoryCounts[b] - categoryCounts[a])) {
-      lines.push(`| ${CATEGORY_LABELS[key] ?? key} | ${categoryCounts[key]} |`);
+      lines.push(`| ${CATEGORY_LABELS[key as NonNullable<Finding["category"]>] ?? key} | ${categoryCounts[key]} |`);
     }
     lines.push("");
     lines.push(

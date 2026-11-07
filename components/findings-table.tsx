@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { SeverityBadge, Badge } from "@/components/ui/badge";
 import type { Finding, Severity } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -34,7 +34,19 @@ const CATEGORY_LABELS: Record<NonNullable<Finding["category"]>, string> = {
 export function FindingsTable({ findings }: { findings: Finding[] }) {
   const [openId, setOpenId] = useState<string | null>(null);
 
-  if (findings.length === 0) {
+  const uniqueSorted = useMemo(() => {
+    const seen = new Set<string>();
+    const deduped: Finding[] = [];
+    for (const f of findings) {
+      const key = `${f.severity}|${f.category ?? ""}|${f.title.trim()}|${f.endpoint.trim()}|${f.evidence.trim().slice(0, 120)}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      deduped.push(f);
+    }
+    return deduped.sort((a, b) => ORDER.indexOf(a.severity) - ORDER.indexOf(b.severity));
+  }, [findings]);
+
+  if (uniqueSorted.length === 0) {
     return (
       <div className="px-4 py-10 text-center text-xs text-muted-dim">
         Belum ada temuan. Temuan akan muncul di sini seiring scan berjalan.
@@ -42,13 +54,9 @@ export function FindingsTable({ findings }: { findings: Finding[] }) {
     );
   }
 
-  const sorted = [...findings].sort(
-    (a, b) => ORDER.indexOf(a.severity) - ORDER.indexOf(b.severity)
-  );
-
   return (
     <div className="divide-y divide-border">
-      {sorted.map((f) => {
+      {uniqueSorted.map((f) => {
         const isOpen = openId === f.id;
         return (
           <div key={f.id}>

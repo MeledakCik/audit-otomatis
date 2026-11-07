@@ -1,11 +1,17 @@
 /**
  * Permukaan RCE, Shell-Escalation (wp2shell, php2shell, node2shell, go2shell, py2shell),
- * Node Out-of-Bounds / Memory Surface & Deep WebShell / FileManager Detector PASIF:
+ * Node Out-of-Bounds / Memory Surface & Deep Structural WebShell / FileManager Detector PASIF:
  * Endpoint diagnostik/debug/runtime serta artefak WebShell & FileManager (WSO, b374k, Alfa,
  * MariJUANA, Gel4y, Mini Shell, TinyFileManager, FileRun, elFinder, Responsive FileManager,
  * KCFFinder, Roxy Fileman, KodExplorer) yang membuka jalur kompromi penuh bila terekspos.
- * 100% GET-only, tanpa payload eksploitasi. Temuan hanya dibuat jika ISI respons cocok dengan penanda spesifik (true-positive validated).
+ *
+ * PRINSIP ANTI-FALSE-POSITIVE (STRUCTURAL DOM / JSON / HEADER VALIDATION):
+ * - TIDAK PERNAH mendeteksi WebShell / FileManager hanya dari kemunculan teks nama di halaman biasa,
+ *   dokumentasi, artikel, atau bundle JS React/Next.js (`__NEXT_DATA__`, `_next/static`, `self.__next_f`).
+ * - Wajib memverifikasi STRUKTUR DOM / FORM / INPUT / JSON API CONNECTOR / COOKIE nyata dari aplikasi
+ *   WebShell atau FileManager yang sedang berjalan di endpoint tersebut.
  */
+import * as cheerio from "cheerio";
 import type { Finding, FindingCategory, Severity } from "@/lib/types";
 import { chromeHeaders, detectCloudflareChallenge } from "@/lib/crawler";
 import type { RequestBudget } from "@/lib/rate-limit";
@@ -30,7 +36,7 @@ export interface Spec {
   cve?: string[];
   rce: boolean;
   /** return severity bila cocok, null jika bukan true positive */
-  validate: (body: string, ct: string, status?: number) => Severity | null;
+  validate: (body: string, ct: string, status?: number, headers?: Headers) => Severity | null;
   marker: string;
   impact: string;
   fix: string;
@@ -42,108 +48,47 @@ const notHtml = (ct: string, b: string) =>
   !ct.includes("html") && !/<(!doctype|html|head|body)\b/i.test(b.slice(0, 600));
 
 /**
- * Detektor tanda tangan (signature) multi-indikator untuk WebShell aktif (WSO, b374k, Alfa, c99, r57,
- * MariJUANA, Gel4y, IndoXploit, Sadrazam, FoxWSO, dsb.) dan halaman login backdoor (single-input password gate).
- * Mencegah false-positive pada halaman website biasa atau artikel blog keamanan.
+ * Guard untuk menolak halaman SPA modern (Next.js / Nuxt / Vite / artikel dokumentasi)
+ * agar halaman web biasa yang menulis kata "WSO" / "TinyFileManager" / "b374k" TIDAK PERNAH
+ * dianggap sebagai WebShell / FileManager.
  */
-export function matchWebshellSignature(body: string): { family: string; marker: string; severity: Severity } | null {
+function isModernSpaOrArticleShell(body: string): boolean {
+  const head = body.slice(0, 32 * 1024);
+  if (
+    head.includes("/_next/static/") ||
+    head.includes("__NEXT_DATA__") ||
+    head.includes("self.__next_f") ||
+    head.includes("sentinel-id.net") ||
+    /<meta[^>]+name=["']generator["'][^>]+content=["'](?:Next\.js|Gatsby|Astro|Hugo|Hexo)/i.test(head)
+  ) {
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Detektor STRUKTURAL untuk WebShell aktif (WSO, b374k, Alfa, c99, r57, MariJUANA, Gel4y, IndoXploit, Mini Shell).
+ * Wajib memverifikasi elemen interaktif DOM (`<form>`, `<input>`, `<textarea>`, `<table>` file listing)
+ * atau header/cookie autentikasi khas WebShell — BUKAN sekadar kecocokan string teks!
+ */
+export function matchWebshellSignature(
+  body: string,
+  headers?: Headers
+): { family: string; marker: string; severity: Severity } | null {
+  if (!body || isModernSpaOrArticleShell(body)) return null;
   const head = body.slice(0, 48 * 1024);
 
-  // 1. Named WebShell Families (Title / Banner + Functional UI markers)
-  if (
-    /(?:WSO\s+\d+\.\d+|Web\s*Shell\s*by\s*oRb|wso_version|FilesMan)/i.test(head) &&
-    /(?:uname\s*-a|safe_mode|Server\s+security|Php\s+eval|chmod|Self\s+remove)/i.test(head)
-  ) {
-    return { family: "WSO / FilesMan WebShell", marker: "WSO / FilesMan UI + system uname banner", severity: "CRITICAL" };
-  }
-
-  if (
-    /(?:b374k\s+\d+\.\d+|b374k\s+shell|b374k\s+mini)/i.test(head) &&
-    /(?:terminal|processes|eval|database|file\s*manager|c99|r57)/i.test(head)
-  ) {
-    return { family: "b374k PHP WebShell", marker: "b374k WebShell UI + terminal/eval tabs", severity: "CRITICAL" };
-  }
-
-  if (
-    /(?:Alfa\s+Team|ALFA\s+TEaM\s+Shell|Alfa-Shell|alfacgiapi|Alfa\s+V\d)/i.test(head) &&
-    /(?:solevisible|Alfa|filemanager|cgi\s+shell|eval|perl|python)/i.test(head)
-  ) {
-    return { family: "ALFA Team WebShell", marker: "ALFA Team Shell signature + command console", severity: "CRITICAL" };
-  }
-
-  if (
-    /(?:MARIJUANA|MariJUANA\s+Shell|0x5a455553|Gel4y\s+Mini\s+Shell|IndoXploit\s+Shell|IDX\s+Shell|Mini\s+Shell\s+By| FoxWSO|AnonSec\s+Shell|0byt3m1n1)/i.test(
-      head
-    ) &&
-    /(?:uname|uid=\d+|gid=\d+|safe_mode|disable_functions|Upload\s+File|Current\s+Directory|chmod| Mass\s+Deface)/i.test(head)
-  ) {
+  // 0. Cek Cookie / Header khas WebShell (WSO / Alfa / b374k kadang menaruh cookie md5 atau header khusus)
+  const setCookie = headers?.get("set-cookie") ?? "";
+  if (/(?:wso_version|b374k|alfacgi|c99sh)/i.test(setCookie)) {
     return {
-      family: "Underground PHP Mini/Stealth WebShell (MariJUANA / Gel4y / IndoXploit / 0byt3m1n1)",
-      marker: "Mini/Stealth WebShell banner + OS uid/gid/disable_functions telemetry",
+      family: "Active WebShell Session Cookie",
+      marker: `Set-Cookie header mengandung signature WebShell (${setCookie.slice(0, 60)})`,
       severity: "CRITICAL",
     };
   }
 
-  if (
-    /(?:c99shell|c99madshell|r57shell|PhpSpy|MyShell|Ani-Shell|p0wny@shell|p0wny-shell)/i.test(head) &&
-    /(?:safe_mode|uname|uid=|Encoder|Bind\s+port|Back-connect|terminal|cmd)/i.test(head)
-  ) {
-    return {
-      family: "Classic Interactive WebShell (c99 / r57 / p0wny-shell)",
-      marker: "Classic WebShell signature (c99/r57/p0wny) + interactive shell prompt",
-      severity: "CRITICAL",
-    };
-  }
-
-  // 2. Generic Active WebShell Telemetry Combo:
-  // Membutuhkan minimal 3 indikator kuat yang muncul bersamaan (mis. output uname + uid/gid + disable_functions + upload/chmod)
-  let score = 0;
-  const hitMarkers: string[] = [];
-  if (/\buid=\d+\([a-z0-9_-]+\)\s+gid=\d+\([a-z0-9_-]+\)/i.test(head)) {
-    score += 2;
-    hitMarkers.push("uid/gid unix id output");
-  }
-  if (/\bLinux\s+[^\s<>]{2,50}\s+\d+\.\d+\.\d+[-\w.]*\s+#\d+\s+SMP\b/i.test(head)) {
-    score += 2;
-    hitMarkers.push("Linux kernel uname -a banner");
-  }
-  if (/\b(?:disable_functions|safe_mode|open_basedir)\s*[:=]\s*(?:<[^>]+>)?\s*(?:NONE|OFF|ON|exec|system|passthru|shell_exec)/i.test(head)) {
-    score += 2;
-    hitMarkers.push("PHP disable_functions/safe_mode status bar");
-  }
-  if (/\b(?:drwxr-xr-x|-rw-r--r--|drwxrwxrwx)\b/.test(head) && /(?:chmod|Rename|Touch|Delete|Edit)/i.test(head)) {
-    score += 1;
-    hitMarkers.push("POSIX permission table + file actions");
-  }
-  if (/<input[^>]+type=["']file["'][^>]*>[\s\S]{0,400}(?:Upload|Summon|upfile)/i.test(head)) {
-    score += 1;
-    hitMarkers.push("direct file upload widget");
-  }
-
-  if (score >= 4) {
-    return {
-      family: "Active Generic WebShell & System Command Console",
-      marker: hitMarkers.join(" + "),
-      severity: "CRITICAL",
-    };
-  }
-
-  // 3. Stealth Password-Protected WebShell Gate (Minimalist single-input password form without standard HTML layout)
-  if (
-    head.length > 40 &&
-    head.length < 2200 &&
-    /<form[^>]*method=["']?post["']?[^>]*>[\s\S]{0,600}<input[^>]*type=["']?password["']?[^>]*>/i.test(head) &&
-    !/<(?:nav|footer|header|aside|article|main)\b/i.test(head) &&
-    (head.split(/\r?\n/).length <= 35 || /(?:md5|pass|auth_pass|shell|b374k|wso|alfa)/i.test(head))
-  ) {
-    return {
-      family: "Stealth Password-Gated WebShell Backdoor",
-      marker: "Minimalist password-only POST gate (<2.2KB, no nav/footer layout)",
-      severity: "HIGH",
-    };
-  }
-
-  // 4. Unexecuted / Raw Obfuscated PHP WebShell Source Code Leak
+  // 1. Raw / Unexecuted Obfuscated PHP WebShell Source Code Leak (bukan HTML)
   if (
     /<\?php/i.test(head) &&
     /(?:eval|assert|system|shell_exec|passthru|proc_open|popen)\s*\(\s*(?:gzinflate|gzuncompress|str_rot13|base64_decode|rawurldecode)\s*\(/i.test(
@@ -157,104 +102,293 @@ export function matchWebshellSignature(body: string): { family: string; marker: 
     };
   }
 
+  // Parse struktur DOM dengan Cheerio untuk verifikasi elemen nyata
+  const $ = cheerio.load(head);
+  const titleText = $("title").first().text().trim();
+  const hasFileInput = $('input[type="file"]').length > 0;
+  const hasPasswordInput = $('input[type="password"]').length > 0;
+  const hasWsoHiddenAct = $('input[name="a"], input[name="c"], input[name="p1"], select[name="a"]').length > 0;
+  const hasCmdInput =
+    $('input[name="cmd"], input[name="command"], input[name="exec"], textarea[name="p1"], textarea[name="code"], textarea[name="php_eval"]').length > 0;
+
+  // 2. WSO / FilesMan WebShell (Verifikasi DOM: hidden input a/c/p1 atau FilesMan table + uname banner)
+  if (
+    (hasWsoHiddenAct || hasFileInput || hasCmdInput) &&
+    /(?:WSO\s+\d+\.\d+|Web\s*Shell\s*by\s*oRb|FilesMan)/i.test(head) &&
+    /(?:Uname|Safe\s*mode|Php\s*eval|Server\s*security|Self\s*remove)/i.test(head)
+  ) {
+    return {
+      family: "WSO / FilesMan Interactive WebShell",
+      marker: `DOM terverifikasi: form WSO (input[name=a/c/p1]) + sistem telemetri pada <title>${titleText.slice(0, 40)}</title>`,
+      severity: "CRITICAL",
+    };
+  }
+
+  // 3. b374k PHP WebShell (Verifikasi DOM: elemen #terminal / #eval / b374k title + form/script interaktif)
+  if (
+    (/b374k\s+\d+\.\d+|b374k\s+shell/i.test(titleText) || $("#terminal, #processes, #eval, .b374k").length > 0) &&
+    (hasFileInput || hasCmdInput || $("form").length > 0)
+  ) {
+    return {
+      family: "b374k Interactive PHP WebShell",
+      marker: `DOM terverifikasi: antarmuka b374k (<title>${titleText.slice(0, 40)}</title>) + modul terminal/eval`,
+      severity: "CRITICAL",
+    };
+  }
+
+  // 4. ALFA Team WebShell (Verifikasi DOM: form/script alfacgiapi / solevisible + elemen kontrol shell)
+  if (
+    (/(?:Alfa\s+Team|ALFA\s+TEaM\s+Shell|Alfa-Shell|Solevisible)/i.test(titleText) || /alfacgiapi|alfa_data/i.test(head)) &&
+    (hasFileInput || hasCmdInput || $("form").length > 0) &&
+    /(?:safe_mode|disable_functions|uname|uid=\d+|cgi\s+shell)/i.test(head)
+  ) {
+    return {
+      family: "ALFA Team Interactive WebShell",
+      marker: "DOM terverifikasi: struktur ALFA Team Shell + OS command/upload form",
+      severity: "CRITICAL",
+    };
+  }
+
+  // 5. Underground Mini / Stealth WebShells (MariJUANA, Gel4y, IndoXploit, 0byt3m1n1, FoxWSO, AnonSec, c99, r57, p0wny)
+  if (
+    /(?:MARIJUANA|0x5a455553|Gel4y\s+Mini\s+Shell|IndoXploit|0byt3m1n1|c99shell|r57shell|p0wny@shell)/i.test(head) &&
+    (hasFileInput || hasCmdInput || $('input[name="up"], input[name="upload"]').length > 0) &&
+    /(?:uid=\d+\(|gid=\d+\(|disable_functions|drwxr-xr-x|-rw-r--r--)/i.test(head)
+  ) {
+    return {
+      family: "Interactive PHP Mini/Stealth WebShell",
+      marker: "DOM terverifikasi: form upload/command + tabel permission POSIX & uid/gid",
+      severity: "CRITICAL",
+    };
+  }
+
+  // 6. Generic Active WebShell Telemetry + Interactive File/Command Form
+  // Wajib memiliki form interaktif (upload file atau eksekusi command) SEKALIGUS output sistem nyata (uid/gid + kernel uname + permission rwx)
+  const hasUnixIdOutput = /\buid=\d+\([a-z0-9_-]+\)\s+gid=\d+\([a-z0-9_-]+\)/i.test(head);
+  const hasKernelUname = /\bLinux\s+[^\s<>]{2,50}\s+\d+\.\d+\.\d+[-\w.]*\s+#\d+\s+SMP\b/i.test(head);
+  const hasPosixPermTable = /\b(?:drwxr-xr-x|-rw-r--r--|drwxrwxrwx)\b/.test(head);
+  const hasDisableFuncBar = /\b(?:disable_functions|safe_mode)\s*[:=]\s*(?:<[^>]+>)?\s*(?:NONE|OFF|ON|exec|system|passthru|shell_exec)/i.test(head);
+
+  if (
+    (hasFileInput || hasCmdInput) &&
+    ((hasUnixIdOutput && hasPosixPermTable) || (hasKernelUname && hasDisableFuncBar && hasPosixPermTable))
+  ) {
+    return {
+      family: "Active Generic WebShell & File System Console",
+      marker: "DOM terverifikasi: form interaktif (<input type=file/cmd>) + output kernel uname/uid/gid & tabel rwx",
+      severity: "CRITICAL",
+    };
+  }
+
+  // 7. Stealth Password-Protected WebShell Gate
+  // Halaman sangat kecil (<1.8 KB), HANYA punya 1 form POST dengan 1 input password, TANPA elemen navigasi/header/footer/script framework
+  const forms = $("form");
+  const scriptsCount = $("script[src]").length;
+  if (
+    head.length > 40 &&
+    head.length < 1800 &&
+    forms.length === 1 &&
+    hasPasswordInput &&
+    $('input:not([type="hidden"]):not([type="submit"])').length === 1 &&
+    scriptsCount === 0 &&
+    $("nav, footer, header, aside, article, main").length === 0 &&
+    (head.split(/\r?\n/).length <= 25 || /(?:auth_pass|b374k|wso|alfa|shell_pass)/i.test(head))
+  ) {
+    return {
+      family: "Stealth Password-Gated WebShell Backdoor",
+      marker: "DOM terverifikasi: single-input password POST gate murni (<1.8KB, tanpa layout web standar)",
+      severity: "HIGH",
+    };
+  }
+
   return null;
 }
 
 /**
- * Detektor khusus Web-based File Manager (TinyFileManager, elFinder, FileRun, Responsive FileManager,
- * KCFFinder, Roxy Fileman, KodExplorer, FileGator, MonstaFTP, Net2FTP) yang sering dipasang penyerang
- * atau tertinggal tanpa autentikasi di webroot.
+ * Detektor STRUKTURAL khusus Web-based File Manager (TinyFileManager, elFinder, Responsive FileManager,
+ * KCFFinder, Roxy Fileman, KodExplorer, FileGator, WP File Manager).
+ * Wajib memverifikasi elemen DOM nyata (`input[name="fm_usr"]`, `#elfinder`, JSON API response `cwd/phash/errUnknownCmd`, dsb.),
+ * BUKAN sekadar teks nama file manager!
  */
-export function matchFileManagerSignature(body: string, ct: string): { name: string; marker: string; severity: Severity; cve?: string[] } | null {
+export function matchFileManagerSignature(
+  body: string,
+  ct: string
+): { name: string; marker: string; severity: Severity; cve?: string[] } | null {
+  if (!body || isModernSpaOrArticleShell(body)) return null;
   const head = body.slice(0, 48 * 1024);
 
-  // 1. TinyFileManager (H3K / CCPProgrammers)
-  if (
-    html(ct) &&
-    (/(?:Tiny\s*File\s*Manager|tinyfilemanager\.github\.io|fm_usr|fm_pwd|ccpprogrammers)/i.test(head) ||
-      (/<title>[^<]*File\s*Manager[^<]*<\/title>/i.test(head) && /translation\.json|fm_current_root|fa-folder/i.test(head)))
-  ) {
-    const isUnauthListing = /(?:New\s+Item|Upload|Direct\s+Link|Change\s+Permissions|Root\s+path)/i.test(head) && !/fm_pwd/i.test(head);
+  // 1. JSON Connector Response (elFinder / WP File Manager / Roxy Fileman API)
+  // Benar-benar memvalidasi struktur JSON objek yang dikembalikan oleh konektor PHP/backend
+  if (json(ct, head)) {
+    try {
+      const parsed = JSON.parse(head) as Record<string, unknown>;
+      // elFinder connector.minimal.php terbuka penuh (mengembalikan objek cwd + files/options/api)
+      if (
+        parsed &&
+        typeof parsed === "object" &&
+        parsed.cwd &&
+        typeof parsed.cwd === "object" &&
+        "phash" in (parsed.cwd as Record<string, unknown>) &&
+        Array.isArray(parsed.files)
+      ) {
+        return {
+          name: "Studio-42 elFinder Connector API (Unauthenticated Directory Access)",
+          marker: 'JSON struktur konektor elFinder valid ({"cwd":{"phash":...},"files":[...]})',
+          severity: "CRITICAL",
+          cve: ["CVE-2021-32682", "CVE-2020-25213"],
+        };
+      }
+      // elFinder connector aktif merespons perintah kosong dengan {"error":["errUnknownCmd"]}
+      if (
+        parsed &&
+        typeof parsed === "object" &&
+        Array.isArray(parsed.error) &&
+        parsed.error.includes("errUnknownCmd")
+      ) {
+        return {
+          name: "Studio-42 elFinder / WP File Manager Connector Endpoint",
+          marker: 'JSON respons konektor elFinder aktif ({"error":["errUnknownCmd"]})',
+          severity: "CRITICAL",
+          cve: ["CVE-2020-25213", "CVE-2021-32682"],
+        };
+      }
+    } catch {
+      // bukan JSON valid
+    }
+  }
+
+  if (!html(ct)) return null;
+
+  const $ = cheerio.load(head);
+  const titleText = $("title").first().text().trim();
+
+  // 2. TinyFileManager (Verifikasi Struktur DOM: input[name="fm_usr"] & input[name="fm_pwd"] atau tabel #main-table dengan form token)
+  const hasTinyLoginInputs = $('input[name="fm_usr"]').length > 0 && $('input[name="fm_pwd"]').length > 0;
+  const hasTinyWorkspaceDom =
+    $("table#main-table, form#newitemform, div#createNewItem").length > 0 &&
+    $('input[name="token"], a[href*="?p="]').length > 0;
+
+  if (hasTinyLoginInputs || hasTinyWorkspaceDom) {
     return {
-      name: isUnauthListing ? "TinyFileManager (Unauthenticated File System Access)" : "TinyFileManager Login / Console",
-      marker: isUnauthListing ? "TinyFileManager workspace terbuka tanpa password" : "TinyFileManager (fm_usr/fm_pwd) aktif di webroot",
+      name: hasTinyWorkspaceDom
+        ? "TinyFileManager (Unauthenticated File System Workspace)"
+        : "TinyFileManager Login Console",
+      marker: hasTinyWorkspaceDom
+        ? "DOM terverifikasi: tabel workspace #main-table & navigasi direktori ?p= terbuka tanpa login"
+        : "DOM terverifikasi: form login TinyFileManager (input[name=fm_usr] + input[name=fm_pwd])",
       severity: "CRITICAL",
       cve: ["CVE-2021-45010", "CVE-2022-45474"],
     };
   }
 
-  // 2. Studio-42 elFinder (UI & Connector API)
-  if (
-    (html(ct) && /elFinder|elfinder\.min\.js|elfinder\.full\.js/i.test(head) && /\$\(['"]#elfinder['"]\)\.elfinder/i.test(head)) ||
-    (json(ct, head) && /"cwd"\s*:\s*\{[\s\S]*"phash"\s*:/i.test(head) && /"files"\s*:\s*\[/i.test(head))
-  ) {
+  // 3. Studio-42 elFinder Web UI (Verifikasi Struktur DOM: container #elfinder + script elfinder.min.js/elfinder.full.js + inisialisasi .elfinder({url:...}))
+  const hasElfinderContainer = $("#elfinder, .elfinder").length > 0;
+  const hasElfinderScript = $('script[src*="elfinder"]').length > 0;
+  if (hasElfinderContainer && (hasElfinderScript || /\.elfinder\s*\(\s*\{[\s\S]{0,300}url\s*:/i.test(head))) {
     return {
-      name: "Studio-42 elFinder Web File Manager / Connector",
-      marker: json(ct, head) ? "elFinder Connector JSON (cwd/phash/files)" : "elFinder UI (#elfinder instance)",
+      name: "Studio-42 elFinder Web File Manager UI",
+      marker: "DOM terverifikasi: container #elfinder + script elfinder.js & konfigurasi connector URL",
       severity: "CRITICAL",
       cve: ["CVE-2021-32682", "CVE-2019-9194"],
     };
   }
 
-  // 3. Responsive FileManager (Trippo)
+  // 4. Responsive FileManager (Verifikasi Struktur DOM: input#rfm_subfolder / #ff-item-type-all / script include.min.js)
   if (
-    html(ct) &&
-    /(?:Responsive\s+FileManager|responsivefilemanager\.com|rfm_subfolder| dialog\.php\?type=)/i.test(head)
+    $("input#rfm_subfolder, input#sub_folder, div.uploader, ul.grid.cs-style-2").length >= 2 &&
+    /Responsive\s+FileManager/i.test(titleText)
   ) {
     return {
-      name: "Responsive FileManager (dialog.php / upload.php)",
-      marker: "Responsive FileManager UI terbuka di publik",
+      name: "Responsive FileManager (dialog.php Workspace)",
+      marker: "DOM terverifikasi: struktur input#rfm_subfolder + grid file explorer Responsive FileManager",
       severity: "CRITICAL",
       cve: ["CVE-2020-26045"],
     };
   }
 
-  // 4. KCFinder Web File Manager
-  if (html(ct) && /(?:KCFinder|kcfinder\/browse\.php|kc_CKEditor|browser\.init)/i.test(head)) {
+  // 5. KCFinder Web File Manager (Verifikasi Struktur DOM: #folders + #files + script kcfinder)
+  if ($("#folders").length > 0 && $("#files").length > 0 && /KCFinder/i.test(titleText)) {
     return {
       name: "KCFinder Web File Manager (browse.php)",
-      marker: "KCFinder file browser UI terbuka",
+      marker: "DOM terverifikasi: panel #folders + #files pada KCFinder browse.php",
       severity: "HIGH",
       cve: ["CVE-2019-14315"],
     };
   }
 
-  // 5. Roxy Fileman (.NET / PHP File Manager)
-  if (
-    (html(ct) || json(ct, head)) &&
-    /(?:Roxy\s+Fileman|roxyfileman|DIRLIST|FILESLIST|pnlDirList)/i.test(head)
-  ) {
+  // 6. Roxy Fileman (Verifikasi Struktur DOM: #pnlDirList + #pnlFileList + conf.json)
+  if ($("#pnlDirList").length > 0 && $("#pnlFileList").length > 0) {
     return {
       name: "Roxy Fileman Web File Manager",
-      marker: "Roxy Fileman interface / DIRLIST endpoint",
+      marker: "DOM terverifikasi: elemen #pnlDirList & #pnlFileList Roxy Fileman",
       severity: "CRITICAL",
       cve: ["CVE-2018-20526"],
     };
   }
 
-  // 6. KodExplorer / KodBox / FileGator / FileRun
+  // 7. KodExplorer / FileGator / FileRun (Verifikasi Struktur DOM spesifik aplikasi)
   if (
-    html(ct) &&
-    /(?:KodExplorer|kalcaddle|KodBox|FileGator|filegator\.io|FileRun|filerun\.com)/i.test(head) &&
-    /(?:file|explorer|login|upload|webdav)/i.test(head)
+    ($('meta[name="generator"][content*="KodExplorer"]').length > 0 ||
+      $("div.frame-main, div#filegator, body.kod-login").length > 0) &&
+    /(?:KodExplorer|KodBox|FileGator|FileRun)/i.test(titleText)
   ) {
     return {
-      name: "Standalone Cloud/Web File Manager (KodExplorer / FileGator / FileRun)",
-      marker: "KodExplorer / FileGator / FileRun web interface",
+      name: "Standalone Web File Manager (KodExplorer / FileGator / FileRun)",
+      marker: `DOM terverifikasi: container aplikasi pada <title>${titleText.slice(0, 40)}</title>`,
       severity: "HIGH",
     };
   }
 
-  // 7. WP File Manager (wp-file-manager plugin connector / Zero-Day CVE-2020-25213)
-  if (
-    (json(ct, head) || html(ct)) &&
-    /(?:errUnknownCmd|elFinderConnector|wp-file-manager)/i.test(head)
-  ) {
+  return null;
+}
+
+/**
+ * Inspeksi pasif terhadap setiap halaman yang sudah di-crawl (`CrawledPage`) untuk mendeteksi
+ * apabila halaman tersebut ternyata adalah WebShell atau FileManager WebShell aktif (tanpa peduli apa nama filenya).
+ */
+export function inspectCrawledPageForShellOrFileManager(page: {
+  url: string;
+  status: number;
+  contentType?: string;
+  html?: string;
+}): Finding | null {
+  if (page.status !== 200 || !page.html) return null;
+  const ct = (page.contentType ?? "text/html").toLowerCase();
+
+  const ws = matchWebshellSignature(page.html);
+  if (ws) {
     return {
-      name: "WordPress File Manager elFinder Connector (CVE-2020-25213)",
-      marker: "elFinder connector response (errUnknownCmd / cwd)",
-      severity: "CRITICAL",
-      cve: ["CVE-2020-25213"],
+      id: `ws_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      severity: ws.severity,
+      title: `[WebShell Backdoor] ${ws.family} aktif terverifikasi secara struktural`,
+      endpoint: page.url,
+      evidence: `HTTP ${page.status} — ${ws.marker}`,
+      impact:
+        "Halaman ini terverifikasi secara struktural (DOM/form/telemetri sistem) sebagai WebShell backdoor aktif yang memberikan akses Remote Code Execution (RCE) dan kontrol sistem file penuh.",
+      fix: FIX_WEBSHELL,
+      cwe: "CWE-434, CWE-94, CWE-506",
+      rce: true,
+      confidence: "verified",
+      category: "webshell",
+    };
+  }
+
+  const fm = matchFileManagerSignature(page.html, ct);
+  if (fm) {
+    return {
+      id: `fm_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      severity: fm.severity,
+      title: `[FileManager WebShell] ${fm.name} terverifikasi secara struktural`,
+      endpoint: page.url,
+      evidence: `HTTP ${page.status} — ${fm.marker}`,
+      impact:
+        "Panel Web File Manager atau konektor API file manager terverifikasi aktif di URL ini. Penyerang dapat memanfaatkannya untuk mengunggah backdoor, memodifikasi source code, atau mengunduh konfigurasi sensitif.",
+      fix: FIX_FILEMANAGER,
+      cwe: "CWE-434, CWE-306, CWE-284",
+      cve: fm.cve,
+      rce: true,
+      confidence: "verified",
+      category: "filemanager-shell",
     };
   }
 
@@ -633,7 +767,7 @@ export const RCE_SPECS: Spec[] = [
     fix: "Nonaktifkan GraphiQL/Playground dan introspection di production serta terapkan query depth & complexity limiting.",
   },
 
-  // ==================== 7. webshell (Active WebShell Backdoors: WSO, b374k, Alfa, MariJUANA, Gel4y, Mini Shell, c99/r57) ====================
+  // ==================== 7. webshell (Active WebShell Backdoors — Structural DOM & Telemetry Validated) ====================
   ...[
     "/shell.php",
     "/wso.php",
@@ -660,15 +794,15 @@ export const RCE_SPECS: Spec[] = [
       title: `[WebShell Backdoor] Artefak WebShell aktif terdeteksi pada ${p}`,
       cwe: ["CWE-434", "CWE-94", "CWE-506"],
       rce: true,
-      marker: "WebShell UI / System Command Telemetry (WSO/b374k/Alfa/Mini/Stealth)",
-      validate: (b) => matchWebshellSignature(b)?.severity ?? null,
+      marker: "Structural WebShell DOM / System Command Telemetry",
+      validate: (b, _ct, _st, headers) => matchWebshellSignature(b, headers)?.severity ?? null,
       impact:
-        "File WebShell / Backdoor aktif terdeteksi di server! Penyerang memiliki kendali Remote Code Execution (RCE), pembacaan/modifikasi seluruh filesystem, akses database, dan pivot ke jaringan internal.",
+        "File WebShell / Backdoor aktif terdeteksi secara struktural di server! Penyerang memiliki kendali Remote Code Execution (RCE), pembacaan/modifikasi seluruh filesystem, akses database, dan pivot ke jaringan internal.",
       fix: FIX_WEBSHELL,
     })
   ),
 
-  // ==================== 8. filemanager-shell (Exposed Web File Managers: TinyFileManager, elFinder, ResponsiveFM, Roxy, KCFinder) ====================
+  // ==================== 8. filemanager-shell (Exposed Web File Managers — Structural DOM & JSON Connector Validated) ====================
   ...[
     "/tinyfilemanager.php",
     "/filemanager.php",
@@ -697,10 +831,10 @@ export const RCE_SPECS: Spec[] = [
         ? ["CVE-2021-45010"]
         : undefined,
       rce: true,
-      marker: "Web File Manager UI / Connector (TinyFileManager / elFinder / ResponsiveFM / KCFinder / Roxy)",
+      marker: "Structural Web File Manager DOM / JSON Connector",
       validate: (b, ct) => matchFileManagerSignature(b, ct)?.severity ?? null,
       impact:
-        "Panel Web File Manager terbuka di webroot publik. Sering digunakan sebagai WebShell FileManager untuk mengunggah backdoor PHP, mengedit source code produksi, atau mengunduh file konfigurasi rahasia (.env / wp-config.php).",
+        "Panel Web File Manager atau konektor JSON-nya terverifikasi terbuka di webroot publik. Sering digunakan sebagai FileManager WebShell untuk mengunggah backdoor PHP, mengedit source code produksi, atau mengunduh file konfigurasi rahasia (.env / wp-config.php).",
       fix: FIX_FILEMANAGER,
     })
   ),
@@ -793,9 +927,15 @@ export interface RceSurfaceResult {
 
 const newId = () => Math.random().toString(36).slice(2) + Date.now().toString(36);
 
-export function evaluateRceSpec(spec: Spec, status: number, ct: string, body: string): Severity | null {
+export function evaluateRceSpec(
+  spec: Spec,
+  status: number,
+  ct: string,
+  body: string,
+  headers?: Headers
+): Severity | null {
   if (status !== 200 && !(spec.path === "/xmlrpc.php" && status === 405)) return null;
-  return spec.validate(body, ct.toLowerCase(), status);
+  return spec.validate(body, ct.toLowerCase(), status, headers);
 }
 
 export async function checkRceSurface(
@@ -832,14 +972,13 @@ export async function checkRceSurface(
     if (!r) continue;
     if (detectCloudflareChallenge(r.status, r.headers, r.text.slice(0, 2000))) continue;
 
-    const sev = evaluateRceSpec(spec, r.status, r.ct, r.text);
+    const sev = evaluateRceSpec(spec, r.status, r.ct, r.text, r.headers);
     if (!sev) continue;
 
-    // Enrich marker & title with exact WebShell / FileManager family if matched
     let exactMarker = spec.marker;
     let exactTitle = spec.title;
     if (spec.vector === "webshell") {
-      const ws = matchWebshellSignature(r.text);
+      const ws = matchWebshellSignature(r.text, r.headers);
       if (ws) {
         exactMarker = `${ws.family} — ${ws.marker}`;
         exactTitle = `[WebShell Backdoor] ${ws.family} aktif pada ${spec.path}`;

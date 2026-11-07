@@ -57,6 +57,10 @@ function freshState(id: string, domain: string, origin: string): ScanState {
   };
 }
 
+function findingDedupKey(f: Finding): string {
+  return `${f.severity}|${f.category ?? ""}|${f.title.trim()}|${f.endpoint.trim()}|${f.evidence.trim().slice(0, 120)}`;
+}
+
 async function persistMetaToDb(id: string, force = false): Promise<void> {
   const state = memScans.get(id);
   if (!state) return;
@@ -107,15 +111,20 @@ export async function emit(id: string, event: Omit<ScanLogEvent, "timestamp">): 
   }
 
   if (state) {
+    if (event.type === "finding" && event.finding) {
+      const incomingKey = findingDedupKey(event.finding);
+      const alreadyExists = state.findings.some((existing) => findingDedupKey(existing) === incomingKey);
+      if (alreadyExists) {
+        return;
+      }
+      state.findings.push(event.finding);
+    }
     state.logs.push(full);
     if (state.logs.length > MAX_LOGS_KEPT) {
       state.logs.splice(0, state.logs.length - MAX_LOGS_KEPT);
     }
     if (event.type === "status" && event.status) {
       state.status = event.status;
-    }
-    if (event.type === "finding" && event.finding) {
-      state.findings.push(event.finding);
     }
   }
 

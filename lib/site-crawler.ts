@@ -12,7 +12,7 @@ import type { RequestBudget } from "./rate-limit";
 
 export const MAX_CRAWL_URLS = 50;
 export const DEFAULT_MAX_DEPTH = 3; // level 0 (homepage) .. level 3
-export const MAX_STORED_HTML_CHARS = 4_000;
+export const MAX_STORED_HTML_CHARS = 24_000;
 
 interface PageParseResult {
   internalLinks: string[];
@@ -26,6 +26,19 @@ function resolveUrl(base: string, href: string): string | null {
     return new URL(href, base).toString();
   } catch {
     return null;
+  }
+}
+
+function normalizeCrawlUrl(raw: string): string {
+  try {
+    const u = new URL(raw);
+    u.hash = "";
+    if (u.pathname.length > 1 && u.pathname.endsWith("/")) {
+      u.pathname = u.pathname.replace(/\/+$/, "");
+    }
+    return u.toString();
+  } catch {
+    return raw;
   }
 }
 
@@ -43,7 +56,7 @@ function parsePage(origin: string, pageUrl: string, html: string): PageParseResu
       const u = new URL(resolved);
       if (u.hostname !== originUrl.hostname) return;
       u.hash = "";
-      internalLinks.push(u.toString());
+      internalLinks.push(normalizeCrawlUrl(u.toString()));
     } catch {
       // ignore
     }
@@ -80,9 +93,14 @@ function parsePage(origin: string, pageUrl: string, html: string): PageParseResu
   try {
     const { document } = parseHTML(html);
     const nodeList = document.querySelectorAll("script:not([src])");
-    for (const node of Array.from(nodeList) as { textContent?: string | null }[]) {
+    for (const node of Array.from(nodeList) as { textContent?: string | null; getAttribute?: (k: string) => string | null }[]) {
+      const typeAttr = (node.getAttribute?.("type") || "").toLowerCase();
+      if (typeAttr === "application/ld+json" || typeAttr === "application/json") continue;
       const text = node.textContent?.trim();
-      if (text && text.length > 0) inlineScripts.push(text);
+      if (!text || text.length === 0) continue;
+      // Lewati Next.js RSC hydration flight payloads yang hanya membawa serialized teks artikel/komponen UI
+      if (text.startsWith("(self.__next_f=self.__next_f||[]).push")) continue;
+      inlineScripts.push(text);
     }
   } catch {
     // linkedom gagal parse — bukan fatal
@@ -122,7 +140,8 @@ export async function crawlSite(
   cfClearance?: string
 ): Promise<SiteCrawlResult> {
   const visited = new Set<string>();
-  const queue: { url: string; depth: number }[] = [{ url: origin, depth: 0 }];
+  const startUrl = normalizeCrawlUrl(origin);
+  const queue: { url: string; depth: number }[] = [{ url: startUrl, depth: 0 }];
   const pages: CrawledPage[] = [];
   const allInternalLinksSet = new Set<string>();
   const allScriptsSet = new Set<string>();
@@ -146,8 +165,9 @@ export async function crawlSite(
 
   while (queue.length > 0 && visited.size < maxUrls) {
     const next = queue.shift()!;
-    if (visited.has(next.url) || next.depth > maxDepth) continue;
-    visited.add(next.url);
+    const normUrl = normalizeCrawlUrl(next.url);
+    if (visited.has(normUrl) || next.depth > maxDepth) continue;
+    visited.add(normUrl);
 
     if (!budget.canSpend()) {
       onLog(`Request budget habis, hentikan crawl di ${visited.size} halaman.`);
@@ -156,7 +176,7 @@ export async function crawlSite(
 
     const fetched = await budget.spend(async () => {
       try {
-        const res = await fetch(next.url, {
+        const res = await fetch(normUrl, {
           method: "GET",
           headers: chromeHeaders(next.depth > 0 ? origin : undefined, cfClearance),
           redirect: "follow",
@@ -170,7 +190,7 @@ export async function crawlSite(
 
     if (!fetched) break;
     if (fetched.status === 0) {
-      onLog(`Gagal fetch ${next.url}${fetched.error ? `: ${fetched.error}` : ""}`);
+      onLog(`Gagal fetch ${normUrl}${fetched.error ? `: ${fetched.error}` : ""}`);
       continue;
     }
 
@@ -190,11 +210,10 @@ export async function crawlSite(
     if (cf) {
       cloudflare = cf;
       onLog(
-        `[WAF/CF] Proteksi Cloudflare/WAF terdeteksi pada ${next.url} (HTTP ${fetched.status}) — tetap menyimpan snapshot header Edge & melanjutkan pemeriksaan rute publik/statis.`
+        `[WAF/CF] Proteksi Cloudflare/WAF terdeteksi pada ${normUrl} (HTTP ${fetched.status}) — tetap menyimpan snapshot header Edge & melanjutkan pemeriksaan rute publik/statis.`
       );
-      // Simpan snapshot halaman/header Edge meskipun terkena challenge agar analisis Header, Server/CPE & Request Inspector tetap bekerja
       pages.push({
-        url: next.url,
+        url: normUrl,
         depth: next.depth,
         scripts: [],
         status: fetched.status,
@@ -203,14 +222,14 @@ export async function crawlSite(
         size,
         html: fetched.body.slice(0, MAX_STORED_HTML_CHARS),
       });
-      addNode({ id: pageNodeId(next.url), type: "page", label: `${next.url} [WAF Edge]`, depth: next.depth });
+      addNode({ id: pageNodeId(normUrl), type: "page", label: `${normUrl} [WAF Edge]`, depth: next.depth });
       continue;
     }
 
-    const parsed = parsePage(origin, next.url, fetched.body);
+    const parsed = parsePage(origin, normUrl, fetched.body);
 
     pages.push({
-      url: next.url,
+      url: normUrl,
       depth: next.depth,
       scripts: parsed.scripts,
       status: fetched.status,
@@ -220,25 +239,26 @@ export async function crawlSite(
       html: fetched.body.slice(0, MAX_STORED_HTML_CHARS),
     });
     onLog(
-      `[depth ${next.depth}] ${next.url} — ${parsed.internalLinks.length} link, ${parsed.scripts.length} JS, ${parsed.forms.length} form`
+      `[depth ${next.depth}] ${normUrl} — ${parsed.internalLinks.length} link, ${parsed.scripts.length} JS, ${parsed.forms.length} form`
     );
 
-    addNode({ id: pageNodeId(next.url), type: "page", label: next.url, depth: next.depth });
+    addNode({ id: pageNodeId(normUrl), type: "page", label: normUrl, depth: next.depth });
     for (const script of parsed.scripts) {
       allScriptsSet.add(script);
       addNode({ id: jsNodeId(script), type: "js", label: new URL(script).pathname });
-      addEdge(pageNodeId(next.url), jsNodeId(script));
+      addEdge(pageNodeId(normUrl), jsNodeId(script));
     }
     for (const link of parsed.internalLinks) allInternalLinksSet.add(link);
     for (const form of parsed.forms) allForms.push(form);
     if (parsed.inlineScripts.length > 0) {
-      allInlineScripts.push({ pageUrl: next.url, scripts: parsed.inlineScripts });
+      allInlineScripts.push({ pageUrl: normUrl, scripts: parsed.inlineScripts });
     }
 
     if (next.depth < maxDepth) {
       for (const link of parsed.internalLinks) {
-        if (!visited.has(link) && visited.size + queue.length < maxUrls) {
-          queue.push({ url: link, depth: next.depth + 1 });
+        const normLink = normalizeCrawlUrl(link);
+        if (!visited.has(normLink) && visited.size + queue.length < maxUrls) {
+          queue.push({ url: normLink, depth: next.depth + 1 });
         }
       }
     }
