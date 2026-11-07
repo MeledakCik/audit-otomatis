@@ -27,8 +27,6 @@ const CATEGORY_LABELS: Record<NonNullable<Finding["category"]>, string> = {
   py2shell: "py2shell",
   "node-oob": "node out-of-bounds",
   "sensitive-file": "vault encrypted",
-  webshell: "",
-  "filemanager-shell": ""
 };
 
 export function FindingsTable({ findings }: { findings: Finding[] }) {
