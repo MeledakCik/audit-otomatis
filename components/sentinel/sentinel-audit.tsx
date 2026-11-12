@@ -2,49 +2,32 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import {
-  Shield,
-  TrendingUp,
   Lock,
   Globe,
-  Code2,
+  Shield,
   CheckCircle2,
   AlertTriangle,
-  Sparkles,
-  Search,
-  Copy,
-  Check,
-  Sun,
-  Moon,
   KeyRound,
   FileText,
-  Server,
   Eye,
   EyeOff,
-  RefreshCw,
-  ArrowRight,
-  Terminal,
-  Layers,
-  Award
+  Copy,
+  Check,
+  ArrowRight
 } from "lucide-react";
 
-type ActiveModuleView = "seo-master" | "sentinel-vault";
-type SeoCategoryTab = "hreflang" | "schema" | "meta" | "cwv" | "trust";
 type ClaimMethod = "dns" | "http";
 
-interface HreflangItem {
-  code: string;
-  region: string;
-  urlPath: string;
-  status: "ACTIVE" | "READY";
-}
-
-interface SeoSignalItem {
-  id: string;
-  category: SeoCategoryTab;
-  title: string;
-  value: string;
-  status: "OPTIMAL" | "GOOD" | "ACTION";
-  detail: string;
+export interface SentinelAuditProps {
+  isDark?: boolean;
+  initialDomain?: string;
+  domain?: string;
+  url?: string;
+  targetUrl?: string;
+  scanId?: string;
+  embedded?: boolean;
+  compact?: boolean;
+  [key: string]: unknown;
 }
 
 interface VaultArtifact {
@@ -58,105 +41,6 @@ interface VaultArtifact {
   remediation: string;
 }
 
-const HREFLANG_13: HreflangItem[] = [
-  { code: "x-default", region: "Global Fallback Default", urlPath: "/", status: "ACTIVE" },
-  { code: "id-ID", region: "Indonesia (Primary)", urlPath: "/?hl=id-ID", status: "ACTIVE" },
-  { code: "id", region: "Bahasa Indonesia Generic", urlPath: "/?hl=id", status: "ACTIVE" },
-  { code: "en-US", region: "United States (English)", urlPath: "/?hl=en-US", status: "ACTIVE" },
-  { code: "en-GB", region: "United Kingdom (English)", urlPath: "/?hl=en-GB", status: "ACTIVE" },
-  { code: "en-SG", region: "Singapore (English)", urlPath: "/?hl=en-SG", status: "ACTIVE" },
-  { code: "en-AU", region: "Australia (English)", urlPath: "/?hl=en-AU", status: "ACTIVE" },
-  { code: "en-CA", region: "Canada (English)", urlPath: "/?hl=en-CA", status: "ACTIVE" },
-  { code: "en-IN", region: "India (English)", urlPath: "/?hl=en-IN", status: "ACTIVE" },
-  { code: "en", region: "International English", urlPath: "/?hl=en", status: "ACTIVE" },
-  { code: "ms-MY", region: "Malaysia (Bahasa Melayu)", urlPath: "/?hl=ms-MY", status: "ACTIVE" },
-  { code: "ja-JP", region: "Japan (Japanese)", urlPath: "/?hl=ja-JP", status: "ACTIVE" },
-  { code: "de-DE", region: "Germany (German)", urlPath: "/?hl=de-DE", status: "ACTIVE" }
-];
-
-const SEO_SIGNALS: SeoSignalItem[] = [
-  {
-    id: "S-01",
-    category: "hreflang",
-    title: "Reciprocal 13-Locale Hreflang Cluster",
-    value: "13 / 13 Valid",
-    status: "OPTIMAL",
-    detail: "Seluruh 13 tag hreflang (termasuk x-default, id-ID, en-US, en-GB) memiliki canonical timbal-balik yang valid."
-  },
-  {
-    id: "S-02",
-    category: "hreflang",
-    title: "HTML Lang & Content-Language Parity",
-    value: "lang=\"id\" + Multi-Region",
-    status: "OPTIMAL",
-    detail: "Atribut lang pada elemen <html> selaras dengan deklarasi hreflang utama dan peta situs internasional."
-  },
-  {
-    id: "S-03",
-    category: "schema",
-    title: "Schema.org SoftwareApplication Graph",
-    value: "JSON-LD Valid",
-    status: "OPTIMAL",
-    detail: "Mendeklarasikan aplikasi keamanan web pasif beserta kategori, fitur, dan verifikasi komunitas GDG Bandung."
-  },
-  {
-    id: "S-04",
-    category: "schema",
-    title: "Schema.org FAQPage Structured Data",
-    value: "4 Bilingual Q&A",
-    status: "OPTIMAL",
-    detail: "Struktur FAQPage tervalidasi untuk memperkaya tampilan Rich Snippet di halaman pertama Google SERP."
-  },
-  {
-    id: "S-05",
-    category: "meta",
-    title: "Meta Title & Description Length",
-    value: "58 chars · 154 chars",
-    status: "OPTIMAL",
-    detail: "Panjang judul dan deskripsi berada pada rentang ideal tanpa pemotongan piksel pada SERP desktop maupun mobile."
-  },
-  {
-    id: "S-06",
-    category: "meta",
-    title: "OpenGraph & Twitter Card Image (1200x630)",
-    value: "/opengraph-image.png",
-    status: "GOOD",
-    detail: "Menggunakan rasio 1.91:1 (1200x630 px) dengan kartu summary_large_image untuk pratinjau sosial yang tajam."
-  },
-  {
-    id: "S-07",
-    category: "cwv",
-    title: "Largest Contentful Paint (LCP) & CLS",
-    value: "LCP 1.1s · CLS 0.01",
-    status: "OPTIMAL",
-    detail: "Desain berbasis komponen kaca ringan tanpa blokir render menghasilkan skor Core Web Vitals hijau."
-  },
-  {
-    id: "S-08",
-    category: "cwv",
-    title: "XML Sitemap & Robots.txt Directives",
-    value: "22 Routes Indexed",
-    status: "OPTIMAL",
-    detail: "Seluruh modul spesialis tercantum pada /sitemap.xml dan diizinkan untuk perayapan Googlebot."
-  },
-  {
-    id: "S-09",
-    category: "trust",
-    title: "HTTPS + HSTS Preload Trust Signal",
-    value: "TLS 1.3 · max-age=63072000",
-    status: "OPTIMAL",
-    detail: "Enkripsi TLS 1.3 dan header Strict-Transport-Security memperkuat sinyal kepercayaan peringkat Google."
-  },
-  {
-    id: "S-10",
-    category: "trust",
-    title: "Content-Security-Policy & Anti-Clickjacking",
-    value: "CSP + X-Frame-Options",
-    status: "OPTIMAL",
-    detail: "Melindungi reputasi domain dari injeksi skrip pihak ketiga dan penyalahgunaan iframe."
-  }
-];
-
 const VAULT_ARTIFACTS: VaultArtifact[] = [
   {
     id: "V-01",
@@ -166,7 +50,7 @@ const VAULT_ARTIFACTS: VaultArtifact[] = [
     publicPreview: "APP_KEY=[REDACTED_AES256_GCM_8F3A] · AWS_SECRET=[REDACTED_AES256_GCM_9C12]",
     decryptedPreview: "APP_KEY=base64:SentinelDemoKey9912... · AWS_SECRET=wJalrXUtnFEMI/K7MDENG/bPxRfiCY",
     cipherMeta: "AES-256-GCM · IV: 9f4b...21a0 · Tag: e81c...770b",
-    remediation: "Blokir akses ke dotfile (/.env*) pada konfigurasi Nginx/Cloudflare atau pindahkan ke luar public root."
+    remediation: "Blokir akses dotfile (/.env*) pada konfigurasi Nginx/Cloudflare atau pindahkan ke luar public root."
   },
   {
     id: "V-02",
@@ -201,310 +85,59 @@ const VAULT_ARTIFACTS: VaultArtifact[] = [
 ];
 
 /**
- * Komponen `SeoMasterView` untuk `/scan/seo-master` (`components/seo-master/seo-master-view.tsx`)
+ * Komponen utama `SentinelAudit` untuk `components/sentinel/sentinel-audit.tsx`.
+ * Mengekspor `SentinelAudit`, `SentinelVaultView`, dan `default` agar kompatibel dengan:
+ * - `import { SentinelAudit } from "@/components/sentinel/sentinel-audit"` di `components/scan-dashboard.tsx`
+ * - `import { SentinelVaultView } from "@/components/sentinel/sentinel-audit"` di `app/scan/sentinel/page.tsx`
  */
-export function SeoMasterView({ isDark = true }: { isDark?: boolean }) {
-  const [domainInput, setDomainInput] = useState<string>("sentinel-id.net");
-  const [activeCat, setActiveCat] = useState<SeoCategoryTab>("hreflang");
-  const [generatorTab, setGeneratorTab] = useState<"head" | "nextjs" | "jsonld">("nextjs");
-  const [copiedCode, setCopiedCode] = useState<boolean>(false);
+export function SentinelAudit(props: SentinelAuditProps = {}) {
+  const {
+    isDark: propDark,
+    initialDomain,
+    domain,
+    url,
+    targetUrl
+  } = props;
 
-  const glassCard = isDark
-    ? "bg-white/[0.04] backdrop-blur-2xl border border-white/[0.11] shadow-[0_24px_60px_-15px_rgba(0,0,0,0.65)]"
-    : "bg-white/75 backdrop-blur-2xl border border-slate-900/[0.08] shadow-[0_20px_50px_-12px_rgba(15,23,42,0.07)]";
-  const glassPill = isDark
-    ? "bg-white/[0.06] backdrop-blur-xl border border-white/[0.1]"
-    : "bg-white/85 backdrop-blur-xl border border-slate-900/[0.08]";
-  const mutedText = isDark ? "text-slate-400" : "text-slate-600";
+  const defaultDom =
+    (typeof initialDomain === "string" && initialDomain) ||
+    (typeof domain === "string" && domain) ||
+    (typeof url === "string" && url) ||
+    (typeof targetUrl === "string" && targetUrl) ||
+    "sentinel-id.net";
 
-  const filteredSignals = useMemo(
-    () => SEO_SIGNALS.filter((s) => s.category === activeCat),
-    [activeCat]
+  const [detectedDark, setDetectedDark] = useState<boolean>(true);
+  const [claimDomain, setClaimDomain] = useState<string>(
+    defaultDom.replace(/^https?:\/\//i, "").split("/")[0] || "sentinel-id.net"
   );
-
-  const generatedSnippet = useMemo(() => {
-    const cleanDom = domainInput.trim().replace(/^https?:\/\//i, "").split("/")[0] || "sentinel-id.net";
-    if (generatorTab === "nextjs") {
-      return `// app/layout.tsx — Next.js 16 International Rank #1 Metadata
-import type { Metadata } from "next";
-
-export const metadata: Metadata = {
-  metadataBase: new URL("https://www.${cleanDom}"),
-  title: "Sentinel-ID — #1 Passive Website Security Auditor & SEO Master",
-  description: "Platform audit keamanan web pasif 100% GET-only dengan Brankas AES-256-GCM & 35+ sinyal SEO Global.",
-  alternates: {
-    canonical: "https://www.${cleanDom}/",
-    languages: {
-      "x-default": "https://www.${cleanDom}/",
-      "id-ID": "https://www.${cleanDom}/?hl=id-ID",
-      "en-US": "https://www.${cleanDom}/?hl=en-US",
-      "en-GB": "https://www.${cleanDom}/?hl=en-GB",
-      "en-SG": "https://www.${cleanDom}/?hl=en-SG",
-      "ja-JP": "https://www.${cleanDom}/?hl=ja-JP",
-      "de-DE": "https://www.${cleanDom}/?hl=de-DE"
-    }
-  },
-  openGraph: {
-    title: "Sentinel-ID — Passive Website Security Auditor & SEO Master",
-    url: "https://www.${cleanDom}/",
-    siteName: "Sentinel-ID",
-    images: [{ url: "/opengraph-image.png", width: 1200, height: 630 }],
-    locale: "id_ID",
-    type: "website"
-  }
-};`;
-    }
-    if (generatorTab === "jsonld") {
-      return `{
-  "@context": "https://schema.org",
-  "@graph": [
-    {
-      "@type": "SoftwareApplication",
-      "name": "Sentinel-ID Passive Security Auditor",
-      "applicationCategory": "SecurityApplication",
-      "operatingSystem": "Web",
-      "url": "https://www.${cleanDom}/",
-      "author": { "@type": "Person", "name": "Kasyaf" }
-    },
-    {
-      "@type": "FAQPage",
-      "mainEntity": [
-        {
-          "@type": "Question",
-          "name": "Apakah Sentinel-ID 100% aman untuk server produksi?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Ya, 100% pasif menggunakan metode HTTP GET/HEAD-only tanpa eksploitasi."
-          }
-        }
-      ]
-    }
-  ]
-}`;
-    }
-    return `<!-- Tag Hreflang Internasional & OpenGraph untuk https://www.${cleanDom}/ -->
-<link rel="canonical" href="https://www.${cleanDom}/" />
-<link rel="alternate" hreflang="x-default" href="https://www.${cleanDom}/" />
-<link rel="alternate" hreflang="id-ID" href="https://www.${cleanDom}/?hl=id-ID" />
-<link rel="alternate" hreflang="en-US" href="https://www.${cleanDom}/?hl=en-US" />
-<link rel="alternate" hreflang="en-GB" href="https://www.${cleanDom}/?hl=en-GB" />
-<meta property="og:image" content="https://www.${cleanDom}/opengraph-image.png" />`;
-  }, [domainInput, generatorTab]);
-
-  function copySnippet() {
-    try {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(generatedSnippet);
-      }
-    } catch {
-      // Abaikan bila clipboard tidak tersedia
-    }
-    setCopiedCode(true);
-    setTimeout(() => setCopiedCode(false), 2200);
-  }
-
-  return (
-    <div className="space-y-8">
-      {/* Top Bento Hero for SEO Master */}
-      <div className={`rounded-3xl p-6 sm:p-8 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center ${glassCard}`}>
-        <div className="lg:col-span-7 space-y-4">
-          <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono text-emerald-500 ${glassPill}`}>
-            <TrendingUp className="w-3.5 h-3.5" />
-            <span>MODUL /scan/seo-master · GLOBAL SERP ENGINE</span>
-          </div>
-          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
-            SEO Master &amp;{" "}
-            <span className="bg-gradient-to-r from-emerald-400 via-cyan-400 to-purple-500 bg-clip-text text-transparent">
-              International Rank #1
-            </span>
-          </h1>
-          <p className={`text-sm sm:text-base leading-relaxed ${mutedText}`}>
-            Mengaudit <strong>35+ sinyal teknis Google SERP</strong>, klaster{" "}
-            <strong>13 tag hreflang internasional</strong>, grafik{" "}
-            <strong>JSON-LD Schema.org</strong>, dan sinyal kepercayaan keamanan{" "}
-            <strong>HTTPS/HSTS/CSP</strong> tanpa menumpuk informasi.
-          </p>
-
-          <div className="flex flex-col sm:flex-row gap-2.5 pt-1">
-            <div className={`flex-1 flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl ${glassPill}`}>
-              <Globe className="w-4 h-4 text-emerald-500 shrink-0" />
-              <input
-                type="text"
-                value={domainInput}
-                onChange={(e) => setDomainInput(e.target.value)}
-                placeholder="Masukkan domain audit SEO..."
-                className="w-full bg-transparent text-sm font-mono focus:outline-none"
-                aria-label="Domain Target SEO Master"
-              />
-            </div>
-            <span className="px-4 py-2.5 rounded-2xl text-xs font-mono font-semibold bg-emerald-500/15 text-emerald-500 border border-emerald-500/30 flex items-center justify-center">
-              ✓ 35/35 Sinyal Aktif
-            </span>
-          </div>
-        </div>
-
-        {/* Right Bento Score Cards */}
-        <div className="lg:col-span-5 grid grid-cols-2 gap-3">
-          {[
-            { label: "SERP Readiness", val: "96 / 100", sub: "Global Rank #1 Ready", tone: "text-emerald-500" },
-            { label: "Hreflang Cluster", val: "13 Locale", sub: "x-default + 12 Negara", tone: "text-cyan-500" },
-            { label: "Schema.org Graph", val: "2 Entities", sub: "SoftwareApp + FAQPage", tone: "text-purple-400" },
-            { label: "Security Trust", val: "A+ Grade", sub: "TLS 1.3 · HSTS · CSP", tone: "text-pink-500" }
-          ].map((item) => (
-            <div key={item.label} className={`rounded-2xl p-4 ${glassPill}`}>
-              <span className={`text-[11px] font-mono uppercase ${mutedText}`}>{item.label}</span>
-              <p className={`text-2xl font-extrabold mt-1 ${item.tone}`}>{item.val}</p>
-              <p className={`text-xs mt-0.5 ${mutedText}`}>{item.sub}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Progressive-Disclosure Signal Inspector & 13 Hreflang Matrix */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left: 35+ Signals Categorized Inspector (7 cols) */}
-        <div className={`lg:col-span-7 rounded-3xl p-6 space-y-5 ${glassCard}`}>
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h2 className="text-lg font-bold">Inspeksi Sinyal SEO Teknis</h2>
-              <p className={`text-xs ${mutedText}`}>
-                Pilih kategori sinyal untuk menjaga tampilan tetap ringkas
-              </p>
-            </div>
-            <div className={`flex flex-wrap gap-1 p-1 rounded-xl ${glassPill}`}>
-              {(
-                [
-                  { id: "hreflang", label: "Hreflang (13)" },
-                  { id: "schema", label: "JSON-LD" },
-                  { id: "meta", label: "Meta & OG" },
-                  { id: "cwv", label: "Web Vitals" },
-                  { id: "trust", label: "Trust HTTPS" }
-                ] as { id: SeoCategoryTab; label: string }[]
-              ).map((t) => (
-                <button
-                  key={t.id}
-                  type="button"
-                  onClick={() => setActiveCat(t.id)}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition ${
-                    activeCat === t.id
-                      ? "bg-gradient-to-r from-emerald-500 to-cyan-600 text-white"
-                      : mutedText
-                  }`}
-                >
-                  {t.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="space-y-3">
-            {filteredSignals.map((sig) => (
-              <div key={sig.id} className={`rounded-2xl p-4 space-y-1.5 ${glassPill}`}>
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-sm font-bold">{sig.title}</span>
-                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-semibold bg-emerald-500/15 text-emerald-500">
-                    {sig.value}
-                  </span>
-                </div>
-                <p className={`text-xs leading-relaxed ${mutedText}`}>{sig.detail}</p>
-              </div>
-            ))}
-          </div>
-
-          {/* 13 Hreflang Badges Grid */}
-          <div className="pt-2 space-y-2">
-            <div className="flex items-center justify-between text-xs">
-              <span className="font-semibold">Matriks 13 Tag Hreflang Internasional</span>
-              <span className="font-mono text-cyan-500">ISO-639-1 / ISO-3166-1</span>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-              {HREFLANG_13.map((h) => (
-                <div
-                  key={h.code}
-                  className={`px-3 py-2 rounded-xl text-xs flex items-center justify-between ${glassPill}`}
-                  title={h.region}
-                >
-                  <span className="font-mono font-bold text-emerald-500">{h.code}</span>
-                  <span className={`text-[10px] truncate ml-1.5 ${mutedText}`}>
-                    {h.region.split(" ")[0]}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Right: Ready-to-Paste Rank #1 Code Generator (5 cols) */}
-        <div className={`lg:col-span-5 rounded-3xl p-6 flex flex-col justify-between space-y-4 ${glassCard}`}>
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-bold">Generator Kode SEO Rank #1</h2>
-                <p className={`text-xs ${mutedText}`}>
-                  Otomatis disesuaikan untuk {domainInput || "sentinel-id.net"}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={copySnippet}
-                className="px-3 py-1.5 rounded-xl text-xs font-semibold text-white bg-gradient-to-r from-emerald-500 to-cyan-600 flex items-center gap-1.5 shadow-sm"
-              >
-                {copiedCode ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                <span>{copiedCode ? "Tersalin" : "Salin Kode"}</span>
-              </button>
-            </div>
-
-            <div className={`inline-flex p-1 rounded-xl ${glassPill}`}>
-              {(
-                [
-                  { id: "nextjs", label: "Next.js Metadata" },
-                  { id: "jsonld", label: "JSON-LD Graph" },
-                  { id: "head", label: "HTML <head>" }
-                ] as const
-              ).map((tab) => (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => setGeneratorTab(tab.id)}
-                  className={`px-3 py-1 rounded-lg text-xs font-mono font-semibold transition ${
-                    generatorTab === tab.id
-                      ? "bg-gradient-to-r from-pink-500 to-purple-600 text-white"
-                      : mutedText
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <pre
-            className={`rounded-2xl p-4 text-[11px] font-mono overflow-x-auto max-h-[340px] leading-relaxed ${glassPill}`}
-          >
-            {generatedSnippet}
-          </pre>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/**
- * Komponen `SentinelVaultView` untuk `/scan/sentinel` (`components/sentinel/sentinel-audit.tsx`)
- */
-export function SentinelVaultView({ isDark = true }: { isDark?: boolean }) {
-  const [claimDomain, setClaimDomain] = useState<string>("sentinel-id.net");
   const [claimMethod, setClaimMethod] = useState<ClaimMethod>("dns");
   const [isOwnerVerified, setIsOwnerVerified] = useState<boolean>(false);
   const [selectedArtifactId, setSelectedArtifactId] = useState<string>("V-01");
   const [verifyNotice, setVerifyNotice] = useState<string>("");
+  const [copiedToken, setCopiedToken] = useState<boolean>(false);
+
+  useEffect(() => {
+    try {
+      const root = document.documentElement;
+      setDetectedDark(root.classList.contains("dark"));
+      const obs = new MutationObserver(() => {
+        setDetectedDark(root.classList.contains("dark"));
+      });
+      obs.observe(root, { attributes: true, attributeFilter: ["class"] });
+      return () => obs.disconnect();
+    } catch {
+      return undefined;
+    }
+  }, []);
+
+  const isDark = propDark !== undefined ? propDark : detectedDark;
 
   const glassCard = isDark
-    ? "bg-white/[0.04] backdrop-blur-2xl border border-white/[0.11] shadow-[0_24px_60px_-15px_rgba(0,0,0,0.65)]"
-    : "bg-white/75 backdrop-blur-2xl border border-slate-900/[0.08] shadow-[0_20px_50px_-12px_rgba(15,23,42,0.07)]";
+    ? "bg-[#110E20]/70 backdrop-blur-2xl border border-white/[0.09] shadow-[0_20px_50px_-15px_rgba(0,0,0,0.65)] text-slate-100"
+    : "bg-white/80 backdrop-blur-2xl border border-slate-900/[0.08] shadow-[0_16px_40px_-12px_rgba(15,23,42,0.06)] text-slate-900";
   const glassPill = isDark
-    ? "bg-white/[0.06] backdrop-blur-xl border border-white/[0.1]"
-    : "bg-white/85 backdrop-blur-xl border border-slate-900/[0.08]";
+    ? "bg-white/[0.05] border border-white/[0.09]"
+    : "bg-slate-900/[0.04] border border-slate-900/[0.08]";
   const mutedText = isDark ? "text-slate-400" : "text-slate-600";
 
   const selectedArtifact = useMemo(
@@ -527,55 +160,65 @@ export function SentinelVaultView({ isDark = true }: { isDark?: boolean }) {
     );
   }
 
+  function handleCopyToken() {
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(verificationToken);
+      }
+    } catch {}
+    setCopiedToken(true);
+    setTimeout(() => setCopiedToken(false), 2000);
+  }
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Top Bento Hero for Sentinel Vault AES-256-GCM */}
-      <div className={`rounded-3xl p-6 sm:p-8 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center ${glassCard}`}>
-        <div className="lg:col-span-7 space-y-4">
+      <div className={`rounded-3xl p-6 grid grid-cols-1 xl:grid-cols-12 gap-6 items-start ${glassCard}`}>
+        <div className="xl:col-span-7 space-y-3">
           <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono text-pink-500 ${glassPill}`}>
             <Lock className="w-3.5 h-3.5" />
-            <span>MODUL /scan/sentinel · AES-256-GCM ENCRYPTED VAULT</span>
+            <span>SENTINEL VAULT · AES-256-GCM ENCRYPTED EVIDENCE</span>
           </div>
-          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
+          <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
             Sentinel Vault &amp;{" "}
             <span className="bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 bg-clip-text text-transparent">
               Klaim Bukti Pemilik Domain
             </span>
-          </h1>
-          <p className={`text-sm sm:text-base leading-relaxed ${mutedText}`}>
+          </h2>
+          <p className={`text-xs sm:text-sm leading-relaxed ${mutedText}`}>
             Saat pemindai pasif menemukan kebocoran kritis seperti <code>.env</code>,{" "}
             <code>.git/HEAD</code>, atau <code>wp-config.php.bak</code>, nilai rahasia{" "}
-            <strong>tidak pernah ditampilkan ke publik</strong>. Bukti langsung dienkripsi
-            dengan <strong>AES-256-GCM</strong> dan hanya bisa dibuka 1x oleh pemilik sah domain.
+            <strong>langsung disensor dari publik</strong> dan dienkripsi dengan{" "}
+            <strong>AES-256-GCM</strong>. Hanya pemilik sah domain yang dapat membuka bukti 1x lihat.
           </p>
         </div>
 
         {/* Right Vault Security Posture Pills */}
-        <div className="lg:col-span-5 grid grid-cols-2 gap-3">
+        <div className="xl:col-span-5 grid grid-cols-2 gap-2.5">
           {[
             { label: "Algoritma Vault", val: "AES-256", sub: "GCM Authenticated", tone: "text-pink-500" },
-            { label: "Eksposur Publik", val: "0 Bocor", sub: "Auto-Redacted [REDACTED]", tone: "text-emerald-500" },
-            { label: "Metode Klaim", val: "DNS / HTTP", sub: "Verifikasi Kepemilikan", tone: "text-cyan-500" },
-            { label: "Akses Dekripsi", val: "1x Lihat", sub: "One-Time Burn Token", tone: "text-purple-400" }
+            { label: "Eksposur Publik", val: "0 Bocor", sub: "Auto-Redacted", tone: "text-emerald-500" },
+            { label: "Metode Klaim", val: "DNS / HTTP", sub: "Verifikasi Sah", tone: "text-cyan-500" },
+            { label: "Akses Dekripsi", val: "1x Lihat", sub: "One-Time Token", tone: "text-purple-400" }
           ].map((m) => (
-            <div key={m.label} className={`rounded-2xl p-4 ${glassPill}`}>
-              <span className={`text-[11px] font-mono uppercase ${mutedText}`}>{m.label}</span>
-              <p className={`text-2xl font-extrabold mt-1 ${m.tone}`}>{m.val}</p>
-              <p className={`text-xs mt-0.5 ${mutedText}`}>{m.sub}</p>
+            <div key={m.label} className={`rounded-2xl p-3.5 ${glassPill}`}>
+              <span className={`text-[10px] font-mono uppercase ${mutedText}`}>{m.label}</span>
+              <p className={`text-xl font-extrabold mt-0.5 ${m.tone}`}>{m.val}</p>
+              <p className={`text-[11px] ${mutedText}`}>{m.sub}</p>
             </div>
           ))}
         </div>
       </div>
 
       {/* Main Grid: Encrypted Evidence Vault Table + Domain Ownership Claim Wizard */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
         {/* Left: Sensitive Artifacts & Redaction Inspector (7 cols) */}
-        <div className={`lg:col-span-7 rounded-3xl p-6 space-y-5 ${glassCard}`}>
+        <div className={`xl:col-span-7 rounded-3xl p-6 space-y-4 ${glassCard}`}>
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
-              <h2 className="text-lg font-bold">Brankas Bukti File Sensitif</h2>
+              <h3 className="text-base sm:text-lg font-bold">Brankas Bukti File Sensitif</h3>
               <p className={`text-xs ${mutedText}`}>
-                Klik artefak untuk melihat perbandingan tampilan publik vs dekripsi pemilik sah
+                Pilih artefak untuk melihat perbandingan redaksi publik vs dekripsi pemilik sah
               </p>
             </div>
             <span
@@ -585,11 +228,11 @@ export function SentinelVaultView({ isDark = true }: { isDark?: boolean }) {
                   : "bg-amber-500/15 text-amber-500"
               }`}
             >
-              {isOwnerVerified ? "🔓 Terverifikasi (1x Lihat)" : "🔒 Disensor untuk Publik"}
+              {isOwnerVerified ? "Terverifikasi (1x Lihat)" : "Disensor untuk Publik"}
             </span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             {VAULT_ARTIFACTS.map((art) => {
               const isSel = art.id === selectedArtifactId;
               return (
@@ -597,12 +240,12 @@ export function SentinelVaultView({ isDark = true }: { isDark?: boolean }) {
                   key={art.id}
                   type="button"
                   onClick={() => setSelectedArtifactId(art.id)}
-                  className={`rounded-2xl p-4 text-left transition-all ${glassPill} ${
+                  className={`rounded-2xl p-3.5 text-left transition-all ${glassPill} ${
                     isSel ? "ring-2 ring-pink-500/70" : "opacity-85 hover:opacity-100"
                   }`}
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <span className="font-mono text-sm font-bold text-pink-500">
+                    <span className="font-mono text-xs sm:text-sm font-bold text-pink-500">
                       {art.path}
                     </span>
                     <span
@@ -624,7 +267,7 @@ export function SentinelVaultView({ isDark = true }: { isDark?: boolean }) {
           </div>
 
           {/* Selected Artifact Evidence Detail Box */}
-          <div className={`rounded-2xl p-5 space-y-3 ${glassPill}`}>
+          <div className={`rounded-2xl p-4 space-y-2.5 ${glassPill}`}>
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="text-xs font-mono font-bold text-cyan-500">
                 {selectedArtifact.path} · {selectedArtifact.cwe}
@@ -634,7 +277,7 @@ export function SentinelVaultView({ isDark = true }: { isDark?: boolean }) {
               </span>
             </div>
 
-            <div className="p-3.5 rounded-xl bg-black/25 border border-white/10 font-mono text-xs break-all">
+            <div className="p-3 rounded-xl bg-black/25 border border-white/10 font-mono text-xs break-all text-slate-100">
               {isOwnerVerified
                 ? selectedArtifact.decryptedPreview
                 : selectedArtifact.publicPreview}
@@ -648,23 +291,20 @@ export function SentinelVaultView({ isDark = true }: { isDark?: boolean }) {
         </div>
 
         {/* Right: Domain Ownership Claim Wizard (5 cols) */}
-        <div className={`lg:col-span-5 rounded-3xl p-6 flex flex-col justify-between space-y-5 ${glassCard}`}>
-          <form onSubmit={handleVerifyOwnership} className="space-y-4">
+        <div className={`xl:col-span-5 rounded-3xl p-6 space-y-4 ${glassCard}`}>
+          <form onSubmit={handleVerifyOwnership} className="space-y-3.5">
             <div>
-              <span className="text-xs font-mono uppercase tracking-widest text-purple-400 font-semibold">
+              <span className="text-[11px] font-mono uppercase tracking-widest text-purple-400 font-semibold">
                 Verifikasi Kepemilikan Sah
               </span>
-              <h2 className="text-lg font-bold mt-1">
+              <h3 className="text-base sm:text-lg font-bold mt-0.5">
                 Klaim Domain &amp; Buka Brankas
-              </h2>
-              <p className={`text-xs mt-0.5 ${mutedText}`}>
-                Buktikan kepemilikan domain via DNS TXT atau file HTTP untuk membuka redaksi bukti.
-              </p>
+              </h3>
             </div>
 
-            <div className="space-y-1.5">
+            <div className="space-y-1">
               <label className="text-xs font-semibold block">Domain yang Diklaim</label>
-              <div className={`flex items-center gap-2 px-3.5 py-2.5 rounded-2xl ${glassPill}`}>
+              <div className={`flex items-center gap-2 px-3 py-2 rounded-xl ${glassPill}`}>
                 <Globe className="w-4 h-4 text-pink-500 shrink-0" />
                 <input
                   type="text"
@@ -679,14 +319,13 @@ export function SentinelVaultView({ isDark = true }: { isDark?: boolean }) {
               </div>
             </div>
 
-            {/* Method Selector */}
-            <div className="space-y-1.5">
+            <div className="space-y-1">
               <label className="text-xs font-semibold block">Metode Verifikasi</label>
-              <div className={`grid grid-cols-2 gap-2 p-1 rounded-2xl ${glassPill}`}>
+              <div className={`grid grid-cols-2 gap-1.5 p-1 rounded-xl ${glassPill}`}>
                 <button
                   type="button"
                   onClick={() => setClaimMethod("dns")}
-                  className={`py-2 rounded-xl text-xs font-semibold transition ${
+                  className={`py-1.5 rounded-lg text-xs font-semibold transition ${
                     claimMethod === "dns"
                       ? "bg-gradient-to-r from-pink-500 to-purple-600 text-white"
                       : mutedText
@@ -697,30 +336,37 @@ export function SentinelVaultView({ isDark = true }: { isDark?: boolean }) {
                 <button
                   type="button"
                   onClick={() => setClaimMethod("http")}
-                  className={`py-2 rounded-xl text-xs font-semibold transition ${
+                  className={`py-1.5 rounded-lg text-xs font-semibold transition ${
                     claimMethod === "http"
                       ? "bg-gradient-to-r from-pink-500 to-purple-600 text-white"
                       : mutedText
                   }`}
                 >
-                  File HTTP Well-Known
+                  File HTTP Token
                 </button>
               </div>
             </div>
 
-            {/* Token Challenge Instructions */}
-            <div className={`rounded-2xl p-4 space-y-2 text-xs ${glassPill}`}>
-              <div className="font-semibold">
-                {claimMethod === "dns"
-                  ? `Tambahkan TXT Record pada DNS ${claimDomain}:`
-                  : `Unggah file teks pada path berikut:`}
+            <div className={`rounded-2xl p-3.5 space-y-2 text-xs ${glassPill}`}>
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-semibold">
+                  {claimMethod === "dns" ? "DNS TXT Host:" : "HTTP Token Path:"}
+                </span>
+                <button
+                  type="button"
+                  onClick={handleCopyToken}
+                  className="text-[11px] font-mono text-pink-500 flex items-center gap-1"
+                >
+                  {copiedToken ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                  <span>{copiedToken ? "Tersalin" : "Salin Token"}</span>
+                </button>
               </div>
               <div className="font-mono text-[11px] text-cyan-500 break-all">
                 {claimMethod === "dns"
-                  ? `Host: _sentinel-verify.${claimDomain}`
-                  : `URL: https://${claimDomain}/.well-known/sentinel-claim.txt`}
+                  ? `_sentinel-verify.${claimDomain}`
+                  : `https://${claimDomain}/.well-known/sentinel-claim.txt`}
               </div>
-              <div className="p-2.5 rounded-xl bg-black/20 font-mono text-[11px] text-emerald-400 break-all">
+              <div className="p-2 rounded-lg bg-black/25 font-mono text-[11px] text-emerald-400 break-all">
                 {verificationToken}
               </div>
             </div>
@@ -728,7 +374,7 @@ export function SentinelVaultView({ isDark = true }: { isDark?: boolean }) {
             <div className="flex gap-2">
               <button
                 type="submit"
-                className="flex-1 py-3 px-4 rounded-2xl font-semibold text-xs text-white bg-gradient-to-r from-pink-500 via-purple-600 to-indigo-600 hover:opacity-95 transition shadow-lg shadow-pink-500/20"
+                className="flex-1 py-2.5 px-4 rounded-xl font-semibold text-xs text-white bg-gradient-to-r from-pink-500 via-purple-600 to-indigo-600 hover:opacity-95 transition shadow-md"
               >
                 Verifikasi &amp; Buka Bukti (1x Lihat)
               </button>
@@ -739,16 +385,16 @@ export function SentinelVaultView({ isDark = true }: { isDark?: boolean }) {
                     setIsOwnerVerified(false);
                     setVerifyNotice("");
                   }}
-                  className={`px-3 py-3 rounded-2xl text-xs font-mono ${glassPill}`}
+                  className={`px-3 py-2.5 rounded-xl text-xs font-mono ${glassPill}`}
                 >
-                  Kunci Lagi
+                  Kunci
                 </button>
               )}
             </div>
           </form>
 
           {verifyNotice && (
-            <div className="rounded-2xl p-3.5 bg-emerald-500/15 border border-emerald-500/30 text-xs text-emerald-500 font-medium">
+            <div className="rounded-xl p-3 bg-emerald-500/15 border border-emerald-500/30 text-xs text-emerald-500 font-medium">
               ✓ {verifyNotice}
             </div>
           )}
@@ -758,107 +404,6 @@ export function SentinelVaultView({ isDark = true }: { isDark?: boolean }) {
   );
 }
 
-/**
- * Default export untuk pratinjau terpadu di Canvas (`/scan/seo-master` & `/scan/sentinel`)
- */
-export default function App() {
-  const [activeView, setActiveView] = useState<ActiveModuleView>("seo-master");
-  const [isDark, setIsDark] = useState<boolean>(true);
-
-  useEffect(() => {
-    const root = document.documentElement;
-    if (isDark) {
-      root.classList.add("dark");
-    } else {
-      root.classList.remove("dark");
-    }
-  }, [isDark]);
-
-  const themeBg = isDark
-    ? "bg-[#07070C] text-slate-50"
-    : "bg-[#F5F5F7] text-slate-900";
-  const glassBar = isDark
-    ? "bg-white/[0.04] backdrop-blur-2xl border border-white/[0.11]"
-    : "bg-white/80 backdrop-blur-2xl border border-slate-900/[0.08]";
-  const glassPill = isDark
-    ? "bg-white/[0.06] border border-white/[0.1]"
-    : "bg-slate-900/[0.04] border border-slate-900/[0.08]";
-
-  return (
-    <div className={`min-h-screen relative transition-colors duration-300 ${themeBg}`}>
-      {/* Ambient Liquid Prism Background */}
-      <div className="pointer-events-none fixed inset-0 overflow-hidden z-0">
-        <div className="absolute -top-28 -left-24 w-96 h-96 rounded-full bg-pink-500/15 blur-[110px]" />
-        <div className="absolute top-1/3 -right-24 w-96 h-96 rounded-full bg-emerald-500/12 blur-[110px]" />
-      </div>
-
-      {/* Floating Glass Header */}
-      <header className="sticky top-3 z-40 px-4 sm:px-6 pt-2">
-        <div
-          className={`max-w-7xl mx-auto rounded-2xl px-4 sm:px-5 py-2.5 flex flex-wrap items-center justify-between gap-3 ${glassBar}`}
-        >
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center text-white">
-              <Shield className="w-4 h-4" />
-            </div>
-            <span className="font-bold text-sm sm:text-base">
-              Sentinel-ID Specialist Modules
-            </span>
-          </div>
-
-          {/* Switcher between /scan/seo-master and /scan/sentinel */}
-          <div className={`flex items-center gap-1 p-1 rounded-xl ${glassPill}`}>
-            <button
-              type="button"
-              onClick={() => setActiveView("seo-master")}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition ${
-                activeView === "seo-master"
-                  ? "bg-gradient-to-r from-emerald-500 to-cyan-600 text-white shadow-sm"
-                  : "opacity-75 hover:opacity-100"
-              }`}
-            >
-              SEO Master (/scan/seo-master)
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveView("sentinel-vault")}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition ${
-                activeView === "sentinel-vault"
-                  ? "bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-sm"
-                  : "opacity-75 hover:opacity-100"
-              }`}
-            >
-              Sentinel Vault (/scan/sentinel)
-            </button>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => setIsDark(!isDark)}
-            className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 ${glassPill}`}
-          >
-            {isDark ? (
-              <>
-                <Sun className="w-3.5 h-3.5 text-amber-400" />
-                <span>Light Glass</span>
-              </>
-            ) : (
-              <>
-                <Moon className="w-3.5 h-3.5 text-indigo-600" />
-                <span>Dark Glass</span>
-              </>
-            )}
-          </button>
-        </div>
-      </header>
-
-      <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 pt-8 pb-20">
-        {activeView === "seo-master" ? (
-          <SeoMasterView isDark={isDark} />
-        ) : (
-          <SentinelVaultView isDark={isDark} />
-        )}
-      </main>
-    </div>
-  );
-}
+// Alias ekspor agar 100% kompatibel dengan semua cara impor di repositori
+export const SentinelVaultView = SentinelAudit;
+export default SentinelAudit;
