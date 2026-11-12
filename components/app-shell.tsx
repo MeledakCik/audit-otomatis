@@ -26,9 +26,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center text-white">
                 <Shield className="w-4 h-4" />
               </div>
-              <span className="font-bold tracking-tight text-sm sm:text-base">
-                Sentinel-ID
-              </span>
+              <span className="font-bold tracking-tight text-sm sm:text-base">Sentinel-ID</span>
             </div>
           </div>
 
@@ -38,19 +36,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </span>
             <button
               type="button"
-              onClick={() =>
-                setTheme(resolvedTheme === "dark" ? "light" : "dark")
-              }
+              onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
               className="px-3 py-1.5 rounded-xl border border-[var(--border)] text-xs font-medium flex items-center gap-1.5"
             >
-              {resolvedTheme === "dark" ? (
-                <Sun className="w-3.5 h-3.5 text-amber-400" />
-              ) : (
-                <Moon className="w-3.5 h-3.5 text-indigo-600" />
-              )}
-              <span>
-                {resolvedTheme === "dark" ? "Light Glass" : "Dark Glass"}
-              </span>
+              {resolvedTheme === "dark" ? <Sun className="w-3.5 h-3.5 text-amber-400" /> : <Moon className="w-3.5 h-3.5 text-indigo-600" />}
+              <span>{resolvedTheme === "dark" ? "Light Glass" : "Dark Glass"}</span>
             </button>
           </div>
         </div>

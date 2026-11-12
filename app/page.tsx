@@ -1,560 +1,1116 @@
-import { Suspense } from "react";
-import Link from "next/link";
-import { ScanForm } from "@/components/scan-form";
-import { VerifiedBadge } from "@/components/verified-badge";
+"use client";
+
+import React, { useState, useEffect, useMemo } from "react";
 import {
-  buildPageMetadata,
-  GLOBAL_SEO_FAQS,
-  INTERNATIONAL_HREFLANG_LOCALES,
-} from "@/lib/seo-master";
-import {
-  Search,
-  Code2,
-  ShieldCheck,
-  FileText,
-  Lock,
-  KeyRound,
-  Map,
-  Radar,
-  Globe2,
-  Fingerprint,
-  UserSearch,
-  TrafficConeIcon,
-  ExternalLink,
-  FileJson,
-  ShellIcon,
-  ClipboardCheck,
-  ArrowUpRight,
+  Shield,
   Sparkles,
-  Activity,
-  Terminal,
+  Search,
+  Lock,
+  Globe,
+  Code2,
   Cpu,
-  ShieldAlert,
-  TrendingUp,
-  HelpCircle,
+  Eye,
+  FileText,
+  Server,
+  Terminal,
+  CheckCircle2,
+  AlertTriangle,
+  Info,
+  ArrowRight,
+  Sun,
+  Moon,
+  Layers,
+  Activity,
+  KeyRound,
+  Copy,
+  Check,
+  RefreshCw,
+  ChevronDown
 } from "lucide-react";
 
-export const maxDuration = 300;
+type ScanMode = "full" | "vault";
+type ViewTab = "overview" | "scanner" | "modules";
+type SeverityFilter = "ALL" | "MEDIUM" | "LOW" | "INFO";
+type FaqLang = "id" | "en";
 
-export const metadata = buildPageMetadata("/");
+interface ShellSurface {
+  id: string;
+  label: string;
+  cwe: string;
+  title: string;
+  desc: string;
+  paths: string[];
+}
 
-const DEEP_SHELL_ENGINES = [
+interface VaultStep {
+  step: string;
+  title: string;
+  badge: string;
+  summary: string;
+}
+
+interface SentinelModule {
+  id: number;
+  title: string;
+  cat: "Core Audit & Scan" | "Vulnerability & Code" | "Recon & Threat Intel" | "Resources & Admin";
+  route: string;
+  badge: string;
+  desc: string;
+}
+
+interface AuditFinding {
+  id: string;
+  sev: "MEDIUM" | "LOW" | "INFO";
+  module: string;
+  path: string;
+  detail: string;
+}
+
+const SHELL_SURFACES: ShellSurface[] = [
   {
-    code: "wp2shell",
-    title: "WordPress RCE & Config Surface",
+    id: "wp2shell",
+    label: "wp2shell",
     cwe: "CWE-434 · CWE-538 · CWE-284",
-    desc: "Deteksi pasif wp-config.php.bak/~/.save, debug.log, xmlrpc.php aktif, enumerasi user REST API (/wp-json/wp/v2/users), installer terbuka, dan indeks /wp-content/uploads/.",
-    targets: ["/wp-config.php.bak", "/wp-content/debug.log", "/xmlrpc.php", "/wp-json/wp/v2/users"],
+    title: "WordPress RCE & Config Surface",
+    desc: "Deteksi pasif wp-config.php.bak/~/.save, debug.log terbuka, xmlrpc.php aktif, enumerasi user REST API (/wp-json/wp/v2/users), installer terbuka, dan indeks /wp-content/uploads/.",
+    paths: ["/wp-config.php.bak", "/wp-content/debug.log", "/xmlrpc.php", "/wp-json/wp/v2/users"]
   },
   {
-    code: "php2shell",
-    title: "PHP Eval, Ignition & Profiler",
+    id: "php2shell",
+    label: "php2shell",
     cwe: "CWE-94 · CWE-95 · CWE-489",
+    title: "PHP Eval, Ignition & Profiler",
     desc: "Audit pasif Laravel Ignition debug RCE (CVE-2021-3129), PHPUnit eval-stdin.php (CVE-2017-9841), Symfony Profiler, phpinfo(), PHP-FPM status, dan eksposur composer.json.",
-    targets: ["/_ignition/health-check", "/vendor/phpunit/.../eval-stdin.php", "/phpinfo.php", "/fpm-status"],
+    paths: ["/_ignition/health-check", "/vendor/phpunit/.../eval-stdin.php", "/phpinfo.php", "/fpm-status"]
   },
   {
-    code: "node2shell",
-    title: "Node.js V8 Inspector & SSR Sinks",
+    id: "node2shell",
+    label: "node2shell",
     cwe: "CWE-94 · CWE-502 · CWE-1321",
-    desc: "Deteksi port debug V8 Inspector (/json/version), PM2 ecosystem.config.js, Next.js dev stack-frame, serta sink AST child_process, vm.runInNewContext, deserialization & prototype pollution.",
-    targets: ["/json/version", "/ecosystem.config.js", "child_process / vm", "__proto__ pollution"],
+    title: "Node.js V8 Inspector & SSR Sinks",
+    desc: "Deteksi port debug V8 Inspector (/json/version), PM2 ecosystem.config.js, Next.js dev stack-frame, serta sink AST child_process, vm.runInNewContext & prototype pollution.",
+    paths: ["/json/version", "/ecosystem.config.js", "child_process / vm", "__proto__ pollution"]
   },
   {
-    code: "go2shell",
-    title: "Go Runtime pprof & Expvar",
+    id: "go2shell",
+    label: "go2shell",
     cwe: "CWE-215 · CWE-200 · CWE-489",
+    title: "Go Runtime pprof & Expvar",
     desc: "Inspeksi pasif profil runtime Go (/debug/pprof/), kebocoran argumen binary (/debug/pprof/cmdline), goroutine/heap dump, serta variabel runtime expvar (/debug/vars).",
-    targets: ["/debug/pprof/", "/debug/pprof/cmdline", "/debug/vars", "Go panic trace"],
+    paths: ["/debug/pprof/", "/debug/pprof/cmdline", "/debug/vars", "Go panic trace"]
   },
   {
-    code: "py2shell",
-    title: "Python Werkzeug, Jupyter & Celery",
+    id: "py2shell",
+    label: "py2shell",
     cwe: "CWE-94 · CWE-306 · CWE-489",
+    title: "Python Werkzeug, Jupyter & Celery",
     desc: "Deteksi Werkzeug/Flask interactive debugger (/console), Jupyter Notebook kernel API tanpa autentikasi (/api/kernels), Celery Flower monitor (/api/workers), dan Django Debug Toolbar.",
-    targets: ["/console", "/api/kernels", "/api/workers", "/__debug__/"],
+    paths: ["/console", "/api/kernels", "/api/workers", "/__debug__/"]
   },
   {
-    code: "node out of bound",
-    title: "Node Out-of-Bounds (OOB) & Memory",
+    id: "node-oob",
+    label: "node OOB",
     cwe: "CWE-119 · CWE-125 · CWE-787 · CWE-918",
-    desc: "Deteksi snapshot memori V8 (/heapdump), alokasi Buffer.allocUnsafe & pembacaan TypedArray/DataView out-of-bounds, RangeError buffer leak, serta kandidat parameter Out-of-Band (OOB SSRF/Webhook).",
-    targets: ["/heapdump", "Buffer.allocUnsafe", "TypedArray OOB", "OOB Callback/SSRF"],
+    title: "Node Out-of-Bounds (OOB) & Memory",
+    desc: "Deteksi snapshot memori V8 (/heapdump), alokasi Buffer.allocUnsafe & pembacaan TypedArray/DataView out-of-bounds, RangeError buffer leak, serta kandidat OOB SSRF/Webhook.",
+    paths: ["/heapdump", "Buffer.allocUnsafe", "TypedArray OOB", "OOB Callback/SSRF"]
   },
   {
-    code: "webshell",
-    title: "Active WebShell & Stealth Backdoor Engine",
+    id: "webshell",
+    label: "webshell",
     cwe: "CWE-434 · CWE-94 · CWE-506",
-    desc: "Deteksi tajam artefak WebShell aktif (WSO, FilesMan, b374k, ALFA Team, MariJUANA, Gel4y, IndoXploit, Mini Shell, c99/r57, p0wny), halaman login backdoor (single-input password gate), serta source PHP ter-obfuscate (eval/gzinflate/base64_decode).",
-    targets: ["/shell.php", "/wso.php", "/alfa.php", "/b374k.php", "WSO/Alfa/Mini UI"],
+    title: "Active WebShell & Stealth Backdoor",
+    desc: "Deteksi tajam artefak WebShell aktif (WSO, FilesMan, b374k, ALFA Team, MariJUANA, Gel4y, IndoXploit, Mini Shell, c99/r57, p0wny) serta source PHP ter-obfuscate.",
+    paths: ["/shell.php", "/wso.php", "/alfa.php", "/b374k.php"]
   },
   {
-    code: "filemanager-shell",
-    title: "FileManager WebShell & Connector Audit",
+    id: "filemanager",
+    label: "filemanager",
     cwe: "CWE-434 · CWE-306 · CWE-284",
-    desc: "Inspeksi pasif panel Web File Manager yang terekspos atau disalahgunakan sebagai WebShell: TinyFileManager (CVE-2021-45010), Studio-42 elFinder & WP File Manager (CVE-2020-25213 / CVE-2021-32682), Responsive FileManager, KCFinder, Roxy Fileman & KodExplorer.",
-    targets: ["/tinyfilemanager.php", "/fm.php", "/elfinder/...", "/filemanager/dialog.php"],
-  },
+    title: "FileManager WebShell & Connector Audit",
+    desc: "Inspeksi pasif panel Web File Manager yang terekspos: TinyFileManager (CVE-2021-45010), Studio-42 elFinder & WP File Manager (CVE-2020-25213), Responsive FileManager, KCFinder.",
+    paths: ["/tinyfilemanager.php", "/fm.php", "/elfinder/...", "/filemanager/dialog.php"]
+  }
 ];
 
-const QUICK_MODULES = [
+const VAULT_STEPS: VaultStep[] = [
   {
-    title: "SEO Master & Global Rank #1",
-    desc: "Audit 35+ sinyal Google SERP, Hreflang Internasional, JSON-LD Schema.org, Keyword Density & Generator Kode SEO",
-    href: "/scan/seo-master",
-    icon: TrendingUp,
-    badge: "GLOBAL SEO",
+    step: "STEP 01",
+    title: "Crawl & Recon Pasif",
+    badge: "lib/discovery · Max 100 Req",
+    summary: "Menelusuri tautan internal (maks. 50 URL, Depth 3), well-known files (robots.txt, sitemap.xml), dan header HTTP dengan metode GET-only."
   },
   {
-    title: "Sentinel Vault & Klaim",
-    desc: "Audit File Sensitif (.env, .git/HEAD, backup.zip, wp-config.php.bak, AWS keys) & Brankas AES-256-GCM",
-    href: "/scan/sentinel",
-    icon: Lock,
-    badge: "AES-256-GCM",
+    step: "STEP 02",
+    title: "Deep Shell & OOB Audit",
+    badge: "lib/parsers + lib/vuln",
+    summary: "Membongkar bundle JS dan memeriksa 8 permukaan runtime (wp2shell, php2shell, node2shell, go2shell, py2shell, Node OOB) secara 100% pasif."
   },
   {
-    title: "Header Armor",
-    desc: "Skor & analisis HTTP security headers (CSP, HSTS, XFO)",
-    href: "/scan/headers",
-    icon: ShieldCheck,
-    badge: "HTTP",
+    step: "STEP 03",
+    title: "Brankas AES-256-GCM",
+    badge: "Redaksi Publik Otomatis",
+    summary: "Kebocoran kritis (.env, .git/HEAD, backup.zip, wp-config.php.bak, AWS keys) langsung disensor dari publik dan dienkripsi ke Vault Admin."
   },
   {
-    title: "Secret Hunter",
-    desc: "Deteksi API key, token & kredensial bocor di bundle JS",
-    href: "/scan/secrets",
-    icon: KeyRound,
-    badge: "AST / Regex",
-  },
-  {
-    title: "Attack Surface Map",
-    desc: "Visualisasi graf interaktif relasi halaman, JS & endpoint",
-    href: "/scan/map",
-    icon: Map,
-    badge: "Graph",
-  },
-  {
-    title: "Subdomain Watch",
-    desc: "Enumerasi CT logs crt.sh & deteksi risiko subdomain takeover",
-    href: "/scan/subdomain",
-    icon: Globe2,
-    badge: "CT Logs",
-  },
-  {
-    title: "DNS Intelligence",
-    desc: "Audit record A/MX/TXT, proteksi anti-spoofing SPF & DMARC",
-    href: "/scan/dns",
-    icon: TrafficConeIcon,
-    badge: "DoH",
-  },
-  {
-    title: "SSL/TLS Inspector",
-    desc: "Inspeksi rantai sertifikat, masa aktif, cipher & protokol TLS",
-    href: "/scan/ssl",
-    icon: ShellIcon,
-    badge: "TLS",
-  },
-  {
-    title: "JS Supply Chain",
-    desc: "Deteksi library pihak ketiga usang, CVE & tracker skrip",
-    href: "/scan/js",
-    icon: FileJson,
-    badge: "CVE DB",
-  },
-  {
-    title: "Breach Peek & OSINT",
-    desc: "Cek eksposur email/domain pada insiden kebocoran data publik",
-    href: "/scan/breach",
-    icon: Radar,
-    badge: "OSINT",
-  },
-  {
-    title: "Tech Stack Fingerprint",
-    desc: "Identifikasi framework, CMS, CDN, WAF & server secara pasif",
-    href: "/scan/stack",
-    icon: Fingerprint,
-    badge: "Stack",
-  },
-  {
-    title: "Exposure Check",
-    desc: "Verifikasi kebocoran file konfigurasi, shell surface & informasi sensitif",
-    href: "/scan/exposure",
-    icon: ExternalLink,
-    badge: "Passive",
-  },
-  {
-    title: "OSINT Lookup",
-    desc: "Reconnaissance multi-sumber untuk domain, email & username",
-    href: "/scan/osint",
-    icon: UserSearch,
-    badge: "Recon",
-  },
-  {
-    title: "QC Otomatis",
-    desc: "Audit kualitas SEO on-page, performa PageSpeed & broken link",
-    href: "/qc",
-    icon: ClipboardCheck,
-    badge: "SEO + Perf",
-  },
+    step: "STEP 04",
+    title: "Klaim Pemilik Sah Domain",
+    badge: "Verifikasi DNS TXT / HTTP",
+    summary: "Pemilik sah domain memverifikasi DNS TXT atau file token HTTP untuk membuka bukti 1x lihat dan mengunduh laporan lengkap."
+  }
 ];
 
-export default function Home() {
+const MODULES_22: SentinelModule[] = [
+  { id: 1, title: "Overview & Scan", cat: "Core Audit & Scan", route: "/", badge: "VAULT", desc: "Pemindai terpadu 8 engine keamanan pasif dan ringkasan postur domain." },
+  { id: 2, title: "SEO Master & Rank #1", cat: "Core Audit & Scan", route: "/scan/seo-master", badge: "GLOBAL", desc: "Audit 35+ sinyal Google SERP, 13 tag hreflang internasional & JSON-LD Schema.org." },
+  { id: 3, title: "Sentinel Vault & Klaim", cat: "Core Audit & Scan", route: "/scan/sentinel", badge: "AES-256", desc: "Audit file sensitif (.env, .git/HEAD, backup.zip) & Brankas Bukti AES-256-GCM." },
+  { id: 4, title: "QC Otomatis", cat: "Core Audit & Scan", route: "/qc", badge: "SEO+PERF", desc: "Audit kualitas SEO on-page, performa Core Web Vitals & tautan rusak." },
+  { id: 5, title: "Scan History", cat: "Core Audit & Scan", route: "/history", badge: "LOG", desc: "Riwayat pemindaian domain dan perbandingan skor keamanan antar waktu." },
+  { id: 6, title: "Request Inspector", cat: "Core Audit & Scan", route: "/requests", badge: "HTTP", desc: "Inspeksi transparan seluruh request GET/HEAD yang dikirim selama pemindaian." },
+  { id: 7, title: "Header Armor", cat: "Vulnerability & Code", route: "/scan/headers", badge: "CSP/HSTS", desc: "Skor dan analisis HTTP security headers (CSP, HSTS, X-Frame-Options)." },
+  { id: 8, title: "Secret Hunter", cat: "Vulnerability & Code", route: "/scan/secrets", badge: "AST/REGEX", desc: "Deteksi API key, token & kredensial bocor di dalam bundle JavaScript." },
+  { id: 9, title: "Exposure Check", cat: "Vulnerability & Code", route: "/scan/exposure", badge: "PASSIVE", desc: "Verifikasi kebocoran file konfigurasi, shell surface & informasi sensitif." },
+  { id: 10, title: "JS Supply Chain", cat: "Vulnerability & Code", route: "/scan/js", badge: "CVE DB", desc: "Deteksi library pihak ketiga usang, pencocokan CVE OSV/NVD & tracker skrip." },
+  { id: 11, title: "SSL/TLS Checker", cat: "Vulnerability & Code", route: "/scan/ssl", badge: "TLS 1.3", desc: "Inspeksi rantai sertifikat, masa aktif, cipher suite & protokol TLS." },
+  { id: 12, title: "Maintenance Log AI", cat: "Vulnerability & Code", route: "/maintenance-log", badge: "AI", desc: "Rekomendasi remediasi terstruktur dan log pemeliharaan keamanan berbasis AI." },
+  { id: 13, title: "Attack Surface Map", cat: "Recon & Threat Intel", route: "/scan/map", badge: "GRAPH", desc: "Visualisasi graf interaktif relasi halaman, bundle JS, dan endpoint API." },
+  { id: 14, title: "Subdomain Watch", cat: "Recon & Threat Intel", route: "/scan/subdomain", badge: "CT LOGS", desc: "Enumerasi CT logs crt.sh & deteksi risiko subdomain takeover." },
+  { id: 15, title: "DNS Intelligence", cat: "Recon & Threat Intel", route: "/scan/dns", badge: "DoH/SPF", desc: "Audit record A/MX/TXT serta proteksi anti-spoofing SPF & DMARC." },
+  { id: 16, title: "Tech Stack", cat: "Recon & Threat Intel", route: "/scan/stack", badge: "STACK", desc: "Identifikasi framework, CMS, CDN, WAF & server web secara pasif." },
+  { id: 17, title: "Breach Peek", cat: "Recon & Threat Intel", route: "/scan/breach", badge: "OSINT", desc: "Cek eksposur email/domain pada insiden kebocoran data publik." },
+  { id: 18, title: "OSINT Lookup", cat: "Recon & Threat Intel", route: "/scan/osint", badge: "RECON", desc: "Reconnaissance publik untuk username, email, domain & nama (rate-limit 10 req/min)." },
+  { id: 19, title: "Shield Status", cat: "Recon & Threat Intel", route: "/scan/shield-status", badge: "STATUS", desc: "Pemantauan ketahanan WAF/Cloudflare Edge dan postur perlindungan aktif." },
+  { id: 20, title: "Documentation", cat: "Resources & Admin", route: "/docs", badge: "DOCS", desc: "Dokumentasi arsitektur modular Sentinel-ID dan prinsip audit pasif." },
+  { id: 21, title: "API Reference", cat: "Resources & Admin", route: "/api-docs", badge: "REST API", desc: "Referensi endpoint API pasif dan integrasi JSON." },
+  { id: 22, title: "Admin Console", cat: "Resources & Admin", route: "/admin", badge: "ADMIN", desc: "Panel manajemen Sentinel Vault AES-256-GCM dan persetujuan klaim domain." }
+];
+
+const INITIAL_FINDINGS: AuditFinding[] = [
+  {
+    id: "F-01",
+    sev: "MEDIUM",
+    module: "lib/vuln (DOM Sink)",
+    path: "/_next/static/chunks/main-app.js",
+    detail: "Pola innerHTML pada chunk internal Next.js (status: POTENTIAL — false-positive wajar dari renderer React)."
+  },
+  {
+    id: "F-02",
+    sev: "MEDIUM",
+    module: "lib/vuln (DOM Sink)",
+    path: "/_next/static/chunks/framework.js",
+    detail: "Pola location.search / innerHTML pada bundle framework (POTENTIAL — tinjau manual penggunaan dangerouslySetInnerHTML)."
+  },
+  {
+    id: "F-03",
+    sev: "MEDIUM",
+    module: "Header Armor",
+    path: "Content-Security-Policy",
+    detail: "Direktif script-src memuat unsafe-inline untuk hidrasi skrip Next.js."
+  },
+  {
+    id: "F-04",
+    sev: "MEDIUM",
+    module: "lib/parsers",
+    path: "/_next/static/chunks/pages/_app.js",
+    detail: "Ekstraksi 4 endpoint API internal (/api/osint, /api/scan, /api/qc, /api/vault) — pastikan rate-limit aktif."
+  },
+  {
+    id: "F-05",
+    sev: "MEDIUM",
+    module: "JS Supply Chain",
+    path: "OSV / NVD Fingerprint",
+    detail: "0 CVE kritis pada dependensi utama; disarankan rotasi berkala integritas SRI."
+  },
+  {
+    id: "F-06",
+    sev: "MEDIUM",
+    module: "Sentinel Vault",
+    path: "/.env & /.git/HEAD",
+    detail: "Tidak terekspos ke publik (404). Enkripsi otomatis AES-256-GCM siaga bila terdeteksi kebocoran."
+  },
+  {
+    id: "F-07",
+    sev: "LOW",
+    module: "Header Armor",
+    path: "Permissions-Policy",
+    detail: "Disarankan membatasi akses geolocation, camera, dan microphone secara eksplisit."
+  },
+  {
+    id: "F-08",
+    sev: "LOW",
+    module: "Header Armor",
+    path: "Referrer-Policy",
+    detail: "Gunakan strict-origin-when-cross-origin untuk menjaga privasi query parameter."
+  },
+  {
+    id: "F-09",
+    sev: "LOW",
+    module: "SEO Master",
+    path: "Hreflang International",
+    detail: "Tag hreflang id-ID, en-US, dan x-default aktif; siap diperluas ke 13 locale penuh."
+  },
+  {
+    id: "F-10",
+    sev: "LOW",
+    module: "SSL/TLS Checker",
+    path: "HSTS Preload",
+    detail: "TLS 1.3 aktif; tambahkan direktif preload pada Strict-Transport-Security."
+  },
+  {
+    id: "F-11",
+    sev: "INFO",
+    module: "lib/discovery",
+    path: "/robots.txt",
+    detail: "File well-known robots.txt ditemukan (200 OK) dan dipatuhi oleh crawler pasif."
+  },
+  {
+    id: "F-12",
+    sev: "INFO",
+    module: "lib/discovery",
+    path: "/sitemap.xml",
+    detail: "Sitemap XML ditemukan dan mengindeks seluruh modul utama."
+  }
+];
+
+const FAQ_DATA = [
+  {
+    q_id: "Apakah Sentinel-ID 100% aman dan tidak merusak server produksi?",
+    a_id: "Ya. Sentinel-ID beroperasi secara 100% pasif menggunakan metode HTTP GET/HEAD-only tanpa injeksi payload, tanpa brute-force, dilengkapi SSRF Guard serta pembatas RequestBudget maksimal 100 request.",
+    q_en: "Is Sentinel-ID 100% safe for production servers (zero-exploit)?",
+    a_en: "Yes. Sentinel-ID is a strictly passive, non-intrusive website security auditor using read-only HTTP GET/HEAD requests with zero exploit payloads, strict SSRF protection, and a 100-request budget."
+  },
+  {
+    q_id: "Bagaimana cara kerja Brankas Bukti Terenkripsi AES-256-GCM (Sentinel Vault)?",
+    a_id: "Ketika pemindai mendeteksi file sensitif seperti .env, .git/HEAD, wp-config.php.bak, atau kunci AWS, isi rahasia langsung di-redact dari publik dan dienkripsi menggunakan AES-256-GCM di Vault Admin. Hanya pemilik sah domain yang dapat mengklaim bukti tersebut melalui verifikasi DNS TXT atau file HTTP.",
+    q_en: "How does the AES-256-GCM Encrypted Evidence Vault protect leaked secrets?",
+    a_en: "When Sentinel-ID detects exposed .env files, .git repositories, database backups, or API keys, raw values are never shown publicly. Evidence is encrypted with AES-256-GCM and can only be unlocked once by the verified domain owner via DNS TXT or HTTP token verification."
+  },
+  {
+    q_id: "Apa saja celah RCE & Shell Surface yang diperiksa secara pasif?",
+    a_id: "Mesin Deep Shell & OOB memeriksa permukaan runtime utama secara pasif: wp2shell, php2shell (Laravel Ignition CVE-2021-3129, PHPUnit), node2shell (V8 Inspector, child_process/vm sinks), go2shell (Go pprof & expvar), py2shell (Werkzeug console, Jupyter API), serta Node Out-of-Bounds memory & heapdump.",
+    q_en: "Which RCE and runtime shell surfaces does Sentinel-ID detect?",
+    a_en: "Sentinel-ID passively audits runtime surfaces: wp2shell, php2shell (Laravel Ignition, PHPUnit, phpinfo), node2shell (V8 inspector, SSR AST sinks), go2shell (Go pprof/expvar), py2shell (Werkzeug debugger, Jupyter kernels), and Node.js Out-of-Bounds heap/memory exposures."
+  },
+  {
+    q_id: "Bagaimana fitur SEO Master membantu website naik ke Rank #1 Google Internasional?",
+    a_id: "Modul SEO Master memeriksa lebih dari 35 sinyal teknis Google: tag Hreflang 13 locale (id-ID, en-US, en-GB, x-default, dll.), struktur JSON-LD Schema.org, Open Graph, Core Web Vitals, serta Security-SEO Trust Signals (HTTPS/HSTS/CSP).",
+    q_en: "How does the SEO Master module help websites rank #1 on Google internationally?",
+    a_en: "SEO Master audits 35+ Google ranking factors including 13 international hreflang tags, Schema.org JSON-LD graphs, Core Web Vitals, keyword density, Open Graph, and HTTPS/HSTS security trust signals."
+  }
+];
+
+export default function App() {
+  const [isDark, setIsDark] = useState<boolean>(true);
+  const [activeTab, setActiveTab] = useState<ViewTab>("overview");
+  const [targetDomain, setTargetDomain] = useState<string>("kasyaf-cv.my.id");
+  const [scanMode, setScanMode] = useState<ScanMode>("full");
+  const [cfResilient, setCfResilient] = useState<boolean>(true);
+  const [consentChecked, setConsentChecked] = useState<boolean>(true);
+  const [isScanning, setIsScanning] = useState<boolean>(false);
+  const [lastScannedDomain, setLastScannedDomain] = useState<string>("kasyaf-cv.my.id");
+
+  const [activeShellId, setActiveShellId] = useState<string>("wp2shell");
+  const [activeVaultStep, setActiveVaultStep] = useState<number>(0);
+  const [moduleCategory, setModuleCategory] = useState<string>("Semua");
+  const [moduleSearch, setModuleSearch] = useState<string>("");
+  const [selectedModule, setSelectedModule] = useState<SentinelModule>(MODULES_22[0]);
+
+  const [severityFilter, setSeverityFilter] = useState<SeverityFilter>("ALL");
+  const [faqLang, setFaqLang] = useState<FaqLang>("id");
+  const [openFaqIdx, setOpenFaqIdx] = useState<number>(0);
+  const [copiedNotice, setCopiedNotice] = useState<string>("");
+
+  // Sync Dark/Light class on <html> so both Next.js ThemeProvider and standalone preview work seamlessly
+  useEffect(() => {
+    const root = document.documentElement;
+    if (isDark) {
+      root.classList.add("dark");
+    } else {
+      root.classList.remove("dark");
+    }
+  }, [isDark]);
+
+  const activeShell = useMemo(
+    () => SHELL_SURFACES.find((s) => s.id === activeShellId) || SHELL_SURFACES[0],
+    [activeShellId]
+  );
+
+  const filteredModules = useMemo(() => {
+    return MODULES_22.filter((m) => {
+      const matchCat = moduleCategory === "Semua" || m.cat === moduleCategory;
+      const q = moduleSearch.trim().toLowerCase();
+      const matchQuery =
+        !q ||
+        m.title.toLowerCase().includes(q) ||
+        m.route.toLowerCase().includes(q) ||
+        m.badge.toLowerCase().includes(q) ||
+        m.desc.toLowerCase().includes(q);
+      return matchCat && matchQuery;
+    });
+  }, [moduleCategory, moduleSearch]);
+
+  const filteredFindings = useMemo(() => {
+    if (severityFilter === "ALL") return INITIAL_FINDINGS;
+    return INITIAL_FINDINGS.filter((f) => f.sev === severityFilter);
+  }, [severityFilter]);
+
+  function handleRunScan(e: React.FormEvent) {
+    e.preventDefault();
+    if (!consentChecked) return;
+    const cleaned =
+      targetDomain.trim().replace(/^https?:\/\//i, "").split("/")[0] || "kasyaf-cv.my.id";
+    setTargetDomain(cleaned);
+    setIsScanning(true);
+    setTimeout(() => {
+      setIsScanning(false);
+      setLastScannedDomain(cleaned);
+      setActiveTab("scanner");
+    }, 450);
+  }
+
+  function handleCopyReport() {
+    const reportText = [
+      `# Sentinel-ID Passive Security Report (${lastScannedDomain})`,
+      `- Mode: ${scanMode === "full" ? "Full Scan + Deep Shell (8 Engines)" : "Sentinel Vault AES-256-GCM"}`,
+      `- Cloudflare / WAF Resilient: ${cfResilient ? "Active (Edge + DoH)" : "Standard"}`,
+      `- Metrics: 1 URL Crawled / 50 | 11 JS Unpacked | 29 / 100 Requests | 14 Nodes / 13 Edges`,
+      `- Severity: 0 CRITICAL, 0 HIGH, 6 MEDIUM (POTENTIAL), 4 LOW, 2 INFO`,
+      ``,
+      `## Findings`,
+      ...INITIAL_FINDINGS.map((f) => `- [${f.sev}] ${f.module} (${f.path}): ${f.detail}`)
+    ].join("\n");
+
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(reportText);
+      }
+    } catch {
+      // Fallback handled silently
+    }
+    setCopiedNotice("Laporan Markdown berhasil disalin!");
+    setTimeout(() => setCopiedNotice(""), 2500);
+  }
+
+  // Dynamic Glassmorphism Theme Tokens
+  const themeBg = isDark
+    ? "bg-[#07070C] text-slate-50"
+    : "bg-[#F5F5F7] text-slate-900";
+  const glassCard = isDark
+    ? "bg-white/[0.04] backdrop-blur-2xl border border-white/[0.11] shadow-[0_24px_60px_-15px_rgba(0,0,0,0.65)]"
+    : "bg-white/75 backdrop-blur-2xl border border-slate-900/[0.08] shadow-[0_20px_50px_-12px_rgba(15,23,42,0.07)]";
+  const glassPill = isDark
+    ? "bg-white/[0.06] backdrop-blur-xl border border-white/[0.1]"
+    : "bg-white/85 backdrop-blur-xl border border-slate-900/[0.08]";
+  const mutedText = isDark ? "text-slate-400" : "text-slate-600";
+
   return (
-    <div className="w-full min-h-full">
-      <div className="mx-auto max-w-6xl px-5 sm:px-6 lg:px-8 py-8 lg:py-12 space-y-12">
-        {/* Hero & Integrated Scan Launchpad */}
-        <div className="grid grid-cols-1 lg:grid-cols-[1.08fr_0.92fr] gap-8 lg:gap-10 items-start">
-          {/* Left Hero Column */}
-          <div className="space-y-6 pt-1">
-            <div className="flex flex-wrap items-center gap-2.5">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/15 border border-purple-500/30 text-xs font-mono tracking-wider uppercase text-purple-300">
-                <span className="h-2 w-2 rounded-full bg-purple-400 animate-pulse" />
-                SENTINEL-ID PASSIVE AUDITOR &amp; SEO MASTER v3.6
-              </div>
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/35 text-xs font-mono text-emerald-300">
-                <Globe2 className="h-3 w-3 text-emerald-400" />
-                Global Hreflang &amp; Schema.org Ready
-              </span>
-            </div>
+    <div className={`min-h-screen relative transition-colors duration-300 ${themeBg}`}>
+      {/* Ambient Liquid Prism Glow (Apple / Stitch Aesthetic) */}
+      <div className="pointer-events-none fixed inset-0 overflow-hidden z-0">
+        <div
+          className={`absolute -top-28 -left-24 w-[420px] h-[420px] rounded-full blur-[110px] ${
+            isDark ? "bg-pink-500/15" : "bg-pink-400/15"
+          }`}
+        />
+        <div
+          className={`absolute top-1/4 -right-24 w-[460px] h-[460px] rounded-full blur-[120px] ${
+            isDark ? "bg-purple-600/15" : "bg-purple-400/15"
+          }`}
+        />
+        <div
+          className={`absolute bottom-0 left-1/3 w-[380px] h-[380px] rounded-full blur-[110px] ${
+            isDark ? "bg-emerald-500/10" : "bg-emerald-400/15"
+          }`}
+        />
+      </div>
 
-            <div className="space-y-4">
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold leading-[1.12] tracking-tight text-white">
-                Platform Audit Keamanan Web{" "}
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-fuchsia-400 to-emerald-400">
-                  Pasif, Mendalam &amp; SEO Master Global
+      {/* Floating Glass Top Dock */}
+      <header className="sticky top-3 z-40 px-4 sm:px-6 pt-2">
+        <div
+          className={`max-w-7xl mx-auto rounded-2xl px-4 sm:px-5 py-2.5 flex flex-wrap items-center justify-between gap-3 ${glassCard}`}
+        >
+          {/* Brand Logo */}
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-pink-500 via-purple-600 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-pink-500/20">
+              <Shield className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-bold tracking-tight text-sm sm:text-base">
+                  SENTINEL-ID
                 </span>
-              </h1>
-              <p className="text-sm sm:text-base leading-relaxed text-slate-300/90 max-w-xl">
-                Analisis postur keamanan domain &amp; kesiapan SERP Google Global secara mendalam tanpa risiko merusak server. Menggabungkan{" "}
-                <strong className="text-white">Multi-Page Passive Crawler</strong>,{" "}
-                <strong className="text-white">Deep Shell &amp; OOB Engine</strong> (
-                <code className="text-purple-300">wp2shell</code>, <code className="text-purple-300">php2shell</code>,{" "}
-                <code className="text-purple-300">node2shell</code>, <code className="text-purple-300">go2shell</code>,{" "}
-                <code className="text-purple-300">py2shell</code>, <code className="text-purple-300">node out of bound</code>
-                ), <strong className="text-white">Brankas Bukti Terenkripsi (AES-256-GCM)</strong>, dan{" "}
-                <strong className="text-emerald-300">SEO Master International Rank #1 Engine</strong>.
-              </p>
-            </div>
-
-            {/* Official Google Developer Bandung Verification Card */}
-            <div className="pt-1">
-              <VerifiedBadge variant="hero" />
-            </div>
-
-            {/* Highlighted Box: Audit File Sensitif & Brankas Bukti Terenkripsi (AES-256-GCM) + SEO Master */}
-            <div className="rounded-2xl border border-purple-500/35 bg-gradient-to-r from-purple-950/40 via-[#150f24] to-emerald-950/25 p-4 sm:p-5 space-y-2.5 shadow-lg">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="inline-flex items-center gap-2 text-xs font-mono font-bold text-purple-300">
-                  <Lock className="h-4 w-4 text-pink-400" />
-                  <span>PROTEKSI BUKTI KRITIS · KLAIM DOMAIN · GLOBAL SEO MASTER</span>
-                </div>
-                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 border border-emerald-500/35 px-2.5 py-0.5 text-[10px] font-mono font-bold text-emerald-300">
-                  ✓ Sudah Terverifikasi oleh Google Developer Bandung
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span
+                  className={`text-[10px] font-mono px-2 py-0.5 rounded-full ${glassPill} text-emerald-500`}
+                >
+                  v3.6
                 </span>
               </div>
-              <h2 className="text-base sm:text-lg font-extrabold text-white">
-                Audit File Sensitif, Brankas Bukti AES-256-GCM &amp; Optimasi Rank #1 Google Internasional
-              </h2>
-              <p className="text-xs sm:text-sm text-slate-200/90 leading-relaxed">
-                Mendeteksi kebocoran kritis (<code className="text-purple-300 font-semibold">.env</code>,{" "}
-                <code className="text-purple-300 font-semibold">.git/HEAD</code>,{" "}
-                <code className="text-purple-300 font-semibold">backup.zip</code>,{" "}
-                <code className="text-purple-300 font-semibold">wp-config.php.bak</code>,{" "}
-                <code className="text-purple-300 font-semibold">AWS keys</code>) secara pasif dengan enkripsi Vault Admin, sekaligus mengaudit 35+ sinyal SEO Internasional (Hreflang, JSON-LD, Core Web Vitals, Security Trust).
+              <p className={`text-[11px] hidden sm:block ${mutedText}`}>
+                Passive Security Auditor &amp; Global SEO Master
               </p>
-              <div className="flex flex-wrap items-center gap-2 pt-1">
-                <Link
-                  href="/scan/sentinel"
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-purple-600/30 hover:bg-purple-600/45 border border-purple-400/40 px-3.5 py-1.5 text-xs font-mono font-bold text-purple-100 transition-colors"
-                >
-                  <span>Buka Brankas Bukti &amp; Klaim Domain</span>
-                  <ArrowUpRight className="h-3.5 w-3.5" />
-                </Link>
-                <Link
-                  href="/scan/seo-master"
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600/25 hover:bg-emerald-600/40 border border-emerald-400/40 px-3.5 py-1.5 text-xs font-mono font-bold text-emerald-100 transition-colors"
-                >
-                  <TrendingUp className="h-3.5 w-3.5 text-emerald-300" />
-                  <span>Buka SEO Master &amp; Global Rank #1</span>
-                  <ArrowUpRight className="h-3.5 w-3.5" />
-                </Link>
-              </div>
-            </div>
-
-            {/* Key Capabilities Pills */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
-              {[
-                { label: "Deep Crawl", sub: "Max 50 URL · Depth 3", icon: Search },
-                { label: "Shell & OOB Check", sub: "wp/php/node/go/py", icon: Terminal },
-                { label: "Sentinel Vault", sub: "AES-256-GCM + Klaim", icon: Lock },
-                { label: "SEO Master #1", sub: "13 Locale · JSON-LD", icon: TrendingUp },
-              ].map((item) => (
-                <div
-                  key={item.label}
-                  className="rounded-xl border border-white/[0.08] bg-[#120d1d]/90 p-3 hover:border-purple-500/35 transition-all"
-                >
-                  <item.icon className="h-4 w-4 text-purple-400 mb-1.5" />
-                  <div className="text-xs font-bold text-white">{item.label}</div>
-                  <div className="text-[11px] font-mono text-slate-400 mt-0.5">{item.sub}</div>
-                </div>
-              ))}
-            </div>
-
-            {/* Security Guarantees Bar */}
-            <div className="flex flex-wrap items-center gap-3 text-xs font-mono text-slate-300 bg-white/[0.02] border border-white/[0.07] px-4 py-3 rounded-xl">
-              <span className="inline-flex items-center gap-1.5 text-emerald-400 font-semibold">
-                <Activity className="h-3.5 w-3.5" />
-                100% Non-Intrusif
-              </span>
-              <span className="text-white/20">•</span>
-              <span>GET-Only</span>
-              <span className="text-white/20">•</span>
-              <span>SSRF Guard</span>
-              <span className="text-white/20">•</span>
-              <span>Global Hreflang &amp; JSON-LD</span>
             </div>
           </div>
 
-          {/* Right Column: Unified Scan & Sentinel Vault Card */}
-          <div className="relative rounded-2xl border border-purple-500/25 bg-gradient-to-b from-[#171126] via-[#120d1e] to-[#0e0a18] p-5 sm:p-6 shadow-2xl shadow-purple-950/30">
-            <div className="mb-4 flex items-center justify-between gap-2">
-              <div>
-                <div className="text-xs font-mono tracking-widest uppercase text-purple-300 font-bold flex items-center gap-1.5">
-                  <Sparkles className="h-3.5 w-3.5 text-purple-400" />
-                  Unified Deep Security Scanner
-                </div>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  Pilih Full Scan komprehensif atau Audit File Sensitif &amp; Brankas Bukti Terenkripsi (AES-256-GCM)
-                </p>
-              </div>
+          {/* Apple-Style Segmented View Switcher (De-clutters the page) */}
+          <nav
+            className={`flex items-center gap-1 p-1 rounded-xl ${glassPill}`}
+            aria-label="Navigasi Utama"
+          >
+            {(
+              [
+                { id: "overview", label: "Landing Page" },
+                { id: "scanner", label: "Live Scanner & Hasil" },
+                { id: "modules", label: "22 Modul Audit" }
+              ] as { id: ViewTab; label: string }[]
+            ).map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveTab(tab.id)}
+                className={`px-3 sm:px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  activeTab === tab.id
+                    ? "bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-sm"
+                    : `${mutedText} hover:opacity-90`
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </nav>
+
+          {/* GDG Bandung Verified Badge & Dark/Light Mode Switch */}
+          <div className="flex items-center gap-2">
+            <div
+              className={`hidden xl:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-emerald-500 ${glassPill}`}
+            >
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              <span>GDG Bandung Verified</span>
             </div>
 
-            <Suspense fallback={<div className="h-64 animate-pulse rounded-xl bg-white/5" />}>
-              <ScanForm />
-            </Suspense>
+            <button
+              type="button"
+              onClick={() => setIsDark(!isDark)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition hover:scale-[1.02] ${glassPill}`}
+              aria-label="Ganti Mode Gelap atau Terang"
+            >
+              {isDark ? (
+                <>
+                  <Sun className="w-3.5 h-3.5 text-amber-400" />
+                  <span className="hidden sm:inline">Light Glass</span>
+                </>
+              ) : (
+                <>
+                  <Moon className="w-3.5 h-3.5 text-indigo-600" />
+                  <span className="hidden sm:inline">Dark Glass</span>
+                </>
+              )}
+            </button>
           </div>
         </div>
+      </header>
 
-        {/* Deep Shell-Surface & Node Out-of-Bounds Security Matrix */}
-        <div className="space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <div className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider text-pink-400 font-bold mb-1">
-                <Cpu className="h-3.5 w-3.5" />
-                DEEP PASSIVE RUNTIME &amp; SHELL-SURFACE ENGINE
-              </div>
-              <h2 className="text-lg sm:text-xl font-extrabold text-white tracking-tight">
-                Deteksi Mendalam: wp2shell, php2shell, node2shell, go2shell, py2shell &amp; Node Out-of-Bounds
-              </h2>
-              <p className="text-xs text-slate-400 mt-0.5">
-                Memeriksa titik masuk eksekusi kode, debugger terbuka, dan kebocoran memori secara 100% pasif (GET-only, validasi isi respons)
-              </p>
-            </div>
-            <VerifiedBadge variant="vault" />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {DEEP_SHELL_ENGINES.map((eng) => (
-              <div
-                key={eng.code}
-                className="flex flex-col justify-between rounded-2xl border border-white/[0.08] bg-gradient-to-b from-[#161024] to-[#0f0b19] p-5 hover:border-purple-500/40 transition-all"
-              >
-                <div className="space-y-2.5">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-400/35 px-2.5 py-1 text-xs font-mono font-extrabold uppercase text-pink-200">
-                      <ShieldAlert className="h-3.5 w-3.5 text-pink-400" />
-                      {eng.code}
-                    </span>
-                    <span className="text-[10px] font-mono text-slate-400">{eng.cwe}</span>
-                  </div>
-                  <h3 className="text-sm font-bold text-white">{eng.title}</h3>
-                  <p className="text-xs text-slate-400 leading-relaxed">{eng.desc}</p>
+      {/* Main Content Container */}
+      <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 pt-8 pb-20 space-y-16">
+        {/* ================================================================= */}
+        {/* TAB 1: APPLE-STYLE GLASSMORPHIC LANDING PAGE                      */}
+        {/* ================================================================= */}
+        {activeTab === "overview" && (
+          <>
+            {/* Hero Section */}
+            <section className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+              <div className="lg:col-span-7 space-y-6">
+                <div
+                  className={`inline-flex flex-wrap items-center gap-2 px-3.5 py-1.5 rounded-full text-xs ${glassPill}`}
+                >
+                  <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-500 font-mono font-semibold">
+                    100% GET-ONLY · ZERO-EXPLOIT
+                  </span>
+                  <span className={mutedText}>
+                    Terverifikasi Google Developer Bandung · Lead Author: Kasyaf
+                  </span>
                 </div>
 
-                <div className="mt-4 pt-3 border-t border-white/[0.06] flex flex-wrap gap-1.5">
-                  {eng.targets.map((t) => (
-                    <code
-                      key={t}
-                      className="rounded-md bg-black/40 border border-white/[0.07] px-2 py-0.5 text-[10px] font-mono text-purple-300"
+                <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.08]">
+                  Keamanan Web Pasif.{" "}
+                  <span className="bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500 bg-clip-text text-transparent">
+                    Jernih, Ringan, Tanpa Risiko.
+                  </span>
+                </h1>
+
+                <p className={`text-base sm:text-lg leading-relaxed max-w-2xl ${mutedText}`}>
+                  Analisis postur keamanan domain dan kesiapan SERP Google Global
+                  tanpa menembakkan payload yang merusak server. Menggabungkan{" "}
+                  <strong className="font-semibold text-pink-500">
+                    Multi-Page Passive Crawler
+                  </strong>
+                  ,{" "}
+                  <strong className="font-semibold text-purple-500">
+                    8 Engine Deep Shell &amp; OOB
+                  </strong>
+                  , serta{" "}
+                  <strong className="font-semibold text-emerald-500">
+                    Brankas Bukti AES-256-GCM
+                  </strong>
+                  .
+                </p>
+
+                {/* Sleek Glass Scanner Bar */}
+                <form
+                  onSubmit={handleRunScan}
+                  className={`p-3 sm:p-4 rounded-3xl space-y-3 max-w-2xl ${glassCard}`}
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className={`inline-flex p-1 rounded-xl ${glassPill}`}>
+                      <button
+                        type="button"
+                        onClick={() => setScanMode("full")}
+                        className={`px-3 py-1 rounded-lg text-xs font-semibold transition ${
+                          scanMode === "full"
+                            ? "bg-gradient-to-r from-pink-500 to-purple-600 text-white"
+                            : mutedText
+                        }`}
+                      >
+                        Full Scan + Deep Shell
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setScanMode("vault")}
+                        className={`px-3 py-1 rounded-lg text-xs font-semibold transition ${
+                          scanMode === "vault"
+                            ? "bg-gradient-to-r from-pink-500 to-purple-600 text-white"
+                            : mutedText
+                        }`}
+                      >
+                        Brankas AES-256-GCM &amp; Klaim
+                      </button>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setCfResilient(!cfResilient)}
+                      className={`text-[11px] font-mono px-2.5 py-1 rounded-lg transition ${
+                        cfResilient
+                          ? "bg-emerald-500/15 text-emerald-500"
+                          : `${glassPill} ${mutedText}`
+                      }`}
                     >
-                      {t}
-                    </code>
+                      {cfResilient ? "✓ Cloudflare / WAF Resilient" : "Standard Mode"}
+                    </button>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <div
+                      className={`flex-1 flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl ${glassPill}`}
+                    >
+                      <Search className="w-4 h-4 text-pink-500 shrink-0" />
+                      <input
+                        type="text"
+                        value={targetDomain}
+                        onChange={(e) => setTargetDomain(e.target.value)}
+                        placeholder="Masukkan domain (contoh: sentinel-id.net)"
+                        className="w-full bg-transparent text-sm font-mono focus:outline-none"
+                        aria-label="Domain atau URL Target"
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={!consentChecked || isScanning}
+                      className="px-5 py-3 rounded-2xl font-semibold text-sm text-white bg-gradient-to-r from-pink-500 via-purple-600 to-indigo-600 hover:opacity-95 disabled:opacity-50 transition shadow-lg shadow-pink-500/20 flex items-center justify-center gap-2 shrink-0"
+                    >
+                      <span>{isScanning ? "Memindai..." : "Mulai Deep Audit"}</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <label className={`flex items-center gap-2 text-xs cursor-pointer ${mutedText}`}>
+                    <input
+                      type="checkbox"
+                      checked={consentChecked}
+                      onChange={(e) => setConsentChecked(e.target.checked)}
+                      className="rounded text-pink-500"
+                    />
+                    <span>
+                      Saya adalah pemilik sah atau memiliki izin tertulis untuk mengaudit domain ini secara pasif.
+                    </span>
+                  </label>
+                </form>
+
+                {/* 4 Clean Glass Stat Pills */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {[
+                    { label: "Deep Crawl", val: "Max 50 URL", sub: "Depth 3 · 100 Req" },
+                    { label: "Shell & OOB", val: "8 Engine", sub: "wp/php/node/go/py" },
+                    { label: "Sentinel Vault", val: "AES-256", sub: "Redaksi Publik" },
+                    { label: "SEO Master #1", val: "13 Locale", sub: "Hreflang · JSON-LD" }
+                  ].map((item) => (
+                    <div key={item.label} className={`rounded-2xl p-3.5 ${glassCard}`}>
+                      <p className={`text-[11px] font-mono uppercase ${mutedText}`}>
+                        {item.label}
+                      </p>
+                      <p className="text-lg font-bold mt-0.5">{item.val}</p>
+                      <p className={`text-xs ${mutedText}`}>{item.sub}</p>
+                    </div>
                   ))}
                 </div>
               </div>
-            ))}
-          </div>
-        </div>
 
-        {/* 4-Step Workflow Pipeline */}
-        <div className="space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div>
-              <h2 className="text-lg font-extrabold text-white tracking-tight">
-                Alur Kerja Audit File Sensitif &amp; Brankas Bukti Terenkripsi (AES-256-GCM)
-              </h2>
-              <p className="text-xs text-slate-400">
-                Dirancang untuk menjaga kerahasiaan temuan kritis hingga pemilik sah domain terverifikasi — Sudah Terverifikasi oleh Google Developer Bandung
-              </p>
-            </div>
-          </div>
+              {/* Right Column: Apple Frosted Glass Visual Showcase Card */}
+              <div className="lg:col-span-5">
+                <div className={`rounded-3xl p-6 space-y-5 relative overflow-hidden ${glassCard}`}>
+                  {/* Frosted 3D Prism Shield Visual */}
+                  <div
+                    className={`rounded-2xl p-6 flex flex-col items-center justify-center text-center relative overflow-hidden ${
+                      isDark
+                        ? "bg-gradient-to-br from-pink-500/15 via-purple-900/25 to-cyan-500/15 border border-white/10"
+                        : "bg-gradient-to-br from-pink-500/10 via-purple-500/10 to-cyan-500/10 border border-slate-900/10"
+                    }`}
+                  >
+                    <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-pink-500 via-purple-600 to-indigo-600 flex items-center justify-center shadow-2xl shadow-pink-500/30 mb-4">
+                      <Shield className="w-12 h-12 text-white" />
+                    </div>
+                    <span className="text-[11px] font-mono uppercase tracking-widest text-emerald-500 font-semibold">
+                      PASSIVE ARCHITECTURE v2 + v3.6
+                    </span>
+                    <h3 className="text-lg font-bold mt-1">
+                      Unified Deep Security &amp; Vault Engine
+                    </h3>
+                    <p className={`text-xs mt-1 max-w-xs ${mutedText}`}>
+                      discovery → parsers → fingerprint → vuln → fuzzer
+                    </p>
+                  </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {[
-              {
-                n: "01",
-                t: "Crawl & Recon Pasif",
-                d: "Menelusuri tautan internal, form, well-known files, dan header HTTP dengan metode GET-only.",
-                icon: Search,
-              },
-              {
-                n: "02",
-                t: "Deep Shell & OOB Audit",
-                d: "Mendeteksi permukaan wp2shell, php2shell, node2shell, go2shell, py2shell, dan Node Out-of-Bounds secara pasif.",
-                icon: Code2,
-              },
-              {
-                n: "03",
-                t: "Brankas Bukti AES-256-GCM",
-                d: "Kebocoran kritis (.env, .git/HEAD, backup.zip, wp-config.php.bak, AWS keys) dienkripsi ke Vault Admin tanpa bocor ke publik.",
-                icon: Lock,
-              },
-              {
-                n: "04",
-                t: "Klaim Pemilik Sah Domain",
-                d: "Pemilik sah domain memverifikasi DNS TXT / file HTTP untuk membuka bukti 1x lihat & mengunduh laporan.",
-                icon: FileText,
-              },
-            ].map((c) => (
-              <div
-                key={c.n}
-                className="flex flex-col justify-between rounded-2xl border border-white/[0.08] bg-gradient-to-b from-[#151022] to-[#100c1a] p-5 hover:border-purple-500/40 transition-all group"
-              >
-                <div className="flex items-start justify-between">
-                  <span className="inline-flex items-center justify-center rounded-lg bg-purple-500/15 border border-purple-500/30 px-2.5 py-1 text-xs font-mono font-bold text-purple-300">
-                    STEP {c.n}
-                  </span>
-                  <c.icon className="h-4 w-4 text-slate-400 group-hover:text-purple-300 transition-colors" />
-                </div>
-                <div className="mt-4">
-                  <div className="text-sm font-bold text-white">{c.t}</div>
-                  <div className="text-xs text-slate-400 mt-1.5 leading-relaxed">{c.d}</div>
+                  {/* Compact 8-Engine Pills (Clean 2-Column Grid) */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-semibold">8 Engine Otomatis Sekaligus</span>
+                      <span className="font-mono text-emerald-500">GET-Only</span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                      {[
+                        "1. Multi-Page & Edge Crawler",
+                        "2. AST JS & Secret Scan",
+                        "3. wp/php/node/go/py Shell",
+                        "4. WebShell & FileManager",
+                        "5. Node Out-of-Bounds (OOB)",
+                        "6. Brankas Bukti AES-256-GCM",
+                        "7. Cloudflare/WAF & DoH Intel",
+                        "8. Header & OSV/NVD CVE Intel"
+                      ].map((eng) => (
+                        <div
+                          key={eng}
+                          className={`px-3 py-2 rounded-xl font-mono text-[11px] truncate ${glassPill}`}
+                        >
+                          {eng}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
-            ))}
-          </div>
-        </div>
+            </section>
 
-        {/* Complete Suite of Specialized Security Scanners */}
-        <div className="space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div>
-              <h2 className="text-lg font-extrabold text-white tracking-tight">
-                Modul Spesialis Keamanan Siber &amp; SEO Master Global
-              </h2>
-              <p className="text-xs text-slate-400">
-                Seluruh 14 modul terindeks di Google Sitemap &amp; terintegrasi dengan monitoring aktivitas Admin serta Brankas AES-256-GCM
-              </p>
-            </div>
-            <Link
-              href="/history"
-              className="inline-flex items-center gap-1.5 text-xs font-mono text-purple-300 hover:text-purple-200"
-            >
-              <span>Lihat Riwayat Scan</span>
-              <ArrowUpRight className="h-3.5 w-3.5" />
-            </Link>
-          </div>
+            {/* Interactive 8 Runtime Shell Selector (Replaces Stacked 8-Card Text Wall) */}
+            <section className={`rounded-3xl p-6 sm:p-8 space-y-6 ${glassCard}`}>
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                <div>
+                  <span className="text-xs font-mono uppercase tracking-widest text-pink-500 font-semibold">
+                    Deep Passive Runtime Engine
+                  </span>
+                  <h2 className="text-2xl sm:text-3xl font-bold tracking-tight mt-1">
+                    Inspeksi 8 Permukaan Runtime &amp; Shell
+                  </h2>
+                  <p className={`text-sm mt-1 ${mutedText}`}>
+                    Klik tab runtime di samping untuk melihat cakupan CWE dan path sensitif yang diperiksa tanpa menumpuk teks.
+                  </p>
+                </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
-            {QUICK_MODULES.map((m) => {
-              const Icon = m.icon;
-              return (
-                <Link
-                  key={m.href}
-                  href={m.href}
-                  className="group flex flex-col justify-between rounded-2xl border border-white/[0.07] bg-[#120d1d]/90 p-4 hover:bg-[#171126] hover:border-purple-500/35 transition-all"
-                >
-                  <div>
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2.5">
-                        <div className="h-9 w-9 rounded-xl bg-purple-500/10 border border-purple-500/20 grid place-items-center text-purple-300 group-hover:bg-purple-500/20 group-hover:text-white transition-colors">
-                          <Icon className="h-4 w-4" />
-                        </div>
-                        <span className="text-sm font-bold text-white group-hover:text-purple-200 transition-colors">
-                          {m.title}
+                {/* Segmented Pill Selector */}
+                <div className={`flex flex-wrap gap-1.5 p-1.5 rounded-2xl ${glassPill}`}>
+                  {SHELL_SURFACES.map((s) => (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => setActiveShellId(s.id)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-mono font-semibold transition ${
+                        activeShellId === s.id
+                          ? "bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-sm"
+                          : `${mutedText} hover:opacity-80`
+                      }`}
+                    >
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Selected Shell Card */}
+              <div className={`rounded-2xl p-5 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center ${glassPill}`}>
+                <div className="lg:col-span-7 space-y-2">
+                  <div className="inline-flex items-center gap-2 text-xs font-mono text-pink-500 font-semibold">
+                    <Terminal className="w-4 h-4" />
+                    <span>{activeShell.label}</span>
+                    <span>·</span>
+                    <span>{activeShell.cwe}</span>
+                  </div>
+                  <h3 className="text-xl font-bold">{activeShell.title}</h3>
+                  <p className={`text-sm leading-relaxed ${mutedText}`}>
+                    {activeShell.desc}
+                  </p>
+                </div>
+                <div className="lg:col-span-5 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {activeShell.paths.map((pathStr) => (
+                    <div
+                      key={pathStr}
+                      className={`px-3.5 py-2.5 rounded-xl font-mono text-xs text-cyan-500 truncate ${glassCard}`}
+                    >
+                      {pathStr}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+
+            {/* Interactive 4-Step AES-256-GCM Vault Workflow */}
+            <section className="space-y-5">
+              <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2">
+                <div>
+                  <span className="text-xs font-mono uppercase tracking-widest text-emerald-500 font-semibold">
+                    Proteksi Bukti Kritis
+                  </span>
+                  <h2 className="text-2xl sm:text-3xl font-bold tracking-tight mt-1">
+                    Alur Brankas Bukti AES-256-GCM &amp; Klaim Domain
+                  </h2>
+                </div>
+                <span className={`text-xs font-mono ${mutedText}`}>
+                  Pilih langkah untuk melihat detail
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {VAULT_STEPS.map((st, idx) => {
+                  const isAct = activeVaultStep === idx;
+                  return (
+                    <button
+                      key={st.step}
+                      type="button"
+                      onClick={() => setActiveVaultStep(idx)}
+                      className={`rounded-2xl p-5 text-left transition-all ${glassCard} ${
+                        isAct ? "ring-2 ring-pink-500/70" : "opacity-85 hover:opacity-100"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-mono font-bold text-pink-500">
+                          {st.step}
+                        </span>
+                        <span
+                          className={`text-[10px] font-mono px-2 py-0.5 rounded-full ${glassPill} text-emerald-500`}
+                        >
+                          {st.badge}
                         </span>
                       </div>
-                      <span className="rounded-full bg-white/[0.04] border border-white/10 px-2.5 py-0.5 text-[10px] font-mono text-slate-300">
-                        {m.badge}
-                      </span>
-                    </div>
-                    <p className="mt-2.5 text-xs text-slate-400 leading-relaxed">{m.desc}</p>
-                  </div>
-                  <div className="mt-3 pt-2.5 border-t border-white/[0.05] flex items-center justify-between text-[11px] font-mono text-purple-300/80 group-hover:text-purple-300">
-                    <span>Buka Modul</span>
-                    <ArrowUpRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Bilingual Global SEO Authority & FAQ Section (Matches Schema.org FAQPage) */}
-        <section
-          aria-label="Global Security & International SEO FAQ"
-          className="rounded-2xl border border-white/10 bg-gradient-to-b from-[#130e1f] to-[#0d0a16] p-6 sm:p-8 space-y-6"
-        >
-          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-5">
-            <div className="space-y-1">
-              <div className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider text-emerald-400 font-bold">
-                <Globe2 className="h-3.5 w-3.5" />
-                GLOBAL SERP &amp; INTERNATIONAL CYBERSECURITY KNOWLEDGE HUB (ID / EN)
+                      <h3 className="text-base font-bold mt-2">{st.title}</h3>
+                      <p className={`text-xs mt-1.5 leading-relaxed ${mutedText}`}>
+                        {st.summary}
+                      </p>
+                    </button>
+                  );
+                })}
               </div>
-              <h2 className="text-lg sm:text-xl font-extrabold text-white">
-                Frequently Asked Questions — Passive Website Security Scanner &amp; SEO Master
-              </h2>
-              <p className="text-xs text-slate-400">
-                Terstruktur dengan Schema.org <code>FAQPage</code>, <code>SoftwareApplication</code>, dan 13 tag{" "}
-                <code>hreflang</code> internasional untuk visibilitas Google Global
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {INTERNATIONAL_HREFLANG_LOCALES.map((loc) => (
-                <span
-                  key={loc}
-                  className="rounded-md bg-white/[0.04] border border-white/10 px-2 py-0.5 text-[10px] font-mono text-emerald-300"
+            </section>
+
+            {/* Clean Bilingual FAQ Accordion with 1-Click ID / EN Switch */}
+            <section className={`rounded-3xl p-6 sm:p-8 space-y-6 ${glassCard}`}>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <span className="text-xs font-mono uppercase tracking-widest text-cyan-500 font-semibold">
+                    Schema.org FAQPage · 13 Hreflang Ready
+                  </span>
+                  <h2 className="text-2xl font-bold tracking-tight mt-1">
+                    Pertanyaan Umum (FAQ)
+                  </h2>
+                </div>
+
+                <div className={`inline-flex p-1 rounded-xl self-start ${glassPill}`}>
+                  <button
+                    type="button"
+                    onClick={() => setFaqLang("id")}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                      faqLang === "id"
+                        ? "bg-gradient-to-r from-pink-500 to-purple-600 text-white"
+                        : mutedText
+                    }`}
+                  >
+                    Bahasa Indonesia
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFaqLang("en")}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                      faqLang === "en"
+                        ? "bg-gradient-to-r from-pink-500 to-purple-600 text-white"
+                        : mutedText
+                    }`}
+                  >
+                    English (Global)
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                {FAQ_DATA.map((item, idx) => {
+                  const isOpen = openFaqIdx === idx;
+                  const q = faqLang === "id" ? item.q_id : item.q_en;
+                  const a = faqLang === "id" ? item.a_id : item.a_en;
+                  return (
+                    <div key={item.q_id} className={`rounded-2xl p-4 ${glassPill}`}>
+                      <button
+                        type="button"
+                        onClick={() => setOpenFaqIdx(isOpen ? -1 : idx)}
+                        className="w-full flex items-center justify-between gap-4 text-left"
+                      >
+                        <span className="text-sm font-bold">{q}</span>
+                        <ChevronDown
+                          className={`w-4 h-4 shrink-0 transition-transform ${
+                            isOpen ? "rotate-180 text-pink-500" : mutedText
+                          }`}
+                        />
+                      </button>
+                      {isOpen && (
+                        <p className={`mt-3 pt-3 border-t border-white/10 text-xs sm:text-sm leading-relaxed ${mutedText}`}>
+                          {a}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          </>
+        )}
+
+        {/* ================================================================= */}
+        {/* TAB 2: LIVE SCANNER & BENCHMARK RESULTS (`kasyaf-cv.my.id`)        */}
+        {/* ================================================================= */}
+        {activeTab === "scanner" && (
+          <section className="space-y-6">
+            <div
+              className={`rounded-3xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${glassCard}`}
+            >
+              <div>
+                <div className="flex items-center gap-2 text-xs font-mono text-emerald-500">
+                  <Activity className="w-4 h-4" />
+                  <span>HASIL AUDIT PASIF TERVERIFIKASI</span>
+                </div>
+                <h2 className="text-2xl font-bold mt-1">
+                  Target Domain: {lastScannedDomain}
+                </h2>
+                <p className={`text-xs sm:text-sm mt-0.5 ${mutedText}`}>
+                  1 URL Crawled · 11 JS Unpacked · 29 / 100 Requests · Graf 14 Node &amp; 13 Edge
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                {copiedNotice && (
+                  <span className="text-xs font-mono text-emerald-500 px-3 py-1.5 rounded-xl bg-emerald-500/10">
+                    {copiedNotice}
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={handleCopyReport}
+                  className="px-4 py-2.5 rounded-xl text-xs font-semibold text-white bg-gradient-to-r from-pink-500 to-purple-600 flex items-center gap-1.5 shadow-md"
                 >
-                  {loc}
-                </span>
+                  <Copy className="w-3.5 h-3.5" />
+                  <span>Salin Markdown Report</span>
+                </button>
+              </div>
+            </div>
+
+            {/* 6 Summary Metric Cards */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+              {[
+                { label: "URL CRAWLED", val: "1 / 50", color: "" },
+                { label: "JS SCANNED", val: "11 Bundle", color: "" },
+                { label: "REQ BUDGET", val: "29 / 100", color: "" },
+                { label: "CRIT / HIGH", val: "0 / 0", color: "text-emerald-500" },
+                { label: "MEDIUM (POTENTIAL)", val: "6", color: "text-amber-500" },
+                { label: "LOW / INFO", val: "4 / 2", color: "text-cyan-500" }
+              ].map((m) => (
+                <div key={m.label} className={`rounded-2xl p-4 ${glassCard}`}>
+                  <span className={`text-[10px] font-mono ${mutedText}`}>{m.label}</span>
+                  <p className={`text-xl font-bold mt-1 ${m.color}`}>{m.val}</p>
+                </div>
               ))}
             </div>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {GLOBAL_SEO_FAQS.map((faq, idx) => (
-              <div
-                key={idx}
-                className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-4 space-y-2.5"
-              >
-                <div className="flex items-start gap-2">
-                  <HelpCircle className="h-4 w-4 text-purple-400 shrink-0 mt-0.5" />
-                  <div className="space-y-1">
-                    <h3 className="text-xs sm:text-sm font-bold text-white">{faq.qId}</h3>
-                    <p className="text-xs text-slate-300 leading-relaxed">{faq.aId}</p>
-                  </div>
-                </div>
-                <div className="pt-2 border-t border-white/[0.06] pl-6 space-y-1">
-                  <div className="text-[11px] font-mono font-semibold text-emerald-300">
-                    EN: {faq.qEn}
-                  </div>
-                  <p className="text-[11px] text-slate-400 leading-relaxed">{faq.aEn}</p>
+            {/* Findings List with Severity Filter */}
+            <div className={`rounded-3xl p-6 space-y-4 ${glassCard}`}>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <h3 className="text-lg font-bold">
+                  Daftar Temuan (`addFinding` Store)
+                </h3>
+                <div className={`flex flex-wrap gap-1 p-1 rounded-xl ${glassPill}`}>
+                  {(["ALL", "MEDIUM", "LOW", "INFO"] as SeverityFilter[]).map((sev) => (
+                    <button
+                      key={sev}
+                      type="button"
+                      onClick={() => setSeverityFilter(sev)}
+                      className={`px-3 py-1 rounded-lg text-xs font-mono font-semibold transition ${
+                        severityFilter === sev
+                          ? "bg-gradient-to-r from-pink-500 to-purple-600 text-white"
+                          : mutedText
+                      }`}
+                    >
+                      {sev}
+                    </button>
+                  ))}
                 </div>
               </div>
-            ))}
-          </div>
-        </section>
-      </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {filteredFindings.map((f) => (
+                  <div key={f.id} className={`rounded-2xl p-4 space-y-1.5 ${glassPill}`}>
+                    <div className="flex items-center justify-between gap-2">
+                      <span
+                        className={`px-2 py-0.5 rounded-md text-[10px] font-mono font-bold ${
+                          f.sev === "MEDIUM"
+                            ? "bg-amber-500/15 text-amber-500"
+                            : f.sev === "LOW"
+                            ? "bg-cyan-500/15 text-cyan-500"
+                            : "bg-emerald-500/15 text-emerald-500"
+                        }`}
+                      >
+                        {f.sev}
+                      </span>
+                      <span className="text-xs font-mono text-cyan-500 truncate">
+                        {f.path}
+                      </span>
+                    </div>
+                    <div className="text-sm font-bold">{f.module}</div>
+                    <p className={`text-xs leading-relaxed ${mutedText}`}>{f.detail}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* ================================================================= */}
+        {/* TAB 3: 22-MODULE BENTO EXPLORER                                    */}
+        {/* ================================================================= */}
+        {activeTab === "modules" && (
+          <section className="space-y-6">
+            <div
+              className={`rounded-3xl p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4 ${glassCard}`}
+            >
+              <div>
+                <span className="text-xs font-mono uppercase tracking-widest text-pink-500 font-semibold">
+                  Navigasi Terpadu
+                </span>
+                <h2 className="text-2xl font-bold mt-1">
+                  22 Modul Keamanan Siber &amp; SEO Master Global
+                </h2>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <div className={`flex items-center gap-2 px-3.5 py-2 rounded-xl ${glassPill}`}>
+                  <Search className="w-4 h-4 text-pink-500" />
+                  <input
+                    type="text"
+                    value={moduleSearch}
+                    onChange={(e) => setModuleSearch(e.target.value)}
+                    placeholder="Cari modul atau rute..."
+                    className="bg-transparent text-xs focus:outline-none"
+                    aria-label="Cari Modul"
+                  />
+                </div>
+
+                <div className={`flex flex-wrap gap-1 p-1 rounded-xl ${glassPill}`}>
+                  {[
+                    "Semua",
+                    "Core Audit & Scan",
+                    "Vulnerability & Code",
+                    "Recon & Threat Intel",
+                    "Resources & Admin"
+                  ].map((cat) => (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => setModuleCategory(cat)}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-medium transition ${
+                        moduleCategory === cat
+                          ? "bg-gradient-to-r from-pink-500 to-purple-600 text-white"
+                          : mutedText
+                      }`}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Selected Module Spotlight Banner */}
+            <div
+              className={`rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${glassPill}`}
+            >
+              <div>
+                <div className="flex items-center gap-2 text-xs font-mono">
+                  <span className="text-pink-500 font-semibold">{selectedModule.cat}</span>
+                  <span>·</span>
+                  <span className="text-cyan-500">{selectedModule.route}</span>
+                </div>
+                <h3 className="text-lg font-bold mt-0.5">{selectedModule.title}</h3>
+                <p className={`text-xs sm:text-sm ${mutedText}`}>{selectedModule.desc}</p>
+              </div>
+              <a
+                href={selectedModule.route}
+                onClick={(e) => {
+                  e.preventDefault();
+                  setActiveTab("scanner");
+                }}
+                className="px-4 py-2.5 rounded-xl text-xs font-semibold text-white bg-gradient-to-r from-pink-500 to-purple-600 shrink-0 inline-flex items-center gap-1.5"
+              >
+                <span>Buka {selectedModule.route}</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </a>
+            </div>
+
+            {/* 22 Modules Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredModules.map((mod) => (
+                <div
+                  key={mod.id}
+                  onClick={() => setSelectedModule(mod)}
+                  className={`rounded-2xl p-5 cursor-pointer flex flex-col justify-between gap-4 transition hover:-translate-y-0.5 ${glassCard} ${
+                    selectedModule.id === mod.id ? "ring-2 ring-pink-500/70" : ""
+                  }`}
+                >
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className={`text-[10px] font-mono uppercase ${mutedText}`}>
+                        {mod.cat}
+                      </span>
+                      <span
+                        className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold text-pink-500 ${glassPill}`}
+                      >
+                        {mod.badge}
+                      </span>
+                    </div>
+                    <h3 className="text-base font-bold">{mod.title}</h3>
+                    <p className={`text-xs leading-relaxed ${mutedText}`}>{mod.desc}</p>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-3 border-t border-white/10 text-xs">
+                    <span className="font-mono text-cyan-500">{mod.route}</span>
+                    <span className="font-semibold text-pink-500">Pilih Modul →</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+      </main>
     </div>
   );
 }
