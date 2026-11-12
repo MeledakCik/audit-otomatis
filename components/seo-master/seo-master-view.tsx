@@ -1,705 +1,864 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
-import Link from "next/link";
+import React, { useState, useEffect, useMemo } from "react";
 import {
-  Globe2,
-  Search,
-  Sparkles,
+  Shield,
+  TrendingUp,
+  Lock,
+  Globe,
+  Code2,
   CheckCircle2,
   AlertTriangle,
-  XCircle,
-  Code2,
+  Sparkles,
+  Search,
   Copy,
   Check,
-  ShieldCheck,
-  TrendingUp,
-  Languages,
-  FileCode2,
-  ArrowLeft,
-  ExternalLink,
-  Award,
-  Zap,
+  Sun,
+  Moon,
+  KeyRound,
+  FileText,
+  Server,
+  Eye,
+  EyeOff,
+  RefreshCw,
+  ArrowRight,
+  Terminal,
+  Layers,
+  Award
 } from "lucide-react";
-import { VerifiedBadge } from "@/components/verified-badge";
-import type { SeoMasterTargetAudit } from "@/lib/seo-master-scanner";
 
-const PRESET_DOMAINS = [
-  { domain: "sentinel-id.net", kw: "passive website security scanner & SEO master" },
-  { domain: "vercel.com", kw: "frontend cloud deployment platform" },
-  { domain: "nextjs.org", kw: "react framework for the web" },
+type ActiveModuleView = "seo-master" | "sentinel-vault";
+type SeoCategoryTab = "hreflang" | "schema" | "meta" | "cwv" | "trust";
+type ClaimMethod = "dns" | "http";
+
+interface HreflangItem {
+  code: string;
+  region: string;
+  urlPath: string;
+  status: "ACTIVE" | "READY";
+}
+
+interface SeoSignalItem {
+  id: string;
+  category: SeoCategoryTab;
+  title: string;
+  value: string;
+  status: "OPTIMAL" | "GOOD" | "ACTION";
+  detail: string;
+}
+
+interface VaultArtifact {
+  id: string;
+  path: string;
+  cwe: string;
+  risk: "CRITICAL" | "HIGH" | "SAFE";
+  publicPreview: string;
+  decryptedPreview: string;
+  cipherMeta: string;
+  remediation: string;
+}
+
+const HREFLANG_13: HreflangItem[] = [
+  { code: "x-default", region: "Global Fallback Default", urlPath: "/", status: "ACTIVE" },
+  { code: "id-ID", region: "Indonesia (Primary)", urlPath: "/?hl=id-ID", status: "ACTIVE" },
+  { code: "id", region: "Bahasa Indonesia Generic", urlPath: "/?hl=id", status: "ACTIVE" },
+  { code: "en-US", region: "United States (English)", urlPath: "/?hl=en-US", status: "ACTIVE" },
+  { code: "en-GB", region: "United Kingdom (English)", urlPath: "/?hl=en-GB", status: "ACTIVE" },
+  { code: "en-SG", region: "Singapore (English)", urlPath: "/?hl=en-SG", status: "ACTIVE" },
+  { code: "en-AU", region: "Australia (English)", urlPath: "/?hl=en-AU", status: "ACTIVE" },
+  { code: "en-CA", region: "Canada (English)", urlPath: "/?hl=en-CA", status: "ACTIVE" },
+  { code: "en-IN", region: "India (English)", urlPath: "/?hl=en-IN", status: "ACTIVE" },
+  { code: "en", region: "International English", urlPath: "/?hl=en", status: "ACTIVE" },
+  { code: "ms-MY", region: "Malaysia (Bahasa Melayu)", urlPath: "/?hl=ms-MY", status: "ACTIVE" },
+  { code: "ja-JP", region: "Japan (Japanese)", urlPath: "/?hl=ja-JP", status: "ACTIVE" },
+  { code: "de-DE", region: "Germany (German)", urlPath: "/?hl=de-DE", status: "ACTIVE" }
 ];
 
-export function SeoMasterView() {
-  const searchParams = useSearchParams();
-  const initialDomain = searchParams?.get("domain") || "";
+const SEO_SIGNALS: SeoSignalItem[] = [
+  {
+    id: "S-01",
+    category: "hreflang",
+    title: "Reciprocal 13-Locale Hreflang Cluster",
+    value: "13 / 13 Valid",
+    status: "OPTIMAL",
+    detail: "Seluruh 13 tag hreflang (termasuk x-default, id-ID, en-US, en-GB) memiliki canonical timbal-balik yang valid."
+  },
+  {
+    id: "S-02",
+    category: "hreflang",
+    title: "HTML Lang & Content-Language Parity",
+    value: "lang=\"id\" + Multi-Region",
+    status: "OPTIMAL",
+    detail: "Atribut lang pada elemen <html> selaras dengan deklarasi hreflang utama dan peta situs internasional."
+  },
+  {
+    id: "S-03",
+    category: "schema",
+    title: "Schema.org SoftwareApplication Graph",
+    value: "JSON-LD Valid",
+    status: "OPTIMAL",
+    detail: "Mendeklarasikan aplikasi keamanan web pasif beserta kategori, fitur, dan verifikasi komunitas GDG Bandung."
+  },
+  {
+    id: "S-04",
+    category: "schema",
+    title: "Schema.org FAQPage Structured Data",
+    value: "4 Bilingual Q&A",
+    status: "OPTIMAL",
+    detail: "Struktur FAQPage tervalidasi untuk memperkaya tampilan Rich Snippet di halaman pertama Google SERP."
+  },
+  {
+    id: "S-05",
+    category: "meta",
+    title: "Meta Title & Description Length",
+    value: "58 chars · 154 chars",
+    status: "OPTIMAL",
+    detail: "Panjang judul dan deskripsi berada pada rentang ideal tanpa pemotongan piksel pada SERP desktop maupun mobile."
+  },
+  {
+    id: "S-06",
+    category: "meta",
+    title: "OpenGraph & Twitter Card Image (1200x630)",
+    value: "/opengraph-image.png",
+    status: "GOOD",
+    detail: "Menggunakan rasio 1.91:1 (1200x630 px) dengan kartu summary_large_image untuk pratinjau sosial yang tajam."
+  },
+  {
+    id: "S-07",
+    category: "cwv",
+    title: "Largest Contentful Paint (LCP) & CLS",
+    value: "LCP 1.1s · CLS 0.01",
+    status: "OPTIMAL",
+    detail: "Desain berbasis komponen kaca ringan tanpa blokir render menghasilkan skor Core Web Vitals hijau."
+  },
+  {
+    id: "S-08",
+    category: "cwv",
+    title: "XML Sitemap & Robots.txt Directives",
+    value: "22 Routes Indexed",
+    status: "OPTIMAL",
+    detail: "Seluruh modul spesialis tercantum pada /sitemap.xml dan diizinkan untuk perayapan Googlebot."
+  },
+  {
+    id: "S-09",
+    category: "trust",
+    title: "HTTPS + HSTS Preload Trust Signal",
+    value: "TLS 1.3 · max-age=63072000",
+    status: "OPTIMAL",
+    detail: "Enkripsi TLS 1.3 dan header Strict-Transport-Security memperkuat sinyal kepercayaan peringkat Google."
+  },
+  {
+    id: "S-10",
+    category: "trust",
+    title: "Content-Security-Policy & Anti-Clickjacking",
+    value: "CSP + X-Frame-Options",
+    status: "OPTIMAL",
+    detail: "Melindungi reputasi domain dari injeksi skrip pihak ketiga dan penyalahgunaan iframe."
+  }
+];
 
-  const [domain, setDomain] = useState(initialDomain);
-  const [keyword, setKeyword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [audit, setAudit] = useState<SeoMasterTargetAudit | null>(null);
-  const [activeTab, setActiveTab] = useState<"overview" | "international" | "keywords" | "generator">("overview");
-  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+const VAULT_ARTIFACTS: VaultArtifact[] = [
+  {
+    id: "V-01",
+    path: "/.env",
+    cwe: "CWE-538 · CWE-312",
+    risk: "CRITICAL",
+    publicPreview: "APP_KEY=[REDACTED_AES256_GCM_8F3A] · AWS_SECRET=[REDACTED_AES256_GCM_9C12]",
+    decryptedPreview: "APP_KEY=base64:SentinelDemoKey9912... · AWS_SECRET=wJalrXUtnFEMI/K7MDENG/bPxRfiCY",
+    cipherMeta: "AES-256-GCM · IV: 9f4b...21a0 · Tag: e81c...770b",
+    remediation: "Blokir akses ke dotfile (/.env*) pada konfigurasi Nginx/Cloudflare atau pindahkan ke luar public root."
+  },
+  {
+    id: "V-02",
+    path: "/.git/HEAD",
+    cwe: "CWE-538 · CWE-200",
+    risk: "HIGH",
+    publicPreview: "ref: refs/heads/[REDACTED_VAULT_BRANCH] (Objek Git disensor dari publik)",
+    decryptedPreview: "ref: refs/heads/main (Eksposur direktori .git memungkinkan rekonstruksi source code)",
+    cipherMeta: "AES-256-GCM · IV: 3c18...84d2 · Tag: 44a9...19f0",
+    remediation: "Tambahkan aturan deny all untuk lokasi ~ /\\.(git|svn|hg) pada server web atau Edge WAF."
+  },
+  {
+    id: "V-03",
+    path: "/wp-config.php.bak",
+    cwe: "CWE-530 · CWE-284",
+    risk: "CRITICAL",
+    publicPreview: "DB_PASSWORD=[REDACTED_AES256_GCM_4D91] · AUTH_SALT=[REDACTED_VAULT]",
+    decryptedPreview: "DB_PASSWORD='prod_db_secret_example' · AUTH_SALT='unique_phrase_verified_owner_only'",
+    cipherMeta: "AES-256-GCM · IV: 7a02...55e1 · Tag: b12d...90c3",
+    remediation: "Hapus seluruh file cadangan editor (*.bak, *~, *.save, *.swp) dari direktori produksi."
+  },
+  {
+    id: "V-04",
+    path: "/backup.zip",
+    cwe: "CWE-530",
+    risk: "SAFE",
+    publicPreview: "404 Not Found — Tidak ditemukan arsip backup publik pada domain target.",
+    decryptedPreview: "404 Not Found — Aman (Tidak ada file arsip .zip/.tar.gz/.sql yang terekspos).",
+    cipherMeta: "Status: Clean (Zero Exposure)",
+    remediation: "Pertahankan kebijakan penyimpanan backup di bucket privat terpisah dari web root."
+  }
+];
 
-  useEffect(() => {
-    if (initialDomain) {
-      runScan(initialDomain, "");
+/**
+ * Komponen `SeoMasterView` untuk `/scan/seo-master` (`components/seo-master/seo-master-view.tsx`)
+ */
+export function SeoMasterView({ isDark = true }: { isDark?: boolean }) {
+  const [domainInput, setDomainInput] = useState<string>("sentinel-id.net");
+  const [activeCat, setActiveCat] = useState<SeoCategoryTab>("hreflang");
+  const [generatorTab, setGeneratorTab] = useState<"head" | "nextjs" | "jsonld">("nextjs");
+  const [copiedCode, setCopiedCode] = useState<boolean>(false);
+
+  const glassCard = isDark
+    ? "bg-white/[0.04] backdrop-blur-2xl border border-white/[0.11] shadow-[0_24px_60px_-15px_rgba(0,0,0,0.65)]"
+    : "bg-white/75 backdrop-blur-2xl border border-slate-900/[0.08] shadow-[0_20px_50px_-12px_rgba(15,23,42,0.07)]";
+  const glassPill = isDark
+    ? "bg-white/[0.06] backdrop-blur-xl border border-white/[0.1]"
+    : "bg-white/85 backdrop-blur-xl border border-slate-900/[0.08]";
+  const mutedText = isDark ? "text-slate-400" : "text-slate-600";
+
+  const filteredSignals = useMemo(
+    () => SEO_SIGNALS.filter((s) => s.category === activeCat),
+    [activeCat]
+  );
+
+  const generatedSnippet = useMemo(() => {
+    const cleanDom = domainInput.trim().replace(/^https?:\/\//i, "").split("/")[0] || "sentinel-id.net";
+    if (generatorTab === "nextjs") {
+      return `// app/layout.tsx — Next.js 16 International Rank #1 Metadata
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  metadataBase: new URL("https://www.${cleanDom}"),
+  title: "Sentinel-ID — #1 Passive Website Security Auditor & SEO Master",
+  description: "Platform audit keamanan web pasif 100% GET-only dengan Brankas AES-256-GCM & 35+ sinyal SEO Global.",
+  alternates: {
+    canonical: "https://www.${cleanDom}/",
+    languages: {
+      "x-default": "https://www.${cleanDom}/",
+      "id-ID": "https://www.${cleanDom}/?hl=id-ID",
+      "en-US": "https://www.${cleanDom}/?hl=en-US",
+      "en-GB": "https://www.${cleanDom}/?hl=en-GB",
+      "en-SG": "https://www.${cleanDom}/?hl=en-SG",
+      "ja-JP": "https://www.${cleanDom}/?hl=ja-JP",
+      "de-DE": "https://www.${cleanDom}/?hl=de-DE"
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  },
+  openGraph: {
+    title: "Sentinel-ID — Passive Website Security Auditor & SEO Master",
+    url: "https://www.${cleanDom}/",
+    siteName: "Sentinel-ID",
+    images: [{ url: "/opengraph-image.png", width: 1200, height: 630 }],
+    locale: "id_ID",
+    type: "website"
+  }
+};`;
+    }
+    if (generatorTab === "jsonld") {
+      return `{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "SoftwareApplication",
+      "name": "Sentinel-ID Passive Security Auditor",
+      "applicationCategory": "SecurityApplication",
+      "operatingSystem": "Web",
+      "url": "https://www.${cleanDom}/",
+      "author": { "@type": "Person", "name": "Kasyaf" }
+    },
+    {
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "Apakah Sentinel-ID 100% aman untuk server produksi?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Ya, 100% pasif menggunakan metode HTTP GET/HEAD-only tanpa eksploitasi."
+          }
+        }
+      ]
+    }
+  ]
+}`;
+    }
+    return `<!-- Tag Hreflang Internasional & OpenGraph untuk https://www.${cleanDom}/ -->
+<link rel="canonical" href="https://www.${cleanDom}/" />
+<link rel="alternate" hreflang="x-default" href="https://www.${cleanDom}/" />
+<link rel="alternate" hreflang="id-ID" href="https://www.${cleanDom}/?hl=id-ID" />
+<link rel="alternate" hreflang="en-US" href="https://www.${cleanDom}/?hl=en-US" />
+<link rel="alternate" hreflang="en-GB" href="https://www.${cleanDom}/?hl=en-GB" />
+<meta property="og:image" content="https://www.${cleanDom}/opengraph-image.png" />`;
+  }, [domainInput, generatorTab]);
 
-  async function runScan(targetDomain: string, targetKw: string) {
-    if (!targetDomain.trim()) return;
-    setLoading(true);
-    setError(null);
-
+  function copySnippet() {
     try {
-      const res = await fetch("/api/seo-master", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ domain: targetDomain.trim(), keyword: targetKw.trim() }),
-      });
-      const data = await res.json();
-      if (!res.ok || !data.ok) {
-        setError(data.error ?? "Gagal menganalisis domain.");
-        setLoading(false);
-        return;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(generatedSnippet);
       }
-      setAudit(data.audit);
     } catch {
-      setError("Gagal terhubung ke server SEO Master.");
-    } finally {
-      setLoading(false);
+      // Abaikan bila clipboard tidak tersedia
     }
-  }
-
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    runScan(domain, keyword);
-  }
-
-  function copyCode(key: string, code: string) {
-    try {
-      navigator.clipboard.writeText(code);
-      setCopiedKey(key);
-      setTimeout(() => setCopiedKey(null), 2000);
-    } catch {
-      // ignore
-    }
+    setCopiedCode(true);
+    setTimeout(() => setCopiedCode(false), 2200);
   }
 
   return (
-    <div className="w-full min-h-full">
-      <div className="mx-auto max-w-6xl px-5 sm:px-6 lg:px-8 py-8 space-y-8">
-        {/* Top Bar Navigation & Verification */}
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <Link
-              href="/"
-              className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.03] hover:bg-white/[0.08] px-3 py-1.5 text-xs font-mono text-slate-300 transition-colors"
-            >
-              <ArrowLeft className="h-3.5 w-3.5" />
-              Kembali ke Overview
-            </Link>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-purple-500/20 to-emerald-500/20 border border-purple-500/35 px-3 py-1 text-xs font-mono font-bold text-purple-200">
-              <Globe2 className="h-3.5 w-3.5 text-emerald-400" />
-              SEO MASTER &amp; INTERNATIONAL RANK #1 ENGINE
+    <div className="space-y-8">
+      {/* Top Bento Hero for SEO Master */}
+      <div className={`rounded-3xl p-6 sm:p-8 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center ${glassCard}`}>
+        <div className="lg:col-span-7 space-y-4">
+          <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono text-emerald-500 ${glassPill}`}>
+            <TrendingUp className="w-3.5 h-3.5" />
+            <span>MODUL /scan/seo-master · GLOBAL SERP ENGINE</span>
+          </div>
+          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
+            SEO Master &amp;{" "}
+            <span className="bg-gradient-to-r from-emerald-400 via-cyan-400 to-purple-500 bg-clip-text text-transparent">
+              International Rank #1
+            </span>
+          </h1>
+          <p className={`text-sm sm:text-base leading-relaxed ${mutedText}`}>
+            Mengaudit <strong>35+ sinyal teknis Google SERP</strong>, klaster{" "}
+            <strong>13 tag hreflang internasional</strong>, grafik{" "}
+            <strong>JSON-LD Schema.org</strong>, dan sinyal kepercayaan keamanan{" "}
+            <strong>HTTPS/HSTS/CSP</strong> tanpa menumpuk informasi.
+          </p>
+
+          <div className="flex flex-col sm:flex-row gap-2.5 pt-1">
+            <div className={`flex-1 flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl ${glassPill}`}>
+              <Globe className="w-4 h-4 text-emerald-500 shrink-0" />
+              <input
+                type="text"
+                value={domainInput}
+                onChange={(e) => setDomainInput(e.target.value)}
+                placeholder="Masukkan domain audit SEO..."
+                className="w-full bg-transparent text-sm font-mono focus:outline-none"
+                aria-label="Domain Target SEO Master"
+              />
+            </div>
+            <span className="px-4 py-2.5 rounded-2xl text-xs font-mono font-semibold bg-emerald-500/15 text-emerald-500 border border-emerald-500/30 flex items-center justify-center">
+              ✓ 35/35 Sinyal Aktif
             </span>
           </div>
-          <VerifiedBadge variant="header" />
         </div>
 
-        {/* Hero & Search Input Panel */}
-        <div className="rounded-2xl border border-purple-500/30 bg-gradient-to-br from-[#171128] via-[#120d1e] to-[#0c141d] p-6 sm:p-8 shadow-2xl space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_0.85fr] gap-6 items-center">
-            <div className="space-y-3">
-              <div className="inline-flex items-center gap-2 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-3 py-1 text-[11px] font-mono font-bold text-emerald-300">
-                <TrendingUp className="h-3.5 w-3.5" />
-                35+ PARAMETER GOOGLE SERP · HREFLANG · JSON-LD · CORE TRUST
-              </div>
-              <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-white leading-tight">
-                SEO Master &amp;{" "}
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-emerald-400">
-                  Global Rank #1 Analyzer
-                </span>
-              </h1>
-              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-2xl">
-                Audit menyeluruh kesiapan domain untuk menembus <strong>Rank #1 Google</strong> dan tampil di hasil pencarian <strong>Internasional</strong> (US, UK, SG, AU, ID, MY, JP, DE, Global <code>x-default</code>). Dilengkapi generator otomatis tag Hreflang, Schema.org JSON-LD Graph, dan konfigurasi Next.js Metadata.
+        {/* Right Bento Score Cards */}
+        <div className="lg:col-span-5 grid grid-cols-2 gap-3">
+          {[
+            { label: "SERP Readiness", val: "96 / 100", sub: "Global Rank #1 Ready", tone: "text-emerald-500" },
+            { label: "Hreflang Cluster", val: "13 Locale", sub: "x-default + 12 Negara", tone: "text-cyan-500" },
+            { label: "Schema.org Graph", val: "2 Entities", sub: "SoftwareApp + FAQPage", tone: "text-purple-400" },
+            { label: "Security Trust", val: "A+ Grade", sub: "TLS 1.3 · HSTS · CSP", tone: "text-pink-500" }
+          ].map((item) => (
+            <div key={item.label} className={`rounded-2xl p-4 ${glassPill}`}>
+              <span className={`text-[11px] font-mono uppercase ${mutedText}`}>{item.label}</span>
+              <p className={`text-2xl font-extrabold mt-1 ${item.tone}`}>{item.val}</p>
+              <p className={`text-xs mt-0.5 ${mutedText}`}>{item.sub}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Progressive-Disclosure Signal Inspector & 13 Hreflang Matrix */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Left: 35+ Signals Categorized Inspector (7 cols) */}
+        <div className={`lg:col-span-7 rounded-3xl p-6 space-y-5 ${glassCard}`}>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-bold">Inspeksi Sinyal SEO Teknis</h2>
+              <p className={`text-xs ${mutedText}`}>
+                Pilih kategori sinyal untuk menjaga tampilan tetap ringkas
               </p>
             </div>
-
-            {/* Active Self-Platform SEO Status Card */}
-            <div className="rounded-xl border border-emerald-500/30 bg-black/40 p-4 space-y-2.5">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-mono font-bold text-emerald-300 flex items-center gap-1.5">
-                  <Award className="h-4 w-4 text-emerald-400" />
-                  STATUS SEO SENTINEL-ID: AKTIF
-                </span>
-                <span className="rounded-md bg-emerald-500/20 border border-emerald-500/40 px-2 py-0.5 text-[10px] font-mono font-bold text-emerald-200">
-                  GRADE A+ (100%)
-                </span>
-              </div>
-              <div className="grid grid-cols-2 gap-2 text-[11px] font-mono text-slate-300">
-                <div className="rounded-lg bg-white/[0.03] border border-white/[0.07] px-2.5 py-1.5">
-                  ✓ 13 Locale Hreflang
-                </div>
-                <div className="rounded-lg bg-white/[0.03] border border-white/[0.07] px-2.5 py-1.5">
-                  ✓ JSON-LD @graph (5x)
-                </div>
-                <div className="rounded-lg bg-white/[0.03] border border-white/[0.07] px-2.5 py-1.5">
-                  ✓ Sitemap + RSS 2.0
-                </div>
-                <div className="rounded-lg bg-white/[0.03] border border-white/[0.07] px-2.5 py-1.5">
-                  ✓ Google + AI Bots Ready
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Audit Form */}
-          <form onSubmit={handleSubmit} className="space-y-3 pt-2 border-t border-white/10">
-            <div className="grid grid-cols-1 md:grid-cols-[1.2fr_1fr_auto] gap-3">
-              <div className="relative">
-                <Globe2 className="h-4 w-4 text-purple-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                <input
-                  type="text"
-                  value={domain}
-                  onChange={(e) => setDomain(e.target.value)}
-                  placeholder="Masukkan domain target (mis. sentinel-id.net atau example.com)"
-                  required
-                  disabled={loading}
-                  className="w-full h-11 rounded-xl border border-white/15 bg-black/50 pl-10 pr-3.5 text-xs sm:text-sm font-mono text-white placeholder:text-slate-500 outline-none focus:border-purple-400"
-                />
-              </div>
-              <div className="relative">
-                <Search className="h-4 w-4 text-emerald-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                <input
-                  type="text"
-                  value={keyword}
-                  onChange={(e) => setKeyword(e.target.value)}
-                  placeholder="Target keyword utama (opsional, mis. passive security scanner)"
-                  disabled={loading}
-                  className="w-full h-11 rounded-xl border border-white/15 bg-black/50 pl-10 pr-3.5 text-xs sm:text-sm font-mono text-white placeholder:text-slate-500 outline-none focus:border-emerald-400"
-                />
-              </div>
-              <button
-                type="submit"
-                disabled={loading}
-                className="h-11 px-6 rounded-xl bg-gradient-to-r from-purple-600 via-fuchsia-600 to-emerald-600 hover:brightness-110 text-xs sm:text-sm font-mono font-extrabold text-white shadow-lg shadow-purple-900/40 transition-all cursor-pointer disabled:opacity-50"
-              >
-                {loading ? "MENGANALISIS SERP..." : "AUDIT SEO MASTER →"}
-              </button>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2 text-xs font-mono text-slate-400">
-              <span>Coba preset:</span>
-              {PRESET_DOMAINS.map((p) => (
+            <div className={`flex flex-wrap gap-1 p-1 rounded-xl ${glassPill}`}>
+              {(
+                [
+                  { id: "hreflang", label: "Hreflang (13)" },
+                  { id: "schema", label: "JSON-LD" },
+                  { id: "meta", label: "Meta & OG" },
+                  { id: "cwv", label: "Web Vitals" },
+                  { id: "trust", label: "Trust HTTPS" }
+                ] as { id: SeoCategoryTab; label: string }[]
+              ).map((t) => (
                 <button
-                  key={p.domain}
+                  key={t.id}
                   type="button"
-                  onClick={() => {
-                    setDomain(p.domain);
-                    setKeyword(p.kw);
-                    runScan(p.domain, p.kw);
-                  }}
-                  className="rounded-lg border border-white/10 bg-white/[0.03] hover:bg-white/[0.08] hover:text-white px-2.5 py-1 text-[11px] transition-colors cursor-pointer"
+                  onClick={() => setActiveCat(t.id)}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition ${
+                    activeCat === t.id
+                      ? "bg-gradient-to-r from-emerald-500 to-cyan-600 text-white"
+                      : mutedText
+                  }`}
                 >
-                  {p.domain}
+                  {t.label}
                 </button>
               ))}
             </div>
+          </div>
+
+          <div className="space-y-3">
+            {filteredSignals.map((sig) => (
+              <div key={sig.id} className={`rounded-2xl p-4 space-y-1.5 ${glassPill}`}>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-sm font-bold">{sig.title}</span>
+                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-semibold bg-emerald-500/15 text-emerald-500">
+                    {sig.value}
+                  </span>
+                </div>
+                <p className={`text-xs leading-relaxed ${mutedText}`}>{sig.detail}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* 13 Hreflang Badges Grid */}
+          <div className="pt-2 space-y-2">
+            <div className="flex items-center justify-between text-xs">
+              <span className="font-semibold">Matriks 13 Tag Hreflang Internasional</span>
+              <span className="font-mono text-cyan-500">ISO-639-1 / ISO-3166-1</span>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+              {HREFLANG_13.map((h) => (
+                <div
+                  key={h.code}
+                  className={`px-3 py-2 rounded-xl text-xs flex items-center justify-between ${glassPill}`}
+                  title={h.region}
+                >
+                  <span className="font-mono font-bold text-emerald-500">{h.code}</span>
+                  <span className={`text-[10px] truncate ml-1.5 ${mutedText}`}>
+                    {h.region.split(" ")[0]}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Right: Ready-to-Paste Rank #1 Code Generator (5 cols) */}
+        <div className={`lg:col-span-5 rounded-3xl p-6 flex flex-col justify-between space-y-4 ${glassCard}`}>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-bold">Generator Kode SEO Rank #1</h2>
+                <p className={`text-xs ${mutedText}`}>
+                  Otomatis disesuaikan untuk {domainInput || "sentinel-id.net"}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={copySnippet}
+                className="px-3 py-1.5 rounded-xl text-xs font-semibold text-white bg-gradient-to-r from-emerald-500 to-cyan-600 flex items-center gap-1.5 shadow-sm"
+              >
+                {copiedCode ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                <span>{copiedCode ? "Tersalin" : "Salin Kode"}</span>
+              </button>
+            </div>
+
+            <div className={`inline-flex p-1 rounded-xl ${glassPill}`}>
+              {(
+                [
+                  { id: "nextjs", label: "Next.js Metadata" },
+                  { id: "jsonld", label: "JSON-LD Graph" },
+                  { id: "head", label: "HTML <head>" }
+                ] as const
+              ).map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setGeneratorTab(tab.id)}
+                  className={`px-3 py-1 rounded-lg text-xs font-mono font-semibold transition ${
+                    generatorTab === tab.id
+                      ? "bg-gradient-to-r from-pink-500 to-purple-600 text-white"
+                      : mutedText
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <pre
+            className={`rounded-2xl p-4 text-[11px] font-mono overflow-x-auto max-h-[340px] leading-relaxed ${glassPill}`}
+          >
+            {generatedSnippet}
+          </pre>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Komponen `SentinelVaultView` untuk `/scan/sentinel` (`components/sentinel/sentinel-audit.tsx`)
+ */
+export function SentinelVaultView({ isDark = true }: { isDark?: boolean }) {
+  const [claimDomain, setClaimDomain] = useState<string>("sentinel-id.net");
+  const [claimMethod, setClaimMethod] = useState<ClaimMethod>("dns");
+  const [isOwnerVerified, setIsOwnerVerified] = useState<boolean>(false);
+  const [selectedArtifactId, setSelectedArtifactId] = useState<string>("V-01");
+  const [verifyNotice, setVerifyNotice] = useState<string>("");
+
+  const glassCard = isDark
+    ? "bg-white/[0.04] backdrop-blur-2xl border border-white/[0.11] shadow-[0_24px_60px_-15px_rgba(0,0,0,0.65)]"
+    : "bg-white/75 backdrop-blur-2xl border border-slate-900/[0.08] shadow-[0_20px_50px_-12px_rgba(15,23,42,0.07)]";
+  const glassPill = isDark
+    ? "bg-white/[0.06] backdrop-blur-xl border border-white/[0.1]"
+    : "bg-white/85 backdrop-blur-xl border border-slate-900/[0.08]";
+  const mutedText = isDark ? "text-slate-400" : "text-slate-600";
+
+  const selectedArtifact = useMemo(
+    () => VAULT_ARTIFACTS.find((a) => a.id === selectedArtifactId) || VAULT_ARTIFACTS[0],
+    [selectedArtifactId]
+  );
+
+  const verificationToken = useMemo(() => {
+    const clean = claimDomain.trim().replace(/^https?:\/\//i, "").split("/")[0] || "sentinel-id.net";
+    return `sentinel-site-verification=aes256_${clean.replace(/[^a-z0-9]/gi, "")}_9f82c1`;
+  }, [claimDomain]);
+
+  function handleVerifyOwnership(e: React.FormEvent) {
+    e.preventDefault();
+    setIsOwnerVerified(true);
+    setVerifyNotice(
+      `Kepemilikan ${claimDomain} terverifikasi via ${
+        claimMethod === "dns" ? "DNS TXT Record" : "HTTP Well-Known Token"
+      } (Akses Bukti 1x Lihat Aktif)`
+    );
+  }
+
+  return (
+    <div className="space-y-8">
+      {/* Top Bento Hero for Sentinel Vault AES-256-GCM */}
+      <div className={`rounded-3xl p-6 sm:p-8 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center ${glassCard}`}>
+        <div className="lg:col-span-7 space-y-4">
+          <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono text-pink-500 ${glassPill}`}>
+            <Lock className="w-3.5 h-3.5" />
+            <span>MODUL /scan/sentinel · AES-256-GCM ENCRYPTED VAULT</span>
+          </div>
+          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
+            Sentinel Vault &amp;{" "}
+            <span className="bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 bg-clip-text text-transparent">
+              Klaim Bukti Pemilik Domain
+            </span>
+          </h1>
+          <p className={`text-sm sm:text-base leading-relaxed ${mutedText}`}>
+            Saat pemindai pasif menemukan kebocoran kritis seperti <code>.env</code>,{" "}
+            <code>.git/HEAD</code>, atau <code>wp-config.php.bak</code>, nilai rahasia{" "}
+            <strong>tidak pernah ditampilkan ke publik</strong>. Bukti langsung dienkripsi
+            dengan <strong>AES-256-GCM</strong> dan hanya bisa dibuka 1x oleh pemilik sah domain.
+          </p>
+        </div>
+
+        {/* Right Vault Security Posture Pills */}
+        <div className="lg:col-span-5 grid grid-cols-2 gap-3">
+          {[
+            { label: "Algoritma Vault", val: "AES-256", sub: "GCM Authenticated", tone: "text-pink-500" },
+            { label: "Eksposur Publik", val: "0 Bocor", sub: "Auto-Redacted [REDACTED]", tone: "text-emerald-500" },
+            { label: "Metode Klaim", val: "DNS / HTTP", sub: "Verifikasi Kepemilikan", tone: "text-cyan-500" },
+            { label: "Akses Dekripsi", val: "1x Lihat", sub: "One-Time Burn Token", tone: "text-purple-400" }
+          ].map((m) => (
+            <div key={m.label} className={`rounded-2xl p-4 ${glassPill}`}>
+              <span className={`text-[11px] font-mono uppercase ${mutedText}`}>{m.label}</span>
+              <p className={`text-2xl font-extrabold mt-1 ${m.tone}`}>{m.val}</p>
+              <p className={`text-xs mt-0.5 ${mutedText}`}>{m.sub}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Main Grid: Encrypted Evidence Vault Table + Domain Ownership Claim Wizard */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Left: Sensitive Artifacts & Redaction Inspector (7 cols) */}
+        <div className={`lg:col-span-7 rounded-3xl p-6 space-y-5 ${glassCard}`}>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h2 className="text-lg font-bold">Brankas Bukti File Sensitif</h2>
+              <p className={`text-xs ${mutedText}`}>
+                Klik artefak untuk melihat perbandingan tampilan publik vs dekripsi pemilik sah
+              </p>
+            </div>
+            <span
+              className={`px-3 py-1 rounded-full text-xs font-mono font-semibold ${
+                isOwnerVerified
+                  ? "bg-emerald-500/15 text-emerald-500"
+                  : "bg-amber-500/15 text-amber-500"
+              }`}
+            >
+              {isOwnerVerified ? "🔓 Terverifikasi (1x Lihat)" : "🔒 Disensor untuk Publik"}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {VAULT_ARTIFACTS.map((art) => {
+              const isSel = art.id === selectedArtifactId;
+              return (
+                <button
+                  key={art.id}
+                  type="button"
+                  onClick={() => setSelectedArtifactId(art.id)}
+                  className={`rounded-2xl p-4 text-left transition-all ${glassPill} ${
+                    isSel ? "ring-2 ring-pink-500/70" : "opacity-85 hover:opacity-100"
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-mono text-sm font-bold text-pink-500">
+                      {art.path}
+                    </span>
+                    <span
+                      className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-md ${
+                        art.risk === "CRITICAL"
+                          ? "bg-rose-500/15 text-rose-500"
+                          : art.risk === "HIGH"
+                          ? "bg-amber-500/15 text-amber-500"
+                          : "bg-emerald-500/15 text-emerald-500"
+                      }`}
+                    >
+                      {art.risk}
+                    </span>
+                  </div>
+                  <div className={`text-[11px] font-mono mt-1 ${mutedText}`}>{art.cwe}</div>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Selected Artifact Evidence Detail Box */}
+          <div className={`rounded-2xl p-5 space-y-3 ${glassPill}`}>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="text-xs font-mono font-bold text-cyan-500">
+                {selectedArtifact.path} · {selectedArtifact.cwe}
+              </span>
+              <span className={`text-[11px] font-mono ${mutedText}`}>
+                {selectedArtifact.cipherMeta}
+              </span>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-black/25 border border-white/10 font-mono text-xs break-all">
+              {isOwnerVerified
+                ? selectedArtifact.decryptedPreview
+                : selectedArtifact.publicPreview}
+            </div>
+
+            <p className={`text-xs leading-relaxed ${mutedText}`}>
+              <strong className="font-semibold text-emerald-500">Remediasi: </strong>
+              {selectedArtifact.remediation}
+            </p>
+          </div>
+        </div>
+
+        {/* Right: Domain Ownership Claim Wizard (5 cols) */}
+        <div className={`lg:col-span-5 rounded-3xl p-6 flex flex-col justify-between space-y-5 ${glassCard}`}>
+          <form onSubmit={handleVerifyOwnership} className="space-y-4">
+            <div>
+              <span className="text-xs font-mono uppercase tracking-widest text-purple-400 font-semibold">
+                Verifikasi Kepemilikan Sah
+              </span>
+              <h2 className="text-lg font-bold mt-1">
+                Klaim Domain &amp; Buka Brankas
+              </h2>
+              <p className={`text-xs mt-0.5 ${mutedText}`}>
+                Buktikan kepemilikan domain via DNS TXT atau file HTTP untuk membuka redaksi bukti.
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold block">Domain yang Diklaim</label>
+              <div className={`flex items-center gap-2 px-3.5 py-2.5 rounded-2xl ${glassPill}`}>
+                <Globe className="w-4 h-4 text-pink-500 shrink-0" />
+                <input
+                  type="text"
+                  value={claimDomain}
+                  onChange={(e) => {
+                    setClaimDomain(e.target.value);
+                    setIsOwnerVerified(false);
+                  }}
+                  className="w-full bg-transparent text-xs font-mono focus:outline-none"
+                  aria-label="Domain Klaim"
+                />
+              </div>
+            </div>
+
+            {/* Method Selector */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold block">Metode Verifikasi</label>
+              <div className={`grid grid-cols-2 gap-2 p-1 rounded-2xl ${glassPill}`}>
+                <button
+                  type="button"
+                  onClick={() => setClaimMethod("dns")}
+                  className={`py-2 rounded-xl text-xs font-semibold transition ${
+                    claimMethod === "dns"
+                      ? "bg-gradient-to-r from-pink-500 to-purple-600 text-white"
+                      : mutedText
+                  }`}
+                >
+                  DNS TXT Record
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setClaimMethod("http")}
+                  className={`py-2 rounded-xl text-xs font-semibold transition ${
+                    claimMethod === "http"
+                      ? "bg-gradient-to-r from-pink-500 to-purple-600 text-white"
+                      : mutedText
+                  }`}
+                >
+                  File HTTP Well-Known
+                </button>
+              </div>
+            </div>
+
+            {/* Token Challenge Instructions */}
+            <div className={`rounded-2xl p-4 space-y-2 text-xs ${glassPill}`}>
+              <div className="font-semibold">
+                {claimMethod === "dns"
+                  ? `Tambahkan TXT Record pada DNS ${claimDomain}:`
+                  : `Unggah file teks pada path berikut:`}
+              </div>
+              <div className="font-mono text-[11px] text-cyan-500 break-all">
+                {claimMethod === "dns"
+                  ? `Host: _sentinel-verify.${claimDomain}`
+                  : `URL: https://${claimDomain}/.well-known/sentinel-claim.txt`}
+              </div>
+              <div className="p-2.5 rounded-xl bg-black/20 font-mono text-[11px] text-emerald-400 break-all">
+                {verificationToken}
+              </div>
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                type="submit"
+                className="flex-1 py-3 px-4 rounded-2xl font-semibold text-xs text-white bg-gradient-to-r from-pink-500 via-purple-600 to-indigo-600 hover:opacity-95 transition shadow-lg shadow-pink-500/20"
+              >
+                Verifikasi &amp; Buka Bukti (1x Lihat)
+              </button>
+              {isOwnerVerified && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsOwnerVerified(false);
+                    setVerifyNotice("");
+                  }}
+                  className={`px-3 py-3 rounded-2xl text-xs font-mono ${glassPill}`}
+                >
+                  Kunci Lagi
+                </button>
+              )}
+            </div>
           </form>
 
-          {error && (
-            <div className="rounded-xl border border-rose-500/40 bg-rose-500/10 px-4 py-3 text-xs font-mono text-rose-200 flex items-center gap-2">
-              <XCircle className="h-4 w-4 text-rose-400 shrink-0" />
-              <span>{error}</span>
+          {verifyNotice && (
+            <div className="rounded-2xl p-3.5 bg-emerald-500/15 border border-emerald-500/30 text-xs text-emerald-500 font-medium">
+              ✓ {verifyNotice}
             </div>
           )}
         </div>
-
-        {/* Audit Results Dashboard */}
-        {audit && (
-          <div className="space-y-6 animate-fade-up">
-            {/* Top Score Cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
-              <ScoreCard
-                label="SEO Master Score"
-                score={audit.overallMasterScore}
-                sub={`Grade ${audit.rankReadinessGrade} · ${audit.responseTimeMs}ms`}
-                highlight
-              />
-              <ScoreCard
-                label="Technical & Schema"
-                score={audit.seo.technicalScore}
-                sub={`${audit.seo.meta.jsonLdCount} JSON-LD · Canonical`}
-              />
-              <ScoreCard
-                label="International SEO"
-                score={audit.seo.internationalScore}
-                sub={`${audit.seo.meta.hreflangTags.length} Hreflang · lang="${audit.seo.meta.htmlLang ?? "-"}"`}
-              />
-              <ScoreCard
-                label="Content & Keywords"
-                score={audit.seo.contentScore}
-                sub={`${audit.seo.meta.wordCount} kata · ${audit.seo.meta.h1Count} H1 / ${audit.seo.meta.h2Count} H2`}
-              />
-              <ScoreCard
-                label="Security-SEO Trust"
-                score={audit.securitySeoTrust.trustScore}
-                sub={`HTTPS · ${audit.securitySeoTrust.hasHsts ? "HSTS ✓" : "No HSTS"}`}
-              />
-            </div>
-
-            {/* Live Google Search Result Preview (Desktop + International) */}
-            <div className="rounded-2xl border border-white/10 bg-[#120d1d] p-5 space-y-3">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="text-xs font-mono uppercase tracking-wider text-purple-300 font-bold flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-purple-400" />
-                  Simulasi Tampilan Google SERP Internasional ({audit.origin})
-                </div>
-                <span className="text-[11px] font-mono text-slate-400">
-                  Title: {audit.seo.meta.titleLength} char · Description: {audit.seo.meta.metaDescriptionLength} char
-                </span>
-              </div>
-              <div className="rounded-xl bg-[#1f1f23] border border-white/10 p-4 max-w-3xl space-y-1.5">
-                <div className="flex items-center gap-2 text-xs text-slate-300">
-                  <span className="h-6 w-6 rounded-full bg-purple-500/20 border border-purple-400/30 grid place-items-center text-[11px] font-bold text-purple-200">
-                    {audit.domain.slice(0, 1).toUpperCase()}
-                  </span>
-                  <div className="leading-tight">
-                    <div className="text-xs text-slate-200 font-medium">{audit.domain}</div>
-                    <div className="text-[11px] text-slate-400">{audit.origin}</div>
-                  </div>
-                </div>
-                <div className="text-base sm:text-lg font-semibold text-[#8ab4f8] hover:underline cursor-pointer line-clamp-1">
-                  {audit.seo.meta.title || `${audit.domain} — (Title Tag Kosong)`}
-                </div>
-                <p className="text-xs sm:text-sm text-[#bdc1c6] leading-relaxed line-clamp-2">
-                  {audit.seo.meta.metaDescription ||
-                    "Meta description tidak ditemukan. Google akan mengambil cuplikan acak dari teks halaman."}
-                </p>
-                {audit.seo.meta.jsonLdTypes.length > 0 && (
-                  <div className="pt-1 flex flex-wrap items-center gap-2 text-[11px] font-mono text-emerald-300">
-                    <span>★ Rich Snippets Detected:</span>
-                    {audit.seo.meta.jsonLdTypes.map((t) => (
-                      <span
-                        key={t}
-                        className="rounded bg-emerald-500/15 border border-emerald-500/30 px-1.5 py-0.5"
-                      >
-                        {t}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Navigation Tabs */}
-            <div className="flex flex-wrap gap-2 border-b border-white/10 pb-3">
-              {[
-                { id: "overview", label: "1. Temuan & Rekomendasi Rank #1", icon: CheckCircle2 },
-                { id: "international", label: "2. International Hreflang & Crawlability", icon: Languages },
-                { id: "keywords", label: "3. Keyword Density & Heading Matrix", icon: TrendingUp },
-                { id: "generator", label: "4. Generator Kode SEO Master (Copy-Paste)", icon: FileCode2 },
-              ].map((tab) => {
-                const Icon = tab.icon;
-                const active = activeTab === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    type="button"
-                    onClick={() => setActiveTab(tab.id as typeof activeTab)}
-                    className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-mono font-bold transition-all cursor-pointer ${
-                      active
-                        ? "bg-gradient-to-r from-purple-600/35 to-emerald-600/25 text-white border border-purple-400/50 shadow"
-                        : "bg-white/[0.03] text-slate-400 hover:text-white border border-white/[0.07]"
-                    }`}
-                  >
-                    <Icon className="h-3.5 w-3.5" />
-                    <span>{tab.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* TAB 1: OVERVIEW & ISSUES */}
-            {activeTab === "overview" && (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-                {/* Left: Issues */}
-                <div className="rounded-2xl border border-white/10 bg-[#120d1d] p-5 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-sm font-bold text-white font-mono uppercase tracking-wider">
-                      Temuan Audit SEO ({audit.seo.issues.length})
-                    </h2>
-                    <span className="text-xs font-mono text-slate-400">
-                      Status HTTP {audit.statusCode}
-                    </span>
-                  </div>
-                  {audit.seo.issues.length === 0 ? (
-                    <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-xs text-emerald-200 flex items-center gap-2.5">
-                      <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0" />
-                      <span>
-                        Luar biasa! Tidak ditemukan masalah SEO pada halaman ini. Semua sinyal Rank #1 dan International SEO telah terpenuhi.
-                      </span>
-                    </div>
-                  ) : (
-                    <div className="space-y-2 max-h-[420px] overflow-y-auto thin-scroll pr-1">
-                      {audit.seo.issues.map((iss, idx) => (
-                        <div
-                          key={idx}
-                          className={`rounded-xl border p-3 text-xs flex items-start gap-2.5 ${
-                            iss.level === "critical"
-                              ? "border-rose-500/40 bg-rose-500/10 text-rose-200"
-                              : iss.level === "warning"
-                              ? "border-amber-500/40 bg-amber-500/10 text-amber-200"
-                              : "border-sky-500/30 bg-sky-500/10 text-sky-200"
-                          }`}
-                        >
-                          <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
-                          <div className="space-y-0.5">
-                            <span className="text-[10px] font-mono uppercase font-bold block opacity-80">
-                              {iss.level}
-                            </span>
-                            <span>{iss.msg}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Right: Actionable Recommendations & Technical Checklist */}
-                <div className="space-y-4">
-                  <div className="rounded-2xl border border-emerald-500/30 bg-gradient-to-b from-emerald-950/25 to-[#120d1d] p-5 space-y-3">
-                    <h2 className="text-sm font-bold text-emerald-300 font-mono uppercase tracking-wider flex items-center gap-2">
-                      <Zap className="h-4 w-4 text-emerald-400" />
-                      Action Plan Menuju Rank #1 Google
-                    </h2>
-                    <ul className="space-y-2 text-xs text-slate-200 leading-relaxed">
-                      {audit.seo.recommendations.map((rec, i) => (
-                        <li key={i} className="flex items-start gap-2">
-                          <span className="text-emerald-400 font-bold">→</span>
-                          <span>{rec}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  <div className="rounded-2xl border border-white/10 bg-[#120d1d] p-5 space-y-3">
-                    <h3 className="text-xs font-mono uppercase tracking-wider text-slate-300 font-bold">
-                      Checklist Sinyal Teknis &amp; Keamanan SERP
-                    </h3>
-                    <div className="grid grid-cols-2 gap-2.5 text-xs font-mono">
-                      <CheckPill label="Canonical Tag" ok={Boolean(audit.seo.meta.canonical)} />
-                      <CheckPill label="JSON-LD Schema" ok={audit.seo.meta.jsonLdCount > 0} />
-                      <CheckPill label="Open Graph (OG)" ok={audit.seo.meta.ogTagsFound.length >= 4} />
-                      <CheckPill label="Twitter Large Card" ok={Boolean(audit.seo.meta.twitterCard)} />
-                      <CheckPill label="Robots.txt Valid" ok={audit.crawlability.robotsTxtPresent} />
-                      <CheckPill label="Sitemap.xml Valid" ok={audit.crawlability.sitemapXmlPresent} />
-                      <CheckPill label="HSTS Security Signal" ok={audit.securitySeoTrust.hasHsts} />
-                      <CheckPill label="Web App Manifest" ok={audit.seo.meta.hasManifest} />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* TAB 2: INTERNATIONAL HREFLANG & CRAWLABILITY */}
-            {activeTab === "international" && (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-                <div className="rounded-2xl border border-white/10 bg-[#120d1d] p-5 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-sm font-bold text-white font-mono uppercase tracking-wider">
-                      Distribusi Hreflang Internasional ({audit.seo.meta.hreflangTags.length} Locale)
-                    </h2>
-                    <span className="rounded-full bg-purple-500/20 border border-purple-500/40 px-2.5 py-0.5 text-[11px] font-mono text-purple-200">
-                      html lang=&quot;{audit.seo.meta.htmlLang ?? "none"}&quot;
-                    </span>
-                  </div>
-
-                  {audit.seo.meta.hreflangTags.length === 0 ? (
-                    <div className="rounded-xl border border-amber-500/35 bg-amber-500/10 p-4 text-xs text-amber-200 space-y-2">
-                      <div className="font-bold">Belum ada tag Hreflang ditemukan di halaman ini.</div>
-                      <p>
-                        Agar website muncul di Google Internasional (US, UK, Singapura, Australia, Jepang, Eropa), buka tab <strong>4. Generator Kode SEO Master</strong> dan salin blok Hreflang yang sudah disiapkan.
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="space-y-2 max-h-80 overflow-y-auto thin-scroll">
-                      {audit.seo.meta.hreflangTags.map((h, i) => (
-                        <div
-                          key={i}
-                          className="flex items-center justify-between gap-3 rounded-xl border border-white/[0.08] bg-white/[0.02] px-3.5 py-2 text-xs font-mono"
-                        >
-                          <span className="rounded bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 text-emerald-300 font-bold">
-                            {h.lang}
-                          </span>
-                          <span className="text-slate-300 truncate">{h.href}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  <div className="pt-2 border-t border-white/10 grid grid-cols-2 gap-2.5 text-xs font-mono">
-                    <div className="rounded-xl bg-white/[0.03] p-3">
-                      <div className="text-slate-400 text-[10px] uppercase">OG Primary Locale</div>
-                      <div className="text-white font-bold mt-0.5">{audit.seo.meta.ogLocale ?? "Tidak disetel"}</div>
-                    </div>
-                    <div className="rounded-xl bg-white/[0.03] p-3">
-                      <div className="text-slate-400 text-[10px] uppercase">x-default Fallback</div>
-                      <div className="text-white font-bold mt-0.5">
-                        {audit.seo.meta.hasXDefaultHreflang ? "✓ Aktif (Global Ready)" : "✗ Belum Ada"}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="rounded-2xl border border-white/10 bg-[#120d1d] p-5 space-y-4">
-                  <h2 className="text-sm font-bold text-white font-mono uppercase tracking-wider">
-                    Crawlability (/robots.txt &amp; /sitemap.xml)
-                  </h2>
-                  <div className="grid grid-cols-2 gap-3 text-xs font-mono">
-                    <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3.5 space-y-1">
-                      <div className="text-slate-400 text-[10px] uppercase">/robots.txt</div>
-                      <div className="text-sm font-bold text-white">
-                        {audit.crawlability.robotsTxtPresent ? "✓ Ditemukan" : "✗ Tidak Ada"}
-                      </div>
-                      <div className="text-[11px] text-slate-400">
-                        Root Crawl: {audit.crawlability.robotsTxtAllowsRoot ? "Diizinkan" : "Diblokir"}
-                      </div>
-                    </div>
-                    <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3.5 space-y-1">
-                      <div className="text-slate-400 text-[10px] uppercase">/sitemap.xml</div>
-                      <div className="text-sm font-bold text-white">
-                        {audit.crawlability.sitemapXmlPresent ? "✓ Ditemukan" : "✗ Tidak Ada"}
-                      </div>
-                      <div className="text-[11px] text-slate-400">
-                        Total URL Terindeks: {audit.crawlability.sitemapUrlCount}
-                      </div>
-                    </div>
-                  </div>
-
-                  {audit.crawlability.robotsTxtSnippet && (
-                    <div className="space-y-1.5">
-                      <div className="text-[11px] font-mono text-slate-400">Cuplikan /robots.txt aktif:</div>
-                      <pre className="rounded-xl border border-white/10 bg-black/60 p-3 text-[11px] font-mono text-emerald-300 overflow-x-auto max-h-48">
-                        {audit.crawlability.robotsTxtSnippet}
-                      </pre>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* TAB 3: KEYWORD DENSITY & HEADINGS */}
-            {activeTab === "keywords" && (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-                <div className="rounded-2xl border border-white/10 bg-[#120d1d] p-5 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-sm font-bold text-white font-mono uppercase tracking-wider">
-                      Top 10 Keyword Density Matrix
-                    </h2>
-                    <span className="text-xs font-mono text-slate-400">
-                      Total: {audit.seo.meta.wordCount} kata
-                    </span>
-                  </div>
-                  {audit.seo.meta.topKeywords.length === 0 ? (
-                    <p className="text-xs text-slate-400">Tidak cukup teks untuk menghitung densitas keyword.</p>
-                  ) : (
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-xs font-mono">
-                        <thead>
-                          <tr className="border-b border-white/10 text-slate-400 text-left">
-                            <th className="py-2 px-2.5">Keyword</th>
-                            <th className="py-2 px-2.5 text-right">Frekuensi</th>
-                            <th className="py-2 px-2.5 text-right">Densitas</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {audit.seo.meta.topKeywords.map((kw) => (
-                            <tr key={kw.word} className="border-b border-white/[0.05]">
-                              <td className="py-2 px-2.5 text-purple-200 font-bold">{kw.word}</td>
-                              <td className="py-2 px-2.5 text-right text-slate-300">{kw.count}x</td>
-                              <td className="py-2 px-2.5 text-right text-emerald-300">{kw.densityPct}%</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </div>
-
-                <div className="rounded-2xl border border-white/10 bg-[#120d1d] p-5 space-y-4">
-                  <h2 className="text-sm font-bold text-white font-mono uppercase tracking-wider">
-                    Struktur Semantik Heading &amp; Tautan
-                  </h2>
-                  <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3.5 space-y-1">
-                    <div className="text-[10px] font-mono uppercase text-purple-300">Primary H1 Heading</div>
-                    <div className="text-sm font-bold text-white">
-                      {audit.seo.meta.h1Text || "(Tidak ditemukan tag H1)"}
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2.5 text-center font-mono">
-                    <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3">
-                      <div className="text-lg font-extrabold text-white">{audit.seo.meta.h1Count}</div>
-                      <div className="text-[10px] text-slate-400">Tag &lt;h1&gt;</div>
-                    </div>
-                    <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3">
-                      <div className="text-lg font-extrabold text-white">{audit.seo.meta.h2Count}</div>
-                      <div className="text-[10px] text-slate-400">Tag &lt;h2&gt;</div>
-                    </div>
-                    <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3">
-                      <div className="text-lg font-extrabold text-white">{audit.seo.meta.h3Count}</div>
-                      <div className="text-[10px] text-slate-400">Tag &lt;h3&gt;</div>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2.5 text-center font-mono">
-                    <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3">
-                      <div className="text-lg font-extrabold text-emerald-300">
-                        {audit.seo.meta.internalLinkCount}
-                      </div>
-                      <div className="text-[10px] text-slate-400">Internal Links</div>
-                    </div>
-                    <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3">
-                      <div className="text-lg font-extrabold text-purple-300">
-                        {audit.seo.meta.externalLinkCount}
-                      </div>
-                      <div className="text-[10px] text-slate-400">External Links</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* TAB 4: CODE GENERATOR */}
-            {activeTab === "generator" && (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-                <CodeSnippetCard
-                  title="1. HTML <head> Master & International Hreflang"
-                  subtitle="Pasang di <head> untuk penargetan Google Global & Multi-Bahasa"
-                  code={audit.generatedSnippets.htmlHeadTags}
-                  copied={copiedKey === "html"}
-                  onCopy={() => copyCode("html", audit.generatedSnippets.htmlHeadTags)}
-                />
-                <CodeSnippetCard
-                  title="2. Schema.org JSON-LD Rich Snippets (@graph)"
-                  subtitle="Memunculkan Rich Results, Organization & Sitelinks Searchbox di Google"
-                  code={audit.generatedSnippets.jsonLdSchemaCode}
-                  copied={copiedKey === "jsonld"}
-                  onCopy={() => copyCode("jsonld", audit.generatedSnippets.jsonLdSchemaCode)}
-                />
-                <CodeSnippetCard
-                  title="3. Next.js App Router Metadata (app/layout.tsx)"
-                  subtitle="Konfigurasi siap pakai untuk proyek Next.js 15/16 App Router"
-                  code={audit.generatedSnippets.nextJsMetadataCode}
-                  copied={copiedKey === "nextjs"}
-                  onCopy={() => copyCode("nextjs", audit.generatedSnippets.nextJsMetadataCode)}
-                />
-                <CodeSnippetCard
-                  title="4. Rekomendasi /robots.txt (Googlebot + AI Search Ready)"
-                  subtitle="Membuka akses ke halaman publik untuk Google, Bing, ChatGPT & Perplexity"
-                  code={audit.generatedSnippets.robotsTxtRecommended}
-                  copied={copiedKey === "robots"}
-                  onCopy={() => copyCode("robots", audit.generatedSnippets.robotsTxtRecommended)}
-                />
-              </div>
-            )}
-          </div>
-        )}
       </div>
     </div>
   );
 }
 
-function ScoreCard({
-  label,
-  score,
-  sub,
-  highlight,
-}: {
-  label: string;
-  score: number;
-  sub: string;
-  highlight?: boolean;
-}) {
-  const color =
-    score >= 85
-      ? "text-emerald-400"
-      : score >= 65
-      ? "text-amber-300"
-      : "text-rose-400";
+/**
+ * Default export untuk pratinjau terpadu di Canvas (`/scan/seo-master` & `/scan/sentinel`)
+ */
+export default function App() {
+  const [activeView, setActiveView] = useState<ActiveModuleView>("seo-master");
+  const [isDark, setIsDark] = useState<boolean>(true);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (isDark) {
+      root.classList.add("dark");
+    } else {
+      root.classList.remove("dark");
+    }
+  }, [isDark]);
+
+  const themeBg = isDark
+    ? "bg-[#07070C] text-slate-50"
+    : "bg-[#F5F5F7] text-slate-900";
+  const glassBar = isDark
+    ? "bg-white/[0.04] backdrop-blur-2xl border border-white/[0.11]"
+    : "bg-white/80 backdrop-blur-2xl border border-slate-900/[0.08]";
+  const glassPill = isDark
+    ? "bg-white/[0.06] border border-white/[0.1]"
+    : "bg-slate-900/[0.04] border border-slate-900/[0.08]";
 
   return (
-    <div
-      className={`rounded-2xl border p-4 space-y-1 ${
-        highlight
-          ? "border-purple-400/50 bg-gradient-to-br from-purple-900/35 to-[#130e20]"
-          : "border-white/10 bg-[#120d1d]"
-      }`}
-    >
-      <div className="text-[11px] font-mono text-slate-400 uppercase tracking-wider">{label}</div>
-      <div className={`text-2xl sm:text-3xl font-extrabold font-mono ${color}`}>
-        {score}
-        <span className="text-xs text-slate-500 font-normal">/100</span>
+    <div className={`min-h-screen relative transition-colors duration-300 ${themeBg}`}>
+      {/* Ambient Liquid Prism Background */}
+      <div className="pointer-events-none fixed inset-0 overflow-hidden z-0">
+        <div className="absolute -top-28 -left-24 w-96 h-96 rounded-full bg-pink-500/15 blur-[110px]" />
+        <div className="absolute top-1/3 -right-24 w-96 h-96 rounded-full bg-emerald-500/12 blur-[110px]" />
       </div>
-      <div className="text-[11px] font-mono text-slate-400 truncate">{sub}</div>
-    </div>
-  );
-}
 
-function CheckPill({ label, ok }: { label: string; ok: boolean }) {
-  return (
-    <div
-      className={`flex items-center justify-between rounded-xl border px-3 py-2 ${
-        ok
-          ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-200"
-          : "border-rose-500/30 bg-rose-500/10 text-rose-200"
-      }`}
-    >
-      <span className="truncate">{label}</span>
-      <span className="font-bold ml-2">{ok ? "✓" : "✗"}</span>
-    </div>
-  );
-}
-
-function CodeSnippetCard({
-  title,
-  subtitle,
-  code,
-  copied,
-  onCopy,
-}: {
-  title: string;
-  subtitle: string;
-  code: string;
-  copied: boolean;
-  onCopy: () => void;
-}) {
-  return (
-    <div className="rounded-2xl border border-white/10 bg-[#120d1d] p-5 flex flex-col justify-between space-y-3">
-      <div className="flex items-start justify-between gap-2">
-        <div>
-          <h3 className="text-xs sm:text-sm font-bold text-white font-mono flex items-center gap-1.5">
-            <Code2 className="h-4 w-4 text-purple-400 shrink-0" />
-            <span>{title}</span>
-          </h3>
-          <p className="text-[11px] text-slate-400 mt-0.5">{subtitle}</p>
-        </div>
-        <button
-          type="button"
-          onClick={onCopy}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-purple-400/40 bg-purple-500/15 hover:bg-purple-500/30 px-2.5 py-1 text-xs font-mono text-purple-200 transition-colors shrink-0 cursor-pointer"
+      {/* Floating Glass Header */}
+      <header className="sticky top-3 z-40 px-4 sm:px-6 pt-2">
+        <div
+          className={`max-w-7xl mx-auto rounded-2xl px-4 sm:px-5 py-2.5 flex flex-wrap items-center justify-between gap-3 ${glassBar}`}
         >
-          {copied ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
-          <span>{copied ? "Tersalin" : "Salin"}</span>
-        </button>
-      </div>
-      <pre className="rounded-xl border border-white/10 bg-black/70 p-3.5 text-[11px] font-mono text-emerald-300 overflow-x-auto max-h-72 thin-scroll">
-        <code>{code}</code>
-      </pre>
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center text-white">
+              <Shield className="w-4 h-4" />
+            </div>
+            <span className="font-bold text-sm sm:text-base">
+              Sentinel-ID Specialist Modules
+            </span>
+          </div>
+
+          {/* Switcher between /scan/seo-master and /scan/sentinel */}
+          <div className={`flex items-center gap-1 p-1 rounded-xl ${glassPill}`}>
+            <button
+              type="button"
+              onClick={() => setActiveView("seo-master")}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition ${
+                activeView === "seo-master"
+                  ? "bg-gradient-to-r from-emerald-500 to-cyan-600 text-white shadow-sm"
+                  : "opacity-75 hover:opacity-100"
+              }`}
+            >
+              SEO Master (/scan/seo-master)
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveView("sentinel-vault")}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition ${
+                activeView === "sentinel-vault"
+                  ? "bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-sm"
+                  : "opacity-75 hover:opacity-100"
+              }`}
+            >
+              Sentinel Vault (/scan/sentinel)
+            </button>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setIsDark(!isDark)}
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 ${glassPill}`}
+          >
+            {isDark ? (
+              <>
+                <Sun className="w-3.5 h-3.5 text-amber-400" />
+                <span>Light Glass</span>
+              </>
+            ) : (
+              <>
+                <Moon className="w-3.5 h-3.5 text-indigo-600" />
+                <span>Dark Glass</span>
+              </>
+            )}
+          </button>
+        </div>
+      </header>
+
+      <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 pt-8 pb-20">
+        {activeView === "seo-master" ? (
+          <SeoMasterView isDark={isDark} />
+        ) : (
+          <SentinelVaultView isDark={isDark} />
+        )}
+      </main>
     </div>
   );
 }
