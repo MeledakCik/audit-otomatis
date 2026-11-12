@@ -304,7 +304,7 @@ export function LandingPage() {
             {/* CONTAINER FOTO PROFIL */}
             <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden shrink-0 border-2 border-accent/20 shadow-lg shadow-accent/10 group-hover/card:border-accent/50 transition-all duration-300">
               <Image
-                src="https://www.kasyaf.id/images/profile.png" // Ganti dengan URL https://www.kasyaf.id/profile jika diizinkan di next.config.js
+                src="/image/profile.png" // Ganti dengan URL https://www.kasyaf.id/profile jika diizinkan di next.config.js
                 alt={`Foto profil ${AUTHOR.name}`}
                 fill
                 sizes="(max-width: 640px) 80px, 96px"
