@@ -61,8 +61,8 @@ export function ScanDashboard({
   return (
     <div className="flex flex-1 flex-col min-h-full">
       {/* Sticky Scan Header */}
-      <header className="border-b border-border bg-panel/85 backdrop-blur-md sticky top-0 z-20">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 py-3.5 flex flex-wrap items-center justify-between gap-3">
+      <header className="border-b border-border bg-panel/85 backdrop-blur-md sticky top-0 z-20 rounded-[20px] shadow-sm">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 py-3.5 flex flex-wrap items-center justify-between gap-3 rounded-[20px] shadow-sm">
           <div className="flex items-center gap-3 min-w-0">
             <Link
               href="/dashboard"
