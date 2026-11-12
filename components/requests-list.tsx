@@ -89,7 +89,7 @@ export function RequestsList() {
             {!error && scans !== null && scans.length === 0 && (
               <div className="px-4 py-10 text-center text-xs text-muted-dim font-mono space-y-2">
                 <p>&gt; No scans found. Run</p>
-                <Link href="/">
+                <Link href="/dashboard">
                   <Button variant="outline" size="sm" className="mt-1">
                     <ScanLine className="h-3.5 w-3.5" />
                     $ trout --scan

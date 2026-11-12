@@ -65,7 +65,7 @@ export function ScanDashboard({
         <div className="mx-auto max-w-6xl px-4 sm:px-6 py-3.5 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
             <Link
-              href="/"
+              href="/dashboard"
               className="flex items-center justify-center h-9 w-9 rounded-xl border border-border bg-foreground/[0.03] hover:bg-foreground/[0.08] text-soft transition-colors shrink-0"
               title="Kembali ke Beranda Scan"
             >

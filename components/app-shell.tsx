@@ -1,19 +1,20 @@
 "use client";
 
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
 import { AppSidebar } from "@/components/app-sidebar";
 import { Sun, Moon, Shield, Menu, BadgeCheck } from "lucide-react";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
   const { resolvedTheme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const closeSidebar = useCallback(() => setSidebarOpen(false), []);
-  useEffect(() => setMounted(true), []);
 
-  const isDark = mounted ? resolvedTheme === "dark" : true;
+  // Landing page punya navbar sendiri; tidak memakai shell aplikasi
+  if (pathname === "/") return <>{children}</>;
 
   return (
     <div className="relative min-h-dvh overflow-x-clip">
@@ -46,12 +47,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </span>
             <button
               type="button"
-              onClick={() => setTheme(isDark ? "light" : "dark")}
+              onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
               className="px-3 py-2 rounded-xl border border-border text-xs font-medium flex items-center gap-2 hover:bg-foreground/5"
-              aria-label={isDark ? "Ganti ke tema terang" : "Ganti ke tema gelap"}
+              aria-label="Ganti tema terang/gelap"
             >
-              {isDark ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-indigo-600" />}
-              <span className="hidden sm:inline">{isDark ? "Terang" : "Gelap"}</span>
+              <Sun className="w-4 h-4 text-amber-400 hidden dark:block" />
+              <Moon className="w-4 h-4 text-indigo-600 dark:hidden" />
+              <span className="hidden sm:inline">Tema</span>
             </button>
           </div>
         </div>

@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* next-themes memakai class .dark, bukan prefers-color-scheme */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* ------------------------------------------------------------------
    Design tokens — satu sumber warna untuk light & dark.
    Semua komponen memakai class semantik (bg-panel, text-muted, dst).
@@ -171,4 +174,12 @@ body {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* Mode hemat: diaktifkan otomatis oleh GlassCanvas pada perangkat menengah ke bawah */
+[data-perf="low"] .glass-panel,
+[data-perf="low"] .glass-pill {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  background: var(--surface-raised);
 }

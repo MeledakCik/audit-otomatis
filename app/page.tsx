@@ -1,5 +1,5 @@
-import { HomePage } from "@/components/home-glass-view";
+import { LandingPage } from "@/components/landing/landing-page";
 
 export default function Page() {
-  return <HomePage />;
+  return <LandingPage />;
 }

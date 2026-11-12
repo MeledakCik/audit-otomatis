@@ -15,7 +15,7 @@ export interface NavModuleItem {
 }
 
 export const SENTINEL_NAV_ITEMS: NavModuleItem[] = [
-  { id: "overview", title: "Overview & Scan", route: "/", badge: "VAULT", badgeTone: "purple", category: "Core Audit & Scan", description: "Unified Deep Security Scanner (8 engine pasif sekaligus) & ringkasan postur domain.", iconName: "shield" },
+  { id: "overview", title: "Overview & Scan", route: "/dashboard", badge: "VAULT", badgeTone: "purple", category: "Core Audit & Scan", description: "Unified Deep Security Scanner (8 engine pasif sekaligus) & ringkasan postur domain.", iconName: "shield" },
   { id: "seo-master", title: "SEO Master & Rank #1", route: "/scan/seo-master", badge: "GLOBAL", badgeTone: "emerald", category: "Core Audit & Scan", description: "Audit 35+ sinyal Google SERP, 13 tag hreflang internasional & JSON-LD Schema.org.", iconName: "trending" },
   { id: "sentinel-vault", title: "Sentinel Vault & Klaim", route: "/scan/sentinel", badge: "AES", badgeTone: "pink", category: "Core Audit & Scan", description: "Audit file sensitif (.env, .git/HEAD, backup.zip) & Brankas Bukti AES-256-GCM.", iconName: "lock" },
   { id: "qc-otomatis", title: "QC Otomatis", route: "/qc", badge: "QC", badgeTone: "cyan", category: "Core Audit & Scan", description: "Audit kualitas SEO on-page, performa Core Web Vitals & pemeriksaan broken link.", iconName: "clipboard" },
