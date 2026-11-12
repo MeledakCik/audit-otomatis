@@ -7,7 +7,6 @@ import { Shield, Sun, Moon, ArrowRight } from "lucide-react";
 const LINKS = [
   { href: "#fitur", label: "Fitur" },
   { href: "#cara-kerja", label: "Cara Kerja" },
-  { href: "#faq", label: "FAQ" },
 ];
 
 export function LandingNav() {

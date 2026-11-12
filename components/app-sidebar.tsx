@@ -168,11 +168,6 @@ export function AppSidebar({
                               />
                               {!slim && <span className="text-sm truncate">{item.title}</span>}
                             </span>
-                            {!slim && item.badge && (
-                              <span className="text-xs font-mono font-semibold px-1.5 py-0.5 rounded bg-accent/10 text-accent shrink-0">
-                                {item.badge}
-                              </span>
-                            )}
                           </Link>
                         </li>
                       );
