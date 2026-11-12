@@ -14,7 +14,7 @@ export function AttackSurfaceAlert({ hints }: { hints: TakeoverHint[] }) {
       <CardContent>
         {hints.length === 0 ? (
           <div className="py-8 text-center space-y-2">
-            <ShieldCheck className="h-6 w-6 text-[#38d47a] mx-auto" />
+            <ShieldCheck className="h-6 w-6 text-ok mx-auto" />
             <p className="text-xs font-mono text-muted-dim">Tidak ada pola subdomain takeover yang terdeteksi dari CNAME.</p>
           </div>
         ) : (

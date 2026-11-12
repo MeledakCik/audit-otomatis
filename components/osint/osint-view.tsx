@@ -18,7 +18,7 @@ const MODES: { id: OsintType; label: string; icon: typeof Globe; placeholder: st
 
 const STATUS: Record<PlatformStatus, { label: string; cls: string; icon: typeof Globe }> = {
   found: { label: "Ditemukan", cls: "text-ok border-ok/30 bg-ok/10", icon: CheckCircle2 },
-  not_found: { label: "Tidak ada", cls: "text-muted border-border bg-white/[0.03]", icon: XCircle },
+  not_found: { label: "Tidak ada", cls: "text-muted border-border bg-foreground/[0.03]", icon: XCircle },
   unknown: { label: "Tidak pasti", cls: "text-sev-medium border-sev-medium/30 bg-sev-medium/10", icon: HelpCircle },
   manual: { label: "Cek manual", cls: "text-accent border-accent/ bg-accent/10", icon: Hand },
 };
@@ -59,7 +59,7 @@ function Links({ links }: { links: OsintLink[] }) {
                   href={l.url}
                   target={l.url.startsWith("/") ? undefined : "_blank"}
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 rounded-full border border-border bg-white/[0.02] px-3 py-1 text-xs font-mono text-foreground hover:border-accent/ hover:text-foreground transition-colors"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-border bg-foreground/[0.02] px-3 py-1 text-xs font-mono text-foreground hover:border-accent/ hover:text-foreground transition-colors"
                 >
                   {l.label}
                   <ExternalLink className="h-3 w-3 opacity-50" />
@@ -87,7 +87,7 @@ function ResultView({ r }: { r: OsintResult }) {
                 href={p.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-between gap-3 rounded-lg border border-border bg-white/[0.02] px-3 py-2 hover:border-accent/ transition-colors"
+                className="flex items-center justify-between gap-3 rounded-lg border border-border bg-foreground/[0.02] px-3 py-2 hover:border-accent/ transition-colors"
               >
                 <div className="min-w-0">
                   <div className="text-sm text-foreground">{p.platform}</div>
@@ -231,7 +231,7 @@ export function OsintView() {
         </div>
 
         <div className="rounded-2xl border border-border bg-surface p-5 space-y-4">
-          <div className="flex flex-wrap rounded-xl border border-border bg-black/20 p-1 gap-1">
+          <div className="flex flex-wrap rounded-xl border border-border bg-sunken p-1 gap-1">
             {MODES.map((m) => (
               <button
                 key={m.id}
@@ -268,7 +268,7 @@ export function OsintView() {
         )}
         {result && <ResultView r={result} />}
 
-        <div className="text-xs font-mono text-muted bg-white/[0.02] border border-border p-3 rounded-lg">
+        <div className="text-xs font-mono text-muted bg-foreground/[0.02] border border-border p-3 rounded-lg">
           Hanya data publik · tanpa login/bypass · maks 10 request/menit · hasil bukan bukti identitas.
         </div>
       </div>

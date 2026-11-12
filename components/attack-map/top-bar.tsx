@@ -20,10 +20,10 @@ export function TopBar({ onScan, loading, hasReport, onFitView, onExportPng, onE
   const [domain, setDomain] = useState("");
 
   return (
-    <div className="border-b border-white/[0.06] bg-[#0f0b16] px-4 sm:px-6 py-3 flex flex-col gap-3">
+    <div className="border-b border-foreground/[0.06] bg-panel px-4 sm:px-6 py-3 flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-3">
         <div className="h-8 w-8 grid place-items-center rounded-lg bg-gradient-to-br from-[#c084fc] to-[#9333ea] text-black shadow-lg shadow-purple-500/20 shrink-0">
-          <ShieldHalf className="h-4 w-4 text-white" strokeWidth={2.5} />
+          <ShieldHalf className="h-4 w-4 text-foreground" strokeWidth={2.5} />
         </div>
         <div className="mr-2">
           <div className="text-sm font-extrabold tracking-tight text-foreground">Attack Surface Map</div>
@@ -39,7 +39,7 @@ export function TopBar({ onScan, loading, hasReport, onFitView, onExportPng, onE
           placeholder="contoh.com atau https://contoh.com"
           spellCheck={false}
           className={cn(
-            "flex-1 min-w-[220px] rounded-xl border border-border bg-[#0a0710] text-[#d6d0e8] font-mono text-sm px-3.5 py-2",
+            "flex-1 min-w-[220px] rounded-xl border border-border bg-sunken text-soft font-mono text-sm px-3.5 py-2",
             "focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent placeholder:text-muted-dim/60"
           )}
         />

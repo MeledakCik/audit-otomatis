@@ -27,7 +27,7 @@ export function HeaderCheckRow({ check }: { check: HeaderCheckResult }) {
           className={cn(
             "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-bold tracking-widest uppercase shrink-0",
             check.pass
-              ? "text-[#38d47a] border-[#38d47a]/40 bg-[#38d47a]/10"
+              ? "text-ok border-ok/40 bg-ok/10"
               : "text-sev-critical border-sev-critical/40 bg-sev-critical/10"
           )}
         >
@@ -56,15 +56,15 @@ export function HeaderCheckRow({ check }: { check: HeaderCheckResult }) {
         <div className="px-4 pb-4 pt-1 space-y-3 border-t border-border bg-surface-raised/40">
           <p className="text-xs leading-relaxed text-foreground/90">{check.risk}</p>
           <div className="relative">
-            <pre className="rounded-lg bg-[#0a0710] border border-border text-xs font-mono text-[#8be9a8] p-3 overflow-x-auto leading-relaxed">
+            <pre className="rounded-lg bg-sunken border border-border text-xs font-mono text-ok p-3 overflow-x-auto leading-relaxed">
               {check.fixNextConfig}
             </pre>
             <button
               onClick={handleCopy}
-              className="absolute top-2 right-2 h-7 w-7 grid place-items-center rounded-md bg-white/5 text-muted-dim hover:text-accent hover:bg-white/10 transition-colors"
+              className="absolute top-2 right-2 h-7 w-7 grid place-items-center rounded-md bg-foreground/5 text-muted-dim hover:text-accent hover:bg-foreground/10 transition-colors"
               title="Copy fix"
             >
-              {copied ? <CheckIcon className="h-3.5 w-3.5 text-[#38d47a]" /> : <Copy className="h-3.5 w-3.5" />}
+              {copied ? <CheckIcon className="h-3.5 w-3.5 text-ok" /> : <Copy className="h-3.5 w-3.5" />}
             </button>
           </div>
         </div>

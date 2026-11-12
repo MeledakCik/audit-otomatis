@@ -11,7 +11,7 @@ const AttackMapView = dynamic(
       <div
         role="status"
         aria-live="polite"
-        className="p-6 text-sm text-slate-300"
+        className="p-6 text-sm text-soft"
       >
         Memuat peta…
       </div>

@@ -90,9 +90,9 @@ export const FlowCanvas = forwardRef<FlowCanvasHandle, FlowCanvasProps>(function
         colorMode="dark"
       >
         <Background variant={BackgroundVariant.Dots} color="#2a1842" gap={22} size={1.3} />
-        <Controls className="!bg-[#0f0b16] !border !border-white/10 !rounded-lg overflow-hidden" showInteractive={false} />
+        <Controls className="!bg-panel !border !border-border !rounded-lg overflow-hidden" showInteractive={false} />
         <MiniMap
-          className="!bg-[#0f0b16] !border !border-white/10 !rounded-lg overflow-hidden"
+          className="!bg-panel !border !border-border !rounded-lg overflow-hidden"
           maskColor="rgba(10,7,16,0.75)"
           nodeColor={(n) => NODE_COLORS[(n.data as MapNodeData).nodeType] ?? "#c084fc"}
         />

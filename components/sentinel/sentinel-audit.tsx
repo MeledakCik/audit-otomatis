@@ -133,12 +133,12 @@ export function SentinelAudit(props: SentinelAuditProps = {}) {
   const isDark = propDark !== undefined ? propDark : detectedDark;
 
   const glassCard = isDark
-    ? "bg-[#110E20]/70 backdrop-blur-2xl border border-white/[0.09] shadow-[0_20px_50px_-15px_rgba(0,0,0,0.65)] text-slate-100"
-    : "bg-white/80 backdrop-blur-2xl border border-slate-900/[0.08] shadow-[0_16px_40px_-12px_rgba(15,23,42,0.06)] text-slate-900";
+    ? "bg-[#110E20]/70 backdrop-blur-2xl border border-foreground/[0.09] shadow-[0_20px_50px_-15px_rgba(0,0,0,0.65)] text-soft"
+    : "bg-foreground/80 backdrop-blur-2xl border border-slate-900/[0.08] shadow-[0_16px_40px_-12px_rgba(15,23,42,0.06)] text-slate-900";
   const glassPill = isDark
-    ? "bg-white/[0.05] border border-white/[0.09]"
+    ? "bg-foreground/[0.05] border border-foreground/[0.09]"
     : "bg-slate-900/[0.04] border border-slate-900/[0.08]";
-  const mutedText = isDark ? "text-slate-400" : "text-slate-600";
+  const mutedText = isDark ? "text-muted" : "text-slate-600";
 
   const selectedArtifact = useMemo(
     () => VAULT_ARTIFACTS.find((a) => a.id === selectedArtifactId) || VAULT_ARTIFACTS[0],
@@ -202,9 +202,9 @@ export function SentinelAudit(props: SentinelAuditProps = {}) {
             { label: "Akses Dekripsi", val: "1x Lihat", sub: "One-Time Token", tone: "text-purple-400" }
           ].map((m) => (
             <div key={m.label} className={`rounded-2xl p-3.5 ${glassPill}`}>
-              <span className={`text-[10px] font-mono uppercase ${mutedText}`}>{m.label}</span>
+              <span className={`text-xs font-mono uppercase ${mutedText}`}>{m.label}</span>
               <p className={`text-xl font-extrabold mt-0.5 ${m.tone}`}>{m.val}</p>
-              <p className={`text-[11px] ${mutedText}`}>{m.sub}</p>
+              <p className={`text-xs ${mutedText}`}>{m.sub}</p>
             </div>
           ))}
         </div>
@@ -249,7 +249,7 @@ export function SentinelAudit(props: SentinelAuditProps = {}) {
                       {art.path}
                     </span>
                     <span
-                      className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-md ${
+                      className={`text-xs font-mono font-bold px-2 py-0.5 rounded-md ${
                         art.risk === "CRITICAL"
                           ? "bg-rose-500/15 text-rose-500"
                           : art.risk === "HIGH"
@@ -260,7 +260,7 @@ export function SentinelAudit(props: SentinelAuditProps = {}) {
                       {art.risk}
                     </span>
                   </div>
-                  <div className={`text-[11px] font-mono mt-1 ${mutedText}`}>{art.cwe}</div>
+                  <div className={`text-xs font-mono mt-1 ${mutedText}`}>{art.cwe}</div>
                 </button>
               );
             })}
@@ -272,12 +272,12 @@ export function SentinelAudit(props: SentinelAuditProps = {}) {
               <span className="text-xs font-mono font-bold text-cyan-500">
                 {selectedArtifact.path} · {selectedArtifact.cwe}
               </span>
-              <span className={`text-[11px] font-mono ${mutedText}`}>
+              <span className={`text-xs font-mono ${mutedText}`}>
                 {selectedArtifact.cipherMeta}
               </span>
             </div>
 
-            <div className="p-3 rounded-xl bg-black/25 border border-white/10 font-mono text-xs break-all text-slate-100">
+            <div className="p-3 rounded-xl bg-sunken border border-border font-mono text-xs break-all text-soft">
               {isOwnerVerified
                 ? selectedArtifact.decryptedPreview
                 : selectedArtifact.publicPreview}
@@ -294,7 +294,7 @@ export function SentinelAudit(props: SentinelAuditProps = {}) {
         <div className={`xl:col-span-5 rounded-3xl p-6 space-y-4 ${glassCard}`}>
           <form onSubmit={handleVerifyOwnership} className="space-y-3.5">
             <div>
-              <span className="text-[11px] font-mono uppercase tracking-widest text-purple-400 font-semibold">
+              <span className="text-xs font-mono uppercase tracking-widest text-purple-400 font-semibold">
                 Verifikasi Kepemilikan Sah
               </span>
               <h3 className="text-base sm:text-lg font-bold mt-0.5">
@@ -355,18 +355,18 @@ export function SentinelAudit(props: SentinelAuditProps = {}) {
                 <button
                   type="button"
                   onClick={handleCopyToken}
-                  className="text-[11px] font-mono text-pink-500 flex items-center gap-1"
+                  className="text-xs font-mono text-pink-500 flex items-center gap-1"
                 >
                   {copiedToken ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
                   <span>{copiedToken ? "Tersalin" : "Salin Token"}</span>
                 </button>
               </div>
-              <div className="font-mono text-[11px] text-cyan-500 break-all">
+              <div className="font-mono text-xs text-cyan-500 break-all">
                 {claimMethod === "dns"
                   ? `_sentinel-verify.${claimDomain}`
                   : `https://${claimDomain}/.well-known/sentinel-claim.txt`}
               </div>
-              <div className="p-2 rounded-lg bg-black/25 font-mono text-[11px] text-emerald-400 break-all">
+              <div className="p-2 rounded-lg bg-sunken font-mono text-xs text-emerald-400 break-all">
                 {verificationToken}
               </div>
             </div>

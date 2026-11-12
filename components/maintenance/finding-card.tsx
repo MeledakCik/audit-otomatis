@@ -75,7 +75,7 @@ export function FindingCard({ finding, index, onToggleStep }: FindingCardProps) 
             </div>
             <p className="text-[13px] leading-relaxed text-foreground/90">{finding.attackVector}</p>
             {finding.payloadExample && (
-              <div className="flex items-start gap-1.5 rounded-lg border border-border bg-[#0a0710] px-3 py-2">
+              <div className="flex items-start gap-1.5 rounded-lg border border-border bg-sunken px-3 py-2">
                 <Terminal className="h-3.5 w-3.5 text-accent mt-0.5 shrink-0" />
                 <code className="text-[11.5px] font-mono text-accent break-all">{finding.payloadExample}</code>
               </div>

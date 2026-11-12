@@ -68,7 +68,7 @@ export function RequestsTable() {
       VIEWED: "bg-sky-500/20 text-sky-300 border-sky-500/40",
       REJECTED: "bg-red-500/20 text-red-300 border-red-500/40",
       AWAITING_PROOF: "bg-purple-500/20 text-purple-300 border-purple-500/40",
-    } as Record<string, string>)[s] ?? "bg-white/10 text-slate-300 border-white/20";
+    } as Record<string, string>)[s] ?? "bg-foreground/10 text-soft border-foreground/20";
 
   const filtered = useMemo(() => {
     if (!items) return [];
@@ -81,35 +81,35 @@ export function RequestsTable() {
 
   return (
     <section className="space-y-4">
-      <div className="rounded-2xl border border-white/10 bg-[#120d1d] p-5 flex flex-wrap items-center justify-between gap-4">
+      <div className="rounded-2xl border border-border bg-panel p-5 flex flex-wrap items-center justify-between gap-4">
         <div className="space-y-1">
-          <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/15 border border-amber-500/30 px-2.5 py-0.5 text-[10px] font-mono font-bold text-amber-300">
+          <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/15 border border-amber-500/30 px-2.5 py-0.5 text-xs font-mono font-bold text-amber-300">
             <KeyRound className="h-3 w-3" />
             VERIFIKASI KEPEMILIKAN DOMAIN
           </div>
-          <h1 className="text-lg font-extrabold text-white">
+          <h1 className="text-lg font-extrabold text-foreground">
             Permintaan Klaim Domain ({items?.length ?? "…"})
           </h1>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-muted">
             Setujui (ACC) permintaan yang telah lulus verifikasi DNS TXT / HTTP File untuk menerbitkan token sekali-pakai (berlaku 10 menit).
           </p>
         </div>
 
         <div className="flex items-center gap-2.5">
           <div className="relative">
-            <Search className="h-3.5 w-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <Search className="h-3.5 w-3.5 text-muted absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Cari domain / status..."
-              className="h-9 rounded-xl border border-white/10 bg-black/40 pl-9 pr-3 text-xs font-mono text-white placeholder:text-slate-500 outline-none focus:border-purple-400"
+              className="h-9 rounded-xl border border-border bg-sunken pl-9 pr-3 text-xs font-mono text-foreground placeholder:text-muted outline-none focus:border-purple-400"
             />
           </div>
           <button
             type="button"
             onClick={load}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] px-3.5 py-2 text-xs font-mono text-slate-200 cursor-pointer"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-foreground/[0.04] hover:bg-foreground/[0.08] px-3.5 py-2 text-xs font-mono text-soft cursor-pointer"
           >
             <RefreshCw className="h-3.5 w-3.5" />
             <span>Refresh</span>
@@ -130,9 +130,9 @@ export function RequestsTable() {
         </div>
       )}
 
-      <div className="overflow-x-auto rounded-2xl border border-white/10 bg-[#120d1d] shadow-xl">
+      <div className="overflow-x-auto rounded-2xl border border-border bg-panel shadow-xl">
         <table className="w-full text-left text-xs">
-          <thead className="border-b border-white/10 bg-black/30 font-mono uppercase text-[11px] text-slate-400">
+          <thead className="border-b border-border bg-sunken font-mono uppercase text-xs text-muted">
             <tr>
               <th className="p-4">Domain</th>
               <th className="p-4">Status Klaim</th>
@@ -143,12 +143,12 @@ export function RequestsTable() {
           </thead>
           <tbody className="divide-y divide-white/[0.06]">
             {filtered.map((i) => (
-              <tr key={i.key} className="hover:bg-white/[0.03] transition-colors">
-                <td className="p-4 font-mono font-bold text-white">{i.domain}</td>
+              <tr key={i.key} className="hover:bg-foreground/[0.03] transition-colors">
+                <td className="p-4 font-mono font-bold text-foreground">{i.domain}</td>
                 <td className="p-4">
                   <span
                     className={cn(
-                      "inline-flex items-center rounded-full border px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase",
+                      "inline-flex items-center rounded-full border px-2.5 py-0.5 font-mono text-xs font-bold uppercase",
                       badgeStyle(i.status)
                     )}
                   >
@@ -162,12 +162,12 @@ export function RequestsTable() {
                       {i.proof.method.toUpperCase()} TERVERIFIKASI
                     </span>
                   ) : (
-                    <span className="text-slate-500">Menunggu bukti user</span>
+                    <span className="text-muted">Menunggu bukti user</span>
                   )}
                 </td>
-                <td className="p-4 font-mono text-slate-300">
+                <td className="p-4 font-mono text-soft">
                   <span className="inline-flex items-center gap-1">
-                    <Clock className="h-3.5 w-3.5 text-slate-400" />
+                    <Clock className="h-3.5 w-3.5 text-muted" />
                     {Math.floor(i.ttl / 3600)}j
                   </span>
                 </td>
@@ -201,7 +201,7 @@ export function RequestsTable() {
             ))}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={5} className="p-10 text-center font-mono text-slate-400">
+                <td colSpan={5} className="p-10 text-center font-mono text-muted">
                   Belum ada permintaan klaim kepemilikan domain.
                 </td>
               </tr>
@@ -218,7 +218,7 @@ export function RequestsTable() {
           onClick={() => setConfirmModal(null)}
         >
           <div
-            className="w-full max-w-md rounded-2xl border border-purple-500/35 bg-[#120d1e] p-6 shadow-2xl space-y-4"
+            className="w-full max-w-md rounded-2xl border border-purple-500/35 bg-panel p-6 shadow-2xl space-y-4"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center gap-2.5">
@@ -228,11 +228,11 @@ export function RequestsTable() {
                   confirmModal.action === "ACC" ? "text-emerald-400" : "text-red-400"
                 )}
               />
-              <h2 className="text-base font-extrabold text-white">
+              <h2 className="text-base font-extrabold text-foreground">
                 Konfirmasi {confirmModal.action} Klaim Domain
               </h2>
             </div>
-            <p className="text-xs text-slate-300 leading-relaxed">
+            <p className="text-xs text-soft leading-relaxed">
               {confirmModal.action === "ACC"
                 ? `Anda akan menyetujui (ACC) klaim kepemilikan untuk domain "${confirmModal.domain}". User akan mendapatkan token sekali-pakai (berlaku 10 menit) untuk melihat evidence dari Vault.`
                 : `Anda akan menolak (REJECT) klaim kepemilikan untuk domain "${confirmModal.domain}".`}
@@ -241,7 +241,7 @@ export function RequestsTable() {
               <button
                 type="button"
                 onClick={() => setConfirmModal(null)}
-                className="rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-xs font-semibold text-slate-300 hover:bg-white/10"
+                className="rounded-xl border border-foreground/15 bg-foreground/5 px-4 py-2 text-xs font-semibold text-soft hover:bg-foreground/10"
               >
                 Batal
               </button>
@@ -250,7 +250,7 @@ export function RequestsTable() {
                 disabled={busy}
                 onClick={executeDecision}
                 className={cn(
-                  "rounded-xl px-4 py-2 text-xs font-bold text-white cursor-pointer",
+                  "rounded-xl px-4 py-2 text-xs font-bold text-foreground cursor-pointer",
                   confirmModal.action === "ACC"
                     ? "bg-emerald-600 hover:bg-emerald-500"
                     : "bg-red-600 hover:bg-red-500"

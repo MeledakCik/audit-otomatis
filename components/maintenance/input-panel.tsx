@@ -145,7 +145,7 @@ export function InputPanel({ onAnalyze, loading }: InputPanelProps) {
               placeholder={`Paste JS / PHP / Python / Next.js build log / Nginx log / Cloudflare log di sini...\n\nContoh:\nconst el = document.getElementById("x");\nel.innerHTML = userInput;`}
               spellCheck={false}
               className={cn(
-                "w-full h-64 resize-y rounded-xl border border-border bg-[#0a0710] text-[#d6d0e8] font-mono text-[12.5px] leading-relaxed p-4",
+                "w-full h-64 resize-y rounded-xl border border-border bg-sunken text-soft font-mono text-[12.5px] leading-relaxed p-4",
                 "focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent placeholder:text-muted-dim/60"
               )}
             />

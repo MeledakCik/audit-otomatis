@@ -37,22 +37,22 @@ export function AdminNav() {
   return (
     <header className="mb-8 space-y-4">
       {/* Top Command Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-purple-500/25 bg-gradient-to-r from-[#150f24] via-[#110c1d] to-[#0d0917] px-5 py-4 shadow-xl">
+      <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-purple-500/25 bg-gradient-to-r from-[#150f24] via-[#110c1d] to-sunken px-5 py-4 shadow-xl">
         <div className="flex items-center gap-3.5">
           <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-purple-600 to-pink-600 grid place-items-center text-white shadow-lg shadow-purple-600/25">
             <ShieldAlert className="h-5 w-5" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-base font-extrabold tracking-wide text-white">
+              <span className="text-base font-extrabold tracking-wide text-foreground">
                 SENTINEL-ID ADMIN CONSOLE
               </span>
-              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 text-[10px] font-mono text-emerald-300">
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 text-xs font-mono text-emerald-300">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
                 TELEMETRY LIVE
               </span>
             </div>
-            <p className="text-xs font-mono text-slate-400">
+            <p className="text-xs font-mono text-muted">
               Pusat Monitoring Aktivitas User · Brankas AES-256-GCM · Verifikasi Kepemilikan Domain
             </p>
           </div>
@@ -62,7 +62,7 @@ export function AdminNav() {
           <VerifiedBadge variant="admin" />
           <Link
             href="/"
-            className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] px-3.5 py-1.5 text-xs font-mono text-slate-200 transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-foreground/[0.04] hover:bg-foreground/[0.08] px-3.5 py-1.5 text-xs font-mono text-soft transition-colors"
           >
             <span>Lihat User Scanner</span>
             <ArrowUpRight className="h-3.5 w-3.5" />
@@ -91,7 +91,7 @@ export function AdminNav() {
                 "inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-mono font-bold transition-all",
                 active
                   ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg shadow-purple-600/25"
-                  : "border border-white/10 bg-[#120d1d] text-slate-300 hover:text-white hover:border-purple-500/40"
+                  : "border border-border bg-panel text-soft hover:text-foreground hover:border-purple-500/40"
               )}
             >
               <Icon className="h-4 w-4" />

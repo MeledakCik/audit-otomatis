@@ -1,49 +1,174 @@
 @import "tailwindcss";
 
+/* ------------------------------------------------------------------
+   Design tokens — satu sumber warna untuk light & dark.
+   Semua komponen memakai class semantik (bg-panel, text-muted, dst).
+------------------------------------------------------------------- */
 :root {
   --background: #f5f5f7;
-  --surface: rgba(255, 255, 255, 0.72);
-  --surface-raised: rgba(255, 255, 255, 0.88);
-  --border: rgba(15, 23, 42, 0.08);
-  --border-strong: rgba(139, 92, 246, 0.28);
+  --surface: rgba(255, 255, 255, 0.78);
+  --surface-raised: rgba(255, 255, 255, 0.95);
+  --panel: #ffffff;          /* kartu / tabel solid */
+  --sunken: #eef0f5;         /* area inset: code, log, input */
+  --line: #dfe3ec;           /* divider solid */
+  --border: rgba(15, 23, 42, 0.10);
+  --border-strong: rgba(126, 34, 206, 0.35);
   --foreground: #0f172a;
+  --soft: #334155;           /* teks sekunder yang masih jelas */
   --muted: #475569;
+  --muted-dim: #5b6678;
   --accent: #a21caf;
   --accent-2: #6d28d9;
   --accent-dim: #86198f;
   --accent-fg: #ffffff;
-  --sev-critical: #e11d48;
-  --sev-high: #d97706;
-  --sev-medium: #b45309;
-  --sev-low: #0284c7;
+  --ok: #0f766e;
+  --warn: #b45309;
+  --danger: #be123c;
+  --sev-critical: #be123c;
+  --sev-high: #c2410c;
+  --sev-medium: #a16207;
+  --sev-low: #0369a1;
   --sev-info: #475569;
+  --glow-a: rgba(236, 72, 153, 0.10);
+  --glow-b: rgba(124, 58, 237, 0.10);
+  color-scheme: light;
 }
 
 .dark {
   --background: #07070c;
-  --surface: rgba(20, 18, 34, 0.54);
-  --surface-raised: rgba(30, 26, 48, 0.72);
+  --surface: rgba(20, 18, 34, 0.72);
+  --surface-raised: rgba(30, 26, 48, 0.88);
+  --panel: #120d1d;
+  --sunken: #0a0710;
+  --line: #2a2340;
   --border: rgba(255, 255, 255, 0.11);
-  --border-strong: rgba(236, 72, 153, 0.38);
+  --border-strong: rgba(236, 72, 153, 0.40);
   --foreground: #f8fafc;
-  --muted: #94a3b8;
-  --accent: #ec4899;
-  --accent-2: #8b5cf6;
+  --soft: #cbd5e1;
+  --muted: #a3afc2;
+  --muted-dim: #8592aa;
+  --accent: #f472b6;
+  --accent-2: #a78bfa;
   --accent-dim: #be185d;
   --accent-fg: #fdf6ff;
+  --ok: #34d399;
+  --warn: #fbbf24;
+  --danger: #fb7185;
+  --sev-critical: #fb7185;
+  --sev-high: #fb923c;
+  --sev-medium: #fbbf24;
+  --sev-low: #38bdf8;
+  --sev-info: #94a3b8;
+  --glow-a: rgba(236, 72, 153, 0.14);
+  --glow-b: rgba(139, 92, 246, 0.14);
+  color-scheme: dark;
 }
 
+/* Tailwind v4: daftarkan token agar class bg, text, dan border semantik tersedia */
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-panel: var(--panel);
+  --color-sunken: var(--sunken);
+  --color-line: var(--line);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-foreground: var(--foreground);
+  --color-soft: var(--soft);
+  --color-muted: var(--muted);
+  --color-muted-dim: var(--muted-dim);
+  --color-accent: var(--accent);
+  --color-accent-2: var(--accent-2);
+  --color-accent-dim: var(--accent-dim);
+  --color-accent-fg: var(--accent-fg);
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
+  --color-danger: var(--danger);
+  --color-sev-critical: var(--sev-critical);
+  --color-sev-high: var(--sev-high);
+  --color-sev-medium: var(--sev-medium);
+  --color-sev-low: var(--sev-low);
+  --color-sev-info: var(--sev-info);
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --animate-fade-up: fade-up 0.35s ease-out both;
+  --animate-fade-in: fade-in 0.25s ease-out both;
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+html {
+  scroll-padding-top: calc(env(safe-area-inset-top, 0px) + 5rem);
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: var(--font-sans);
+  /* ambient glow murah: gradient statis, tanpa filter blur */
+  background-image:
+    radial-gradient(60rem 40rem at -10% -10%, var(--glow-a), transparent 60%),
+    radial-gradient(50rem 40rem at 110% 30%, var(--glow-b), transparent 60%);
+  background-repeat: no-repeat;
+  background-attachment: scroll;
+}
+
+.bg-gradient-accent {
+  background-image: linear-gradient(135deg, var(--accent-dim), var(--accent-2));
+}
+.text-gradient-accent {
+  background-image: linear-gradient(90deg, var(--accent), var(--accent-2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Glass: blur hanya di layar ≥ md (hemat GPU di HP), mobile pakai surface solid */
 .glass-panel {
-  background: var(--surface);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  background: var(--surface-raised);
   border: 1px solid var(--border);
-  box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.18), 0 1px 0 0 rgba(255, 255, 255, 0.12) inset;
+  box-shadow: 0 12px 32px -14px rgba(0, 0, 0, 0.25);
 }
-
 .glass-pill {
   background: var(--surface-raised);
-  backdrop-filter: blur(18px) saturate(170%);
-  -webkit-backdrop-filter: blur(18px) saturate(170%);
   border: 1px solid var(--border);
+}
+@media (min-width: 768px) {
+  .glass-panel {
+    background: var(--surface);
+    backdrop-filter: blur(14px) saturate(160%);
+    -webkit-backdrop-filter: blur(14px) saturate(160%);
+  }
+  .glass-pill {
+    background: var(--surface);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+}
+
+.thin-scroll { scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
+.thin-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+.thin-scroll::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 999px; }
+
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Target sentuh minimum di layar sentuh */
+@media (pointer: coarse) {
+  button, [role="button"], summary, select { min-height: 40px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

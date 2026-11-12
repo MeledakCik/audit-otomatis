@@ -40,12 +40,12 @@ export function LoginForm() {
   }
 
   return (
-    <div className="min-h-dvh w-full flex flex-col justify-between p-4 sm:p-8 bg-[#08060e]">
+    <div className="min-h-dvh w-full flex flex-col justify-between p-4 sm:p-8 bg-sunken">
       {/* Top Bar */}
       <div className="mx-auto w-full max-w-5xl flex items-center justify-between">
         <Link
           href="/"
-          className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] hover:bg-white/[0.08] px-3.5 py-2 text-xs font-mono text-slate-300 transition-colors"
+          className="inline-flex items-center gap-2 rounded-xl border border-border bg-foreground/[0.03] hover:bg-foreground/[0.08] px-3.5 py-2 text-xs font-mono text-soft transition-colors"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
           Kembali ke Beranda User
@@ -55,32 +55,32 @@ export function LoginForm() {
 
       {/* Center Login Card */}
       <div className="mx-auto w-full max-w-md my-auto py-8">
-        <div className="rounded-3xl border border-purple-500/30 bg-gradient-to-b from-[#171128] via-[#120d1f] to-[#0d0917] p-6 sm:p-8 shadow-2xl shadow-purple-950/40 space-y-6">
+        <div className="rounded-3xl border border-purple-500/30 bg-gradient-to-b from-[#171128] via-[#120d1f] to-sunken p-6 sm:p-8 shadow-2xl shadow-purple-950/40 space-y-6">
           <div className="flex flex-col items-center text-center space-y-2">
             <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-purple-600 to-pink-600 grid place-items-center text-white shadow-lg shadow-purple-600/30">
               <ShieldAlert className="h-7 w-7" />
             </div>
-            <div className="inline-flex items-center gap-1.5 rounded-full bg-purple-500/15 border border-purple-500/30 px-3 py-0.5 text-[10px] font-mono font-bold uppercase tracking-widest text-purple-300">
+            <div className="inline-flex items-center gap-1.5 rounded-full bg-purple-500/15 border border-purple-500/30 px-3 py-0.5 text-xs font-mono font-bold uppercase tracking-widest text-purple-300">
               RESTRICTED ACCESS
             </div>
-            <h1 className="text-2xl font-extrabold text-white tracking-tight">
+            <h1 className="text-2xl font-extrabold text-foreground tracking-tight">
               Admin Command Center
             </h1>
-            <p className="text-xs text-slate-400 leading-relaxed">
+            <p className="text-xs text-muted leading-relaxed">
               Pantau seluruh data &amp; aktivitas user secara real-time, kelola brankas bukti AES-256-GCM, dan verifikasi klaim domain.
             </p>
           </div>
 
           <form onSubmit={submit} className="space-y-4">
             <div className="space-y-1.5">
-              <label htmlFor="admin-user" className="text-xs font-mono uppercase tracking-wider text-slate-300 font-semibold">
+              <label htmlFor="admin-user" className="text-xs font-mono uppercase tracking-wider text-soft font-semibold">
                 Username Admin
               </label>
               <div className="relative">
                 <User className="h-4 w-4 text-purple-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <input
                   id="admin-user"
-                  className="w-full h-11 rounded-xl border border-white/15 bg-black/40 pl-10 pr-4 text-sm text-white placeholder:text-slate-500 outline-none focus:border-purple-400"
+                  className="w-full h-11 rounded-xl border border-foreground/15 bg-sunken pl-10 pr-4 text-sm text-foreground placeholder:text-muted outline-none focus:border-purple-400"
                   placeholder="Masukkan username admin"
                   autoComplete="username"
                   value={user}
@@ -91,14 +91,14 @@ export function LoginForm() {
             </div>
 
             <div className="space-y-1.5">
-              <label htmlFor="admin-pass" className="text-xs font-mono uppercase tracking-wider text-slate-300 font-semibold">
+              <label htmlFor="admin-pass" className="text-xs font-mono uppercase tracking-wider text-soft font-semibold">
                 Password
               </label>
               <div className="relative">
                 <Lock className="h-4 w-4 text-purple-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <input
                   id="admin-pass"
-                  className="w-full h-11 rounded-xl border border-white/15 bg-black/40 pl-10 pr-10 text-sm text-white placeholder:text-slate-500 outline-none focus:border-purple-400"
+                  className="w-full h-11 rounded-xl border border-foreground/15 bg-sunken pl-10 pr-10 text-sm text-foreground placeholder:text-muted outline-none focus:border-purple-400"
                   placeholder="••••••••••••"
                   type={showPass ? "text" : "password"}
                   autoComplete="current-password"
@@ -109,7 +109,7 @@ export function LoginForm() {
                 <button
                   type="button"
                   onClick={() => setShowPass((s) => !s)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-foreground"
                   aria-label={showPass ? "Sembunyikan password" : "Tampilkan password"}
                 >
                   {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -136,7 +136,7 @@ export function LoginForm() {
             </button>
           </form>
 
-          <div className="pt-3 border-t border-white/10 grid grid-cols-2 gap-2 text-[11px] font-mono text-slate-400">
+          <div className="pt-3 border-t border-border grid grid-cols-2 gap-2 text-xs font-mono text-muted">
             <div className="flex items-center gap-1.5">
               <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
               <span>Bcrypt Timing-Safe</span>
@@ -150,7 +150,7 @@ export function LoginForm() {
       </div>
 
       {/* Bottom Footer */}
-      <div className="mx-auto w-full max-w-5xl text-center text-xs font-mono text-slate-500">
+      <div className="mx-auto w-full max-w-5xl text-center text-xs font-mono text-muted">
         Sentinel-ID Auto Security Auditor · Verified by Google Developer Bandung
       </div>
     </div>

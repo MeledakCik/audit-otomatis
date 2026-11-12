@@ -22,7 +22,7 @@ const SECTIONS: Section[] = [
 function CodeBlock({ children }: { children: string }) {
   return (
     <pre className="rounded-lg border border-[#333] bg-black px-4 py-3.5 overflow-x-auto text-[12.5px] leading-relaxed">
-      <code className="font-mono text-[#00FF88] whitespace-pre">{children}</code>
+      <code className="font-mono text-ok whitespace-pre">{children}</code>
     </pre>
   );
 }

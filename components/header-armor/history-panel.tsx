@@ -7,8 +7,8 @@ import { cn } from "@/lib/utils";
 import type { HeaderScanLogEntry } from "@/lib/header-scan/types";
 
 const GRADE_TEXT: Record<string, string> = {
-  "A+": "text-[#38d47a]",
-  A: "text-[#38d47a]",
+  "A+": "text-ok",
+  A: "text-ok",
   B: "text-[#38bdf8]",
   C: "text-[#ffcc33]",
   D: "text-[#ff8a2b]",

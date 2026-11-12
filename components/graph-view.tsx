@@ -97,7 +97,7 @@ export function GraphView({
     );
   if (!graph || graph.nodes.length === 0) {
     return (
-      <div className="px-6 py-12 text-center text-xs text-zinc-500 bg-zinc-900/40 rounded-xl border border-zinc-800/80">
+      <div className="px-6 py-12 text-center text-xs text-zinc-500 bg-panel rounded-xl border border-zinc-800/80">
         Belum ada data graph. Peta relasi muncul setelah tahap crawling/analisis
         JS berjalan.
       </div>
@@ -128,7 +128,7 @@ export function GraphView({
 
   return (
     <div className="flex flex-col gap-4 w-full animate-fade-in font-sans">
-      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 bg-[#0b0f19]/85 border border-zinc-800/80 p-5 rounded-2xl shadow-xl backdrop-blur-md">
+      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 bg-sunken/85 border border-zinc-800/80 p-5 rounded-2xl shadow-xl backdrop-blur-md">
         <div className="flex flex-wrap items-center gap-2.5">
           <Link
             href={`/scan/${scanId}/nodes`}
@@ -140,7 +140,7 @@ export function GraphView({
         </div>
       </div>
       <div className="flex flex-col rounded-xl border border-zinc-800/80 bg-zinc-950/60 shadow-xl overflow-hidden backdrop-blur-md">
-        <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-3.5 border-b border-zinc-800/80 bg-zinc-900/40">
+        <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-3.5 border-b border-zinc-800/80 bg-panel">
           <div className="flex items-center gap-5 text-xs font-medium text-zinc-400">
             <Legend
               color={COLORS.page}
@@ -155,7 +155,7 @@ export function GraphView({
               label={`Endpoints (${byType.endpoint.length})`}
             />
           </div>
-          <div className="text-xs font-mono text-zinc-500 bg-zinc-900 px-2.5 py-1 rounded-md border border-zinc-800">
+          <div className="text-xs font-mono text-zinc-500 bg-panel px-2.5 py-1 rounded-md border border-zinc-800">
             Total Relasi:{" "}
             <span className="text-zinc-200 font-semibold">
               {visibleEdges.length}

@@ -141,16 +141,16 @@ export function VaultTable() {
   return (
     <section className="space-y-4">
       <SelfTestPanel />
-      <div className="rounded-2xl border border-white/10 bg-[#120d1d] p-5 flex flex-wrap items-center justify-between gap-4">
+      <div className="rounded-2xl border border-border bg-panel p-5 flex flex-wrap items-center justify-between gap-4">
         <div className="space-y-1">
-          <div className="inline-flex items-center gap-1.5 rounded-full bg-pink-500/15 border border-pink-500/30 px-2.5 py-0.5 text-[10px] font-mono font-bold text-pink-300">
+          <div className="inline-flex items-center gap-1.5 rounded-full bg-pink-500/15 border border-pink-500/30 px-2.5 py-0.5 text-xs font-mono font-bold text-pink-300">
             <Lock className="h-3 w-3" />
             AES-256-GCM · AAD KEY-BOUND · JSON VAULT
           </div>
-          <h1 className="text-lg font-extrabold text-white">
+          <h1 className="text-lg font-extrabold text-foreground">
             Encrypted Evidence &amp; Git Intelligence Vault ({items?.length ?? "…"} item aktif)
           </h1>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-muted">
             Menyimpan bukti temuan CRITICAL (<code className="text-pink-300">/.git/config</code>,{" "}
             <code className="text-pink-300">/logs/HEAD</code>, <code className="text-pink-300">/.git/refs/heads/main</code>,{" "}
             <code className="text-pink-300">/.env</code>) beserta ekstraksi URL GitHub/GitLab dalam tampilan JSON terstruktur.
@@ -159,19 +159,19 @@ export function VaultTable() {
 
         <div className="flex items-center gap-2.5">
           <div className="relative">
-            <Search className="h-3.5 w-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <Search className="h-3.5 w-3.5 text-muted absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Cari domain / ID..."
-              className="h-9 rounded-xl border border-white/10 bg-black/40 pl-9 pr-3 text-xs font-mono text-white placeholder:text-slate-500 outline-none focus:border-purple-400"
+              className="h-9 rounded-xl border border-border bg-sunken pl-9 pr-3 text-xs font-mono text-foreground placeholder:text-muted outline-none focus:border-purple-400"
             />
           </div>
           <button
             type="button"
             onClick={load}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] px-3.5 py-2 text-xs font-mono text-slate-200 cursor-pointer"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-foreground/[0.04] hover:bg-foreground/[0.08] px-3.5 py-2 text-xs font-mono text-soft cursor-pointer"
           >
             <RefreshCw className="h-3.5 w-3.5" />
             <span>Refresh</span>
@@ -185,9 +185,9 @@ export function VaultTable() {
         </div>
       )}
 
-      <div className="overflow-x-auto rounded-2xl border border-white/10 bg-[#120d1d] shadow-xl">
+      <div className="overflow-x-auto rounded-2xl border border-border bg-panel shadow-xl">
         <table className="w-full text-left text-xs">
-          <thead className="border-b border-white/10 bg-black/30 font-mono uppercase text-[11px] text-slate-400">
+          <thead className="border-b border-border bg-sunken font-mono uppercase text-xs text-muted">
             <tr>
               <th className="p-4">Domain Target</th>
               <th className="p-4">Vault Entry ID</th>
@@ -198,16 +198,16 @@ export function VaultTable() {
           </thead>
           <tbody className="divide-y divide-white/[0.06]">
             {filtered.map((i) => (
-              <tr key={i.key} className="hover:bg-white/[0.03] transition-colors">
-                <td className="p-4 font-mono font-bold text-white">{i.domain}</td>
+              <tr key={i.key} className="hover:bg-foreground/[0.03] transition-colors">
+                <td className="p-4 font-mono font-bold text-foreground">{i.domain}</td>
                 <td className="p-4 font-mono text-purple-300">{i.id}</td>
                 <td className="p-4 font-mono">
-                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 text-[10px] text-emerald-300">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 text-xs text-emerald-300">
                     <FileJson className="h-3 w-3" />
                     AES-256-GCM · JSON
                   </span>
                 </td>
-                <td className="p-4 font-mono text-slate-300">
+                <td className="p-4 font-mono text-soft">
                   <span className="inline-flex items-center gap-1">
                     <Clock className="h-3.5 w-3.5 text-amber-400" />
                     {fmt(i.ttl)}
@@ -227,7 +227,7 @@ export function VaultTable() {
             ))}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={5} className="p-10 text-center font-mono text-slate-400">
+                <td colSpan={5} className="p-10 text-center font-mono text-muted">
                   Vault saat ini kosong atau tidak ada domain yang cocok.
                 </td>
               </tr>
@@ -244,16 +244,16 @@ export function VaultTable() {
           onClick={() => setOpen(null)}
         >
           <div
-            className="max-h-[88vh] w-full max-w-3xl overflow-auto rounded-2xl border border-purple-500/35 bg-[#120d1e] p-6 shadow-2xl space-y-4 thin-scroll"
+            className="max-h-[88vh] w-full max-w-3xl overflow-auto rounded-2xl border border-purple-500/35 bg-panel p-6 shadow-2xl space-y-4 thin-scroll"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-start justify-between gap-3 border-b border-white/10 pb-3">
+            <div className="flex items-start justify-between gap-3 border-b border-border pb-3">
               <div>
-                <div className="inline-flex items-center gap-1.5 text-[11px] font-mono text-red-400 font-bold">
+                <div className="inline-flex items-center gap-1.5 text-xs font-mono text-red-400 font-bold">
                   <ShieldAlert className="h-3.5 w-3.5" />
                   DECRYPTED VAULT EVIDENCE &amp; GIT REPO JSON (IN-MEMORY ONLY)
                 </div>
-                <h2 className="text-base font-extrabold text-white mt-0.5 break-all">
+                <h2 className="text-base font-extrabold text-foreground mt-0.5 break-all">
                   {open.ev.domain}
                   {open.ev.path}
                 </h2>
@@ -261,7 +261,7 @@ export function VaultTable() {
               <button
                 type="button"
                 onClick={() => setOpen(null)}
-                className="h-8 w-8 grid place-items-center rounded-full bg-white/5 text-slate-400 hover:text-white"
+                className="h-8 w-8 grid place-items-center rounded-full bg-foreground/5 text-muted hover:text-foreground"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -288,18 +288,18 @@ export function VaultTable() {
                   {open.ev.sensitiveIntel.summary.placeholderSecrets} placeholder
                 </p>
                 {open.ev.sensitiveIntel.summary.awsAccountIds.length > 0 && (
-                  <p className="mt-1 text-[11px] font-mono text-slate-300">
+                  <p className="mt-1 text-xs font-mono text-soft">
                     ID akun AWS (diturunkan offline): {open.ev.sensitiveIntel.summary.awsAccountIds.join(", ")}
                   </p>
                 )}
-                <ul className="mt-2 space-y-1 text-[11px] font-mono text-slate-300 max-h-32 overflow-y-auto thin-scroll">
+                <ul className="mt-2 space-y-1 text-xs font-mono text-soft max-h-32 overflow-y-auto thin-scroll">
                   {open.ev.sensitiveIntel.entries.slice(0, 12).map((e) => (
                     <li key={e.path} className="flex flex-wrap items-center gap-x-2">
                       <span className={e.severity === "CRITICAL" ? "text-red-300 font-bold" : "text-amber-300 font-bold"}>
                         {e.severity}
                       </span>
-                      <span className="text-white">{e.path}</span>
-                      <span className="text-slate-400">
+                      <span className="text-foreground">{e.path}</span>
+                      <span className="text-muted">
                         — {e.analysis.liveCount > 0 ? `${e.analysis.liveCount} nyata` : "tanpa kredensial nyata"}
                         {e.confidence === "existence-only" ? " · indikasi" : ""}
                       </span>
@@ -319,7 +319,7 @@ export function VaultTable() {
                     href={open.ev.gitIntel.primaryRepository.webUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-white underline font-bold break-all"
+                    className="text-foreground underline font-bold break-all"
                   >
                     {open.ev.gitIntel.primaryRepository.webUrl}
                   </a>
@@ -337,7 +337,7 @@ export function VaultTable() {
               </div>
             )}
 
-            <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-mono text-slate-300 bg-black/40 rounded-xl p-3 border border-white/10">
+            <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-mono text-soft bg-sunken rounded-xl p-3 border border-border">
               <div className="flex items-center gap-2">
                 <button
                   type="button"
@@ -346,7 +346,7 @@ export function VaultTable() {
                     "rounded-lg px-3 py-1 font-bold cursor-pointer",
                     viewMode === "json"
                       ? "bg-purple-600 text-white"
-                      : "bg-white/5 text-slate-300 hover:text-white"
+                      : "bg-foreground/5 text-soft hover:text-foreground"
                   )}
                 >
                   Tampilan JSON
@@ -358,7 +358,7 @@ export function VaultTable() {
                     "rounded-lg px-3 py-1 font-bold cursor-pointer",
                     viewMode === "raw"
                       ? "bg-purple-600 text-white"
-                      : "bg-white/5 text-slate-300 hover:text-white"
+                      : "bg-foreground/5 text-soft hover:text-foreground"
                   )}
                 >
                   Raw Evidence
@@ -412,7 +412,7 @@ export function VaultTable() {
               </button>
             </div>
 
-            <pre className="whitespace-pre-wrap break-all rounded-xl bg-[#08060e] border border-white/10 p-4 font-mono text-xs text-emerald-300 max-h-96 overflow-y-auto thin-scroll">
+            <pre className="whitespace-pre-wrap break-all rounded-xl bg-sunken border border-border p-4 font-mono text-xs text-emerald-300 max-h-96 overflow-y-auto thin-scroll">
               {viewMode === "json" ? formattedJsonString : open.ev.snippet}
             </pre>
           </div>

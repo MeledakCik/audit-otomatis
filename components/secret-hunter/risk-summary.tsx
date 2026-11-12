@@ -30,7 +30,7 @@ const RISK_COPY: Record<SecretHuntReport["riskLevel"], { title: string; desc: st
     title: "Risk Level: CLEAN",
     desc: "Tidak ada pola secret/credential yang terdeteksi pada file yang berhasil di-scan.",
     icon: ShieldCheck,
-    className: "text-[#38d47a] border-[#38d47a]/40 bg-[#38d47a]/10",
+    className: "text-ok border-ok/40 bg-ok/10",
   },
 };
 

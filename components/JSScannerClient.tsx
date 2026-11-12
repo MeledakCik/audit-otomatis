@@ -63,9 +63,9 @@ const CATEGORY_COLORS = {
 };
 
 const RISK_COLORS = {
-  low: "bg-[#3FA796]/20 text-[#3FA796]",
-  medium: "bg-[#F2A93C]/20 text-[#F2A93C]",
-  high: "bg-[#E15252]/20 text-[#E15252]",
+  low: "bg-ok/20 text-ok",
+  medium: "bg-warn/20 text-warn",
+  high: "bg-danger/20 text-danger",
 };
 
 function normalizeUrl(input: string): string | null {
@@ -144,10 +144,10 @@ export default function JSScannerClient() {
 
   const riskColor = result
     ? result.risk_score >= 50
-      ? "text-[#E15252]"
+      ? "text-danger"
       : result.risk_score >= 25
-      ? "text-[#F2A93C]"
-      : "text-[#3FA796]"
+      ? "text-warn"
+      : "text-ok"
     : "";
 
   const chartData = result
@@ -162,32 +162,32 @@ export default function JSScannerClient() {
   return (
     <div className="mx-auto max-w-5xl px-4 sm:px-6">
       {/* Input Section */}
-      <div className="rounded-2xl border border-[#232B3D] bg-[#141B2A] p-4 sm:p-6 lg:p-8">
+      <div className="rounded-2xl border border-line bg-panel p-4 sm:p-6 lg:p-8">
         <div className="flex items-center gap-3 mb-4">
-          <span className="font-mono text-xs uppercase tracking-widest text-[#3FA796]">
+          <span className="font-mono text-xs uppercase tracking-widest text-ok">
             Target URL
           </span>
-          <span className="h-px flex-1 bg-[#232B3D]" />
+          <span className="h-px flex-1 bg-line" />
         </div>
 
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
           <div className="flex-1">
-            <div className="flex items-center gap-2 sm:gap-3 bg-[#0E1420] rounded-lg border border-[#5F6F8F] px-3 sm:px-4 py-2.5 sm:py-3 focus-within:border-[#3FA796] focus-within:ring-2 focus-within:ring-[#3FA796]/40 transition-all">
-              <span className="text-[#8A96B3] font-mono text-xs sm:text-sm flex-shrink-0">https://</span>
+            <div className="flex items-center gap-2 sm:gap-3 bg-sunken rounded-lg border border-muted px-3 sm:px-4 py-2.5 sm:py-3 focus-within:border-ok focus-within:ring-2 focus-within:ring-ok/40 transition-all">
+              <span className="text-muted font-mono text-xs sm:text-sm flex-shrink-0">https://</span>
               <input
                 type="text"
                 placeholder="example.com"
                 value={urlInput.replace(/^https?:\/\//, "")}
                 onChange={(e) => setUrlInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && runScan()}
-                className="flex-1 bg-transparent font-mono text-sm sm:text-base text-[#EAF0FA] placeholder:text-[#8A96B3] focus:outline-none min-w-0"
+                className="flex-1 bg-transparent font-mono text-sm sm:text-base text-foreground placeholder:text-muted focus:outline-none min-w-0"
               />
             </div>
           </div>
           <button
             onClick={runScan}
             disabled={loading}
-            className="rounded-md bg-[#3FA796] px-6 sm:px-8 py-2.5 sm:py-3 font-mono text-sm font-semibold uppercase tracking-wide text-[#0E1420] transition hover:bg-[#57C4B2] disabled:cursor-not-allowed disabled:opacity-50 whitespace-nowrap"
+            className="rounded-md bg-ok px-6 sm:px-8 py-2.5 sm:py-3 font-mono text-sm font-semibold uppercase tracking-wide text-[#0E1420] transition hover:bg-ok disabled:cursor-not-allowed disabled:opacity-50 whitespace-nowrap"
           >
             {loading ? (
               <span className="flex items-center gap-2">
@@ -203,16 +203,16 @@ export default function JSScannerClient() {
           </button>
         </div>
 
-        <div className="mt-4 flex items-start gap-2 rounded-lg border border-[#F2A93C]/20 bg-[#F2A93C]/5 px-3 py-2">
-          <span className="text-[#F2A93C] text-sm flex-shrink-0">⚠️</span>
-          <p className="text-xs text-[#C9D2E3]">
+        <div className="mt-4 flex items-start gap-2 rounded-lg border border-warn/20 bg-warn/5 px-3 py-2">
+          <span className="text-warn text-sm flex-shrink-0">⚠️</span>
+          <p className="text-xs text-soft">
             For educational asset inventory purposes. Detects public JS libraries and trackers via server-side proxy request.
           </p>
         </div>
 
         {error && (
-          <div className="mt-4 rounded-lg border border-[#E15252]/40 bg-[#E15252]/10 px-4 py-3">
-            <p className="text-sm text-[#E15252]">{error}</p>
+          <div className="mt-4 rounded-lg border border-danger/40 bg-danger/10 px-4 py-3">
+            <p className="text-sm text-danger">{error}</p>
           </div>
         )}
       </div>
@@ -221,20 +221,20 @@ export default function JSScannerClient() {
       {result && (
         <div className="mt-6 sm:mt-8 space-y-4 sm:space-y-6">
           {/* Header / Risk Score */}
-          <div className="rounded-2xl border border-[#232B3D] bg-[#141B2A] p-4 sm:p-6">
+          <div className="rounded-2xl border border-line bg-panel p-4 sm:p-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div className="w-full sm:w-auto">
-                <p className="text-xs text-[#7C89A6]">Scanned URL</p>
-                <p className="font-mono text-sm sm:text-base text-[#EAF0FA] break-all">{result.url}</p>
+                <p className="text-xs text-muted">Scanned URL</p>
+                <p className="font-mono text-sm sm:text-base text-foreground break-all">{result.url}</p>
                 {result.cached && (
-                  <span className="inline-block mt-1 text-xs text-[#3FA796]">✓ Cached result</span>
+                  <span className="inline-block mt-1 text-xs text-ok">✓ Cached result</span>
                 )}
               </div>
               <div className="w-full sm:w-auto text-left sm:text-right">
-                <p className="text-xs text-[#7C89A6]">Supply Chain Risk Score</p>
+                <p className="text-xs text-muted">Supply Chain Risk Score</p>
                 <p className={`text-2xl sm:text-3xl font-bold ${riskColor}`}>
                   {result.risk_score}
-                  <span className="text-sm font-normal text-[#7C89A6]">/100</span>
+                  <span className="text-sm font-normal text-muted">/100</span>
                 </p>
                 <p className={`text-sm font-semibold ${riskColor}`}>
                   {riskLevel} Risk
@@ -244,36 +244,36 @@ export default function JSScannerClient() {
             
             <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
               <div>
-                <p className="text-xs text-[#7C89A6]">Total Scripts</p>
-                <p className="text-lg sm:text-xl font-semibold text-[#EAF0FA]">
+                <p className="text-xs text-muted">Total Scripts</p>
+                <p className="text-lg sm:text-xl font-semibold text-foreground">
                   {result.total_scripts}
                 </p>
               </div>
               {result.vulnerable_count > 0 && (
                 <div>
-                  <p className="text-xs text-[#7C89A6]">Vulnerable</p>
-                  <p className="text-lg sm:text-xl font-semibold text-[#E15252]">
+                  <p className="text-xs text-muted">Vulnerable</p>
+                  <p className="text-lg sm:text-xl font-semibold text-danger">
                     {result.vulnerable_count}
                   </p>
                 </div>
               )}
               {result.outdated_count > 0 && (
                 <div>
-                  <p className="text-xs text-[#7C89A6]">Outdated</p>
-                  <p className="text-lg sm:text-xl font-semibold text-[#F2A93C]">
+                  <p className="text-xs text-muted">Outdated</p>
+                  <p className="text-lg sm:text-xl font-semibold text-warn">
                     {result.outdated_count}
                   </p>
                 </div>
               )}
               <div>
-                <p className="text-xs text-[#7C89A6]">Trackers</p>
-                <p className="text-lg sm:text-xl font-semibold text-[#EAF0FA]">
+                <p className="text-xs text-muted">Trackers</p>
+                <p className="text-lg sm:text-xl font-semibold text-foreground">
                   {result.tracker_count}
                 </p>
               </div>
               <div className="col-span-2 sm:col-span-1">
-                <p className="text-xs text-[#7C89A6]">Scan Duration</p>
-                <p className="text-lg sm:text-xl font-semibold text-[#EAF0FA]">
+                <p className="text-xs text-muted">Scan Duration</p>
+                <p className="text-lg sm:text-xl font-semibold text-foreground">
                   {(result.scan_duration_ms / 1000).toFixed(1)}s
                 </p>
               </div>
@@ -281,14 +281,14 @@ export default function JSScannerClient() {
 
             {/* Frameworks detected */}
             {result.frameworks && result.frameworks.length > 0 && (
-              <div className="mt-4 pt-4 border-t border-[#232B3D]">
-                <p className="text-xs text-[#7C89A6] mb-2">Frameworks Detected</p>
+              <div className="mt-4 pt-4 border-t border-line">
+                <p className="text-xs text-muted mb-2">Frameworks Detected</p>
                 <div className="flex flex-wrap gap-2">
                   {result.frameworks.map((fw, idx) => (
-                    <span key={idx} className="px-3 py-1 rounded-full bg-[#0E1420] border border-[#5F6F8F] text-xs text-[#EAF0FA]">
+                    <span key={idx} className="px-3 py-1 rounded-full bg-sunken border border-muted text-xs text-foreground">
                       {fw.name}
-                      {fw.version && <span className="text-[#7C89A6] ml-1">v{fw.version}</span>}
-                      <span className="text-[#8A96B3] ml-1">({fw.confidence}%)</span>
+                      {fw.version && <span className="text-muted ml-1">v{fw.version}</span>}
+                      <span className="text-muted ml-1">({fw.confidence}%)</span>
                     </span>
                   ))}
                 </div>
@@ -299,13 +299,13 @@ export default function JSScannerClient() {
           {/* Two-column layout */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
             {/* Scripts List */}
-            <div className="lg:col-span-2 rounded-2xl border border-[#232B3D] bg-[#141B2A] p-4 sm:p-6">
-              <h3 className="font-mono text-sm font-semibold uppercase tracking-wide text-[#EAF0FA] mb-4">
+            <div className="lg:col-span-2 rounded-2xl border border-line bg-panel p-4 sm:p-6">
+              <h3 className="font-mono text-sm font-semibold uppercase tracking-wide text-foreground mb-4">
                 JavaScript Libraries
               </h3>
               <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
                 {result.scripts.length === 0 ? (
-                  <p className="text-sm text-[#7C89A6] text-center py-8">No external JS found.</p>
+                  <p className="text-sm text-muted text-center py-8">No external JS found.</p>
                 ) : (
                   result.scripts.map((script, idx) => {
                     const isVuln = script.vulnerable;
@@ -316,33 +316,33 @@ export default function JSScannerClient() {
                         key={idx}
                         className={`rounded-lg border p-3 sm:p-4 ${
                           isVuln
-                            ? "border-[#E15252]/40 bg-[#E15252]/10"
+                            ? "border-danger/40 bg-danger/10"
                             : isOutdated
-                            ? "border-[#F2A93C]/30 bg-[#F2A93C]/10"
-                            : "border-[#232B3D] bg-[#0E1420]"
+                            ? "border-warn/30 bg-warn/10"
+                            : "border-line bg-sunken"
                         }`}
                       >
                         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                           <div className="flex-1 min-w-0 w-full">
-                            <p className="font-mono text-xs text-[#7C89A6] truncate" title={script.src}>
+                            <p className="font-mono text-xs text-muted truncate" title={script.src}>
                               {script.src}
                             </p>
                             <div className="flex flex-wrap items-center gap-2 mt-1">
-                              <span className="font-mono text-sm text-[#EAF0FA]">
+                              <span className="font-mono text-sm text-foreground">
                                 {script.library || "Unknown"}
                               </span>
                               {script.version && (
-                                <span className="text-xs text-[#7C89A6]">
+                                <span className="text-xs text-muted">
                                   v{script.version}
                                 </span>
                               )}
                               {script.confidence && script.confidence > 50 && (
-                                <span className="text-xs text-[#8A96B3]">
+                                <span className="text-xs text-muted">
                                   {script.confidence}%
                                 </span>
                               )}
                               {script.size > 0 && (
-                                <span className="text-xs text-[#8A96B3]">
+                                <span className="text-xs text-muted">
                                   {formatFileSize(script.size)}
                                 </span>
                               )}
@@ -350,15 +350,15 @@ export default function JSScannerClient() {
                           </div>
                           <div className="flex flex-col items-start sm:items-end gap-1 w-full sm:w-auto">
                             {isVuln ? (
-                              <span className="px-2 py-0.5 rounded-full bg-[#E15252]/20 text-[#E15252] text-xs font-semibold">
+                              <span className="px-2 py-0.5 rounded-full bg-danger/20 text-danger text-xs font-semibold">
                                 ⚠️ VULNERABLE
                               </span>
                             ) : isOutdated ? (
-                              <span className="px-2 py-0.5 rounded-full bg-[#F2A93C]/20 text-[#F2A93C] text-xs font-semibold">
+                              <span className="px-2 py-0.5 rounded-full bg-warn/20 text-warn text-xs font-semibold">
                                 Outdated
                               </span>
                             ) : (
-                              <span className="px-2 py-0.5 rounded-full bg-[#3FA796]/20 text-[#3FA796] text-xs font-semibold">
+                              <span className="px-2 py-0.5 rounded-full bg-ok/20 text-ok text-xs font-semibold">
                                 ✓ OK
                               </span>
                             )}
@@ -367,16 +367,16 @@ export default function JSScannerClient() {
                                 href={`https://nvd.nist.gov/vuln/detail/${script.cve}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-xs text-[#E15252] hover:text-[#EC6E6E] transition font-mono"
+                                className="text-xs text-danger hover:text-[#EC6E6E] transition font-mono"
                               >
                                 {script.cve}
-                                {script.cvss && <span className="ml-1 text-[#7C89A6]">CVSS {script.cvss}</span>}
+                                {script.cvss && <span className="ml-1 text-muted">CVSS {script.cvss}</span>}
                               </a>
                             )}
                           </div>
                         </div>
                         {script.cveDescription && (
-                          <p className="mt-2 text-xs text-[#C9D2E3] border-t border-[#232B3D]/50 pt-2">
+                          <p className="mt-2 text-xs text-soft border-t border-line/50 pt-2">
                             {script.cveDescription}
                           </p>
                         )}
@@ -388,8 +388,8 @@ export default function JSScannerClient() {
             </div>
 
             {/* Chart */}
-            <div className="rounded-2xl border border-[#232B3D] bg-[#141B2A] p-4 sm:p-6">
-              <h3 className="font-mono text-sm font-semibold uppercase tracking-wide text-[#EAF0FA] mb-4">
+            <div className="rounded-2xl border border-line bg-panel p-4 sm:p-6">
+              <h3 className="font-mono text-sm font-semibold uppercase tracking-wide text-foreground mb-4">
                 Tracker Categories
               </h3>
               {chartData.length > 0 && isMounted ? (
@@ -431,13 +431,13 @@ export default function JSScannerClient() {
                   </div>
                   <Legend
                     formatter={(value) => (
-                      <span className="text-xs text-[#C9D2E3]">{value}</span>
+                      <span className="text-xs text-soft">{value}</span>
                     )}
                     className="mt-2"
                   />
                 </>
               ) : (
-                <p className="text-sm text-[#7C89A6] text-center py-8">
+                <p className="text-sm text-muted text-center py-8">
                   No trackers detected
                 </p>
               )}
@@ -446,14 +446,14 @@ export default function JSScannerClient() {
 
           {/* Trackers Table */}
           {result.trackers.length > 0 && (
-            <div className="rounded-2xl border border-[#232B3D] bg-[#141B2A] p-4 sm:p-6 overflow-hidden">
-              <h3 className="font-mono text-sm font-semibold uppercase tracking-wide text-[#EAF0FA] mb-4">
+            <div className="rounded-2xl border border-line bg-panel p-4 sm:p-6 overflow-hidden">
+              <h3 className="font-mono text-sm font-semibold uppercase tracking-wide text-foreground mb-4">
                 3rd-party Domains
               </h3>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-[#232B3D] text-left text-xs text-[#7C89A6]">
+                    <tr className="border-b border-line text-left text-xs text-muted">
                       <th className="pb-2 font-mono px-2">Domain</th>
                       <th className="pb-2 font-mono px-2">Category</th>
                       <th className="pb-2 font-mono px-2 text-right">Count</th>
@@ -464,26 +464,26 @@ export default function JSScannerClient() {
                     {result.trackers.map((tracker, idx) => (
                       <tr
                         key={idx}
-                        className="border-b border-[#232B3D]/50 last:border-0 hover:bg-[#0E1420]/50 transition"
+                        className="border-b border-line/50 last:border-0 hover:bg-sunken/50 transition"
                       >
-                        <td className="py-2 px-2 font-mono text-xs text-[#C9D2E3]">
+                        <td className="py-2 px-2 font-mono text-xs text-soft">
                           {tracker.icon && <span className="mr-1">{tracker.icon}</span>}
                           {tracker.domain}
                         </td>
-                        <td className="py-2 px-2 text-xs text-[#C9D2E3]">
+                        <td className="py-2 px-2 text-xs text-soft">
                           {tracker.category}
                         </td>
-                        <td className="py-2 px-2 text-xs text-[#C9D2E3] text-right">
+                        <td className="py-2 px-2 text-xs text-soft text-right">
                           {tracker.count}
                         </td>
                         <td className="py-2 px-2 text-right">
                           <span
                             className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
                               tracker.risk === "high"
-                                ? "bg-[#E15252]/20 text-[#E15252]"
+                                ? "bg-danger/20 text-danger"
                                 : tracker.risk === "medium"
-                                ? "bg-[#F2A93C]/20 text-[#F2A93C]"
-                                : "bg-[#3FA796]/20 text-[#3FA796]"
+                                ? "bg-warn/20 text-warn"
+                                : "bg-ok/20 text-ok"
                             }`}
                           >
                             {tracker.risk.toUpperCase()}
@@ -498,8 +498,8 @@ export default function JSScannerClient() {
           )}
 
           {/* Scan Info */}
-          <div className="rounded-2xl border border-[#232B3D] bg-[#141B2A] p-4">
-            <p className="text-center text-xs text-[#8A96B3]">
+          <div className="rounded-2xl border border-line bg-panel p-4">
+            <p className="text-center text-xs text-muted">
               Scanned at {new Date(result.scanned_at).toLocaleString()}
               {result.cached && " (cached)"}
             </p>

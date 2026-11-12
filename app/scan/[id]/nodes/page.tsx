@@ -206,7 +206,7 @@ export default function NodeExplorerPage() {
               placeholder="Cari berdasarkan URL, chunk JS, atau tipe aset..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-[#0b0f19]/90 border border-zinc-800/80 rounded-2xl pl-11 pr-4 py-3.5 text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-emerald-500/60 focus:ring-2 focus:ring-emerald-500/20 transition-all shadow-inner"
+              className="w-full bg-sunken/90 border border-zinc-800/80 rounded-2xl pl-11 pr-4 py-3.5 text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-emerald-500/60 focus:ring-2 focus:ring-emerald-500/20 transition-all shadow-inner"
             />
             {searchQuery && (
               <button
@@ -220,7 +220,7 @@ export default function NodeExplorerPage() {
 
           <div className="flex items-center gap-2.5 overflow-x-auto pb-1 md:pb-0">
             {/* Filter Buttons */}
-            <div className="flex items-center bg-[#0b0f19] border border-zinc-800/80 p-1 rounded-2xl">
+            <div className="flex items-center bg-sunken border border-zinc-800/80 p-1 rounded-2xl">
               <FilterButton
                 active={activeFilter === "all"}
                 onClick={() => setActiveFilter("all")}
@@ -252,7 +252,7 @@ export default function NodeExplorerPage() {
                 else if (sortBy === "type") setSortBy("label");
                 else setSortBy("default");
               }}
-              className="flex items-center gap-2 bg-[#0b0f19] hover:bg-zinc-900 border border-zinc-800/80 px-4 py-3 rounded-2xl text-xs font-mono font-medium text-zinc-300 transition-colors shadow-sm shrink-0"
+              className="flex items-center gap-2 bg-sunken hover:bg-panel border border-zinc-800/80 px-4 py-3 rounded-2xl text-xs font-mono font-medium text-zinc-300 transition-colors shadow-sm shrink-0"
             >
               <ArrowUpDown className="w-3.5 h-3.5 text-emerald-400" />
               Sort:{" "}
@@ -270,7 +270,7 @@ export default function NodeExplorerPage() {
           </div>
         )}
         {loading ? (
-          <div className="flex flex-col items-center justify-center p-24 bg-[#0b0f19]/40 border border-zinc-800/80 rounded-3xl text-center space-y-4">
+          <div className="flex flex-col items-center justify-center p-24 bg-sunken/40 border border-zinc-800/80 rounded-3xl text-center space-y-4">
             <div className="relative">
               <div className="w-12 h-12 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin" />
               <div className="absolute inset-0 flex items-center justify-center">
@@ -282,8 +282,8 @@ export default function NodeExplorerPage() {
             </p>
           </div>
         ) : filteredNodes.length === 0 ? (
-          <div className="flex flex-col items-center justify-center p-20 bg-[#0b0f19]/40 border border-zinc-800/80 rounded-3xl text-center space-y-3">
-            <div className="p-4 rounded-2xl bg-zinc-900 border border-zinc-800 text-zinc-500">
+          <div className="flex flex-col items-center justify-center p-20 bg-sunken/40 border border-zinc-800/80 rounded-3xl text-center space-y-3">
+            <div className="p-4 rounded-2xl bg-panel border border-zinc-800 text-zinc-500">
               <AlertCircle className="w-8 h-8" />
             </div>
             <p className="text-xs text-zinc-300 font-mono font-medium">
@@ -313,7 +313,7 @@ export default function NodeExplorerPage() {
                   className={`group relative flex flex-col justify-between p-5 rounded-3xl border transition-all duration-300 cursor-pointer backdrop-blur-xl shadow-xl hover:-translate-y-1 ${
                     isSelected
                       ? "bg-gradient-to-br from-[#111827] to-[#0d1322] border-emerald-500/80 shadow-emerald-950/50 ring-2 ring-emerald-500/30 scale-[1.01]"
-                      : "bg-[#0b0f19]/70 hover:bg-[#111827]/80 border-zinc-800/80 hover:border-zinc-700/80 hover:shadow-2xl"
+                      : "bg-sunken/70 hover:bg-panel/80 border-zinc-800/80 hover:border-zinc-700/80 hover:shadow-2xl"
                   }`}
                 >
                   <div>
@@ -382,7 +382,7 @@ export default function NodeExplorerPage() {
                       )}
                     </span>
                     {isPage && (
-                      <span className="text-xs bg-zinc-900/90 px-2.5 py-0.5 rounded-lg border border-zinc-800 text-zinc-400">
+                      <span className="text-xs bg-panel px-2.5 py-0.5 rounded-lg border border-zinc-800 text-zinc-400">
                         Depth: {node.depth ?? 0}
                       </span>
                     )}
@@ -413,9 +413,9 @@ function StatBox({
 }) {
   return (
     <div
-      className={`group flex items-center gap-3.5 bg-[#070a12]/80 border border-zinc-800/80 px-4 py-3.5 rounded-2xl shadow-inner transition-all duration-300 hover:bg-[#111827]/90 ${colorBorder}`}
+      className={`group flex items-center gap-3.5 bg-[#070a12]/80 border border-zinc-800/80 px-4 py-3.5 rounded-2xl shadow-inner transition-all duration-300 hover:bg-panel/90 ${colorBorder}`}
     >
-      <div className="p-2.5 rounded-xl bg-zinc-900/90 border border-zinc-800/80 shadow-sm group-hover:scale-110 transition-transform">
+      <div className="p-2.5 rounded-xl bg-panel border border-zinc-800/80 shadow-sm group-hover:scale-110 transition-transform">
         {icon}
       </div>
       <div>
@@ -445,7 +445,7 @@ function FilterButton({
       className={`px-3.5 py-2 rounded-xl text-xs font-mono transition-all ${
         active
           ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm font-semibold"
-          : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60 border border-transparent"
+          : "text-zinc-400 hover:text-zinc-200 hover:bg-panel border border-transparent"
       }`}
     >
       {children}

@@ -40,7 +40,7 @@ export function HistoryPanel({ entries, activeId, onSelect, onClear }: HistoryPa
           >
             <div className="flex items-center justify-between gap-2">
               <span className="text-xs font-mono text-foreground truncate">{entry.domain}</span>
-              <span className={cn("text-xs font-mono font-bold", entry.highCount > 0 ? "text-sev-critical" : "text-[#38d47a]")}>
+              <span className={cn("text-xs font-mono font-bold", entry.highCount > 0 ? "text-sev-critical" : "text-ok")}>
                 {entry.totalFound} subs{entry.highCount > 0 ? ` · ${entry.highCount} HIGH` : ""}
               </span>
             </div>

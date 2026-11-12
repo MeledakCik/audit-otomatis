@@ -29,7 +29,7 @@ export function InputPanel({ onScan, loading }: InputPanelProps) {
               placeholder="example.com"
               spellCheck={false}
               className={cn(
-                "w-full rounded-xl border border-border bg-[#0a0710] text-[#d6d0e8] font-mono text-sm pl-9 pr-3.5 py-2.5",
+                "w-full rounded-xl border border-border bg-sunken text-soft font-mono text-sm pl-9 pr-3.5 py-2.5",
                 "focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent placeholder:text-muted-dim/60"
               )}
             />

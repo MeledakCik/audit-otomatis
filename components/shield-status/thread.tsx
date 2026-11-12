@@ -76,16 +76,16 @@ const accentMap: Record<string, string> = {
   rose: "from-transparent via-rose-500/60 to-transparent",
 };
 
-function StatTile({ icon: Icon, label, value, subtitle, accent = "zinc", valueClassName = "text-white" }: any) {
+function StatTile({ icon: Icon, label, value, subtitle, accent = "zinc", valueClassName = "text-foreground" }: any) {
   return (
-    <div className="group relative overflow-hidden rounded-2xl border border-purple-900/30 bg-[#0d0914]/80 p-4 backdrop-blur-xl transition-all hover:border-purple-800/30 hover:shadow-[0_0_20px_rgba(124,58,237,0.08)]">
+    <div className="group relative overflow-hidden rounded-2xl border border-purple-900/30 bg-panel/80 p-4 backdrop-blur-xl transition-all hover:border-purple-800/30 hover:shadow-[0_0_20px_rgba(124,58,237,0.08)]">
       <div className={`absolute top-0 left-0 h-0.5 w-full bg-gradient-to-r ${accentMap[accent] || accentMap.zinc} opacity-60 group-hover:opacity-100 transition-opacity`} />
 
       <div className="flex items-center justify-between">
         <span className="text-xs font-semibold uppercase tracking-[0.14em] text-purple-400 group-hover:text-purple-300">
           {label}
         </span>
-        <div className="flex h-6 w-6 items-center justify-center rounded-full border border-white/[0.06] bg-white/[0.03] text-purple-400 group-hover:text-purple-300 transition-colors">
+        <div className="flex h-6 w-6 items-center justify-center rounded-full border border-foreground/[0.06] bg-foreground/[0.03] text-purple-400 group-hover:text-purple-300 transition-colors">
           <Icon className="h-3.5 w-3.5" />
         </div>
       </div>
@@ -287,7 +287,7 @@ export default function ThreatLab() {
   };
 
   return (
-    <div className="min-h-dvh bg-[#07050a] text-zinc-200 p-4 md:p-8 font-mono antialiased selection:bg-purple-500/30 selection:text-purple-200">
+    <div className="min-h-dvh bg-sunken text-zinc-200 p-4 md:p-8 font-mono antialiased selection:bg-purple-500/30 selection:text-purple-200">
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Header Title (Diubah ke Threads Labs) */}
         <div className="flex items-start gap-3">
@@ -296,7 +296,7 @@ export default function ThreatLab() {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-xl md:text-2xl font-bold tracking-tight text-white">
+              <h1 className="text-xl md:text-2xl font-bold tracking-tight text-foreground">
                 Thread Labs
               </h1>
               <Lock className="w-4 h-4 text-purple-400" />
@@ -308,7 +308,7 @@ export default function ThreatLab() {
         </div>
 
         {/* Header Controls (Cyber Input Card) */}
-        <div className="rounded-2xl border border-purple-900/30 bg-[#0d0914]/80 backdrop-blur-xl p-5 shadow-xl shadow-purple-950/10 space-y-5">
+        <div className="rounded-2xl border border-purple-900/30 bg-panel/80 backdrop-blur-xl p-5 shadow-xl shadow-purple-950/10 space-y-5">
           <div className="flex items-center gap-2 text-xs font-semibold tracking-wider text-purple-400 uppercase border-b border-purple-900/20 pb-3">
             <Target className="w-4 h-4" />
             <span>Target Configuration</span>
@@ -326,7 +326,7 @@ export default function ThreatLab() {
                 value={domainInput}
                 onChange={(e) => setDomainInput(e.target.value)}
                 placeholder="example.com, target.id"
-                className="w-full bg-[#050308] border border-purple-900/40 rounded-xl px-4 py-2.5 text-xs text-purple-200 placeholder-zinc-600 focus-visible:outline-2 focus-visible:outline-purple-400 focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 transition-all font-mono disabled:opacity-50"
+                className="w-full bg-sunken border border-purple-900/40 rounded-xl px-4 py-2.5 text-xs text-purple-200 placeholder-zinc-600 focus-visible:outline-2 focus-visible:outline-purple-400 focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 transition-all font-mono disabled:opacity-50"
                 disabled={isRunning || isLoading}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !isRunning && domainInput.trim()) {
@@ -346,7 +346,7 @@ export default function ThreatLab() {
                   type="number"
                   value={threadsInput}
                   onChange={(e) => setThreadsInput(e.target.value)}
-                  className="w-full bg-[#050308] border border-purple-900/40 rounded-xl px-3 py-2 text-xs text-purple-200 focus-visible:outline-2 focus-visible:outline-purple-400 focus:border-purple-500 font-mono disabled:opacity-50"
+                  className="w-full bg-sunken border border-purple-900/40 rounded-xl px-3 py-2 text-xs text-purple-200 focus-visible:outline-2 focus-visible:outline-purple-400 focus:border-purple-500 font-mono disabled:opacity-50"
                   disabled={isRunning || isLoading}
                 />
               </div>
@@ -359,7 +359,7 @@ export default function ThreatLab() {
                   type="number"
                   value={timeoutInput}
                   onChange={(e) => setTimeoutInput(e.target.value)}
-                  className="w-full bg-[#050308] border border-purple-900/40 rounded-xl px-3 py-2 text-xs text-purple-200 focus-visible:outline-2 focus-visible:outline-purple-400 focus:border-purple-500 font-mono disabled:opacity-50"
+                  className="w-full bg-sunken border border-purple-900/40 rounded-xl px-3 py-2 text-xs text-purple-200 focus-visible:outline-2 focus-visible:outline-purple-400 focus:border-purple-500 font-mono disabled:opacity-50"
                   disabled={isRunning || isLoading}
                 />
               </div>
@@ -371,7 +371,7 @@ export default function ThreatLab() {
                     checked={useProxy}
                     onChange={(e) => setUseProxy(e.target.checked)}
                     disabled={isRunning || isLoading}
-                    className="rounded border-purple-900/50 bg-[#050308] text-purple-600 focus:ring-0 focus:ring-offset-0 disabled:opacity-50"
+                    className="rounded border-purple-900/50 bg-sunken text-purple-600 focus:ring-0 focus:ring-offset-0 disabled:opacity-50"
                   />
                   Proxy
                 </label>
@@ -386,11 +386,11 @@ export default function ThreatLab() {
                   disabled={isLoading}
                   className="w-full relative group overflow-hidden rounded-xl bg-gradient-to-r from-purple-700 via-fuchsia-600 to-purple-600 p-[1px] font-semibold text-xs transition-all duration-300 hover:shadow-[0_0_25px_rgba(168,85,247,0.4)] disabled:opacity-50"
                 >
-                  <div className="flex items-center justify-center gap-2 rounded-xl bg-[#130a21] px-4 py-2.5 transition-all duration-300 group-hover:bg-transparent text-white">
+                  <div className="flex items-center justify-center gap-2 rounded-xl bg-[#130a21] px-4 py-2.5 transition-all duration-300 group-hover:bg-transparent text-foreground">
                     {isLoading ? (
                       <RefreshCw className="h-4 w-4 animate-spin text-purple-300" />
                     ) : (
-                      <Play className="h-4 w-4 text-purple-300 group-hover:text-white" />
+                      <Play className="h-4 w-4 text-purple-300 group-hover:text-foreground" />
                     )}
                     <span>START SCAN</span>
                   </div>
@@ -401,11 +401,11 @@ export default function ThreatLab() {
                   disabled={isLoading}
                   className="w-full relative group overflow-hidden rounded-xl bg-gradient-to-r from-rose-700 to-pink-600 p-[1px] font-semibold text-xs transition-all duration-300 hover:shadow-[0_0_25px_rgba(244,63,94,0.4)] disabled:opacity-50"
                 >
-                  <div className="flex items-center justify-center gap-2 rounded-xl bg-[#1d080e] px-4 py-2.5 transition-all duration-300 group-hover:bg-transparent text-white">
+                  <div className="flex items-center justify-center gap-2 rounded-xl bg-[#1d080e] px-4 py-2.5 transition-all duration-300 group-hover:bg-transparent text-foreground">
                     {isLoading ? (
                       <RefreshCw className="h-4 w-4 animate-spin text-rose-300" />
                     ) : (
-                      <Square className="h-4 w-4 text-rose-300 group-hover:text-white" />
+                      <Square className="h-4 w-4 text-rose-300 group-hover:text-foreground" />
                     )}
                     <span>STOP SCAN</span>
                   </div>
@@ -483,10 +483,10 @@ export default function ThreatLab() {
 
         {/* Results Table */}
         {batchData && (batchData.results?.length ?? 0) > 0 && (
-          <div className="overflow-hidden rounded-2xl border border-purple-900/30 bg-[#0d0914]/80 backdrop-blur-xl shadow-xl shadow-purple-950/10">
+          <div className="overflow-hidden rounded-2xl border border-purple-900/30 bg-panel/80 backdrop-blur-xl shadow-xl shadow-purple-950/10">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead className="border-b border-purple-900/20 bg-[#07050a]/60 text-purple-300 uppercase tracking-wider text-xs">
+                <thead className="border-b border-purple-900/20 bg-sunken/60 text-purple-300 uppercase tracking-wider text-xs">
                   <tr>
                     <th className="px-5 py-3.5 font-semibold">Domain Target</th>
                     <th className="px-5 py-3.5 font-semibold">Guard Status</th>
@@ -498,7 +498,7 @@ export default function ThreatLab() {
                 <tbody className="divide-y divide-purple-900/20 font-mono text-zinc-300">
                   {(batchData.results ?? []).map((res, index) => (
                     <tr key={index} className="hover:bg-purple-950/20 transition-colors">
-                      <td className="px-5 py-3.5 font-semibold text-white">{res.domain}</td>
+                      <td className="px-5 py-3.5 font-semibold text-foreground">{res.domain}</td>
                       <td className="px-5 py-3.5">
                         {res.isGuarded ? (
                           <span className="inline-flex items-center gap-1.5 rounded-md bg-emerald-950/40 px-2.5 py-1 text-xs font-bold text-emerald-400 border border-emerald-800/40">
@@ -530,8 +530,8 @@ export default function ThreatLab() {
         )}
 
         {/* Realtime Terminal Console */}
-        <div className="overflow-hidden rounded-2xl border border-purple-900/30 bg-[#050308]/90 font-mono text-xs shadow-xl shadow-purple-950/20">
-          <div className="flex items-center justify-between border-b border-purple-900/20 bg-[#0d0914]/80 px-4 py-3 text-zinc-400">
+        <div className="overflow-hidden rounded-2xl border border-purple-900/30 bg-sunken/90 font-mono text-xs shadow-xl shadow-purple-950/20">
+          <div className="flex items-center justify-between border-b border-purple-900/20 bg-panel/80 px-4 py-3 text-zinc-400">
             <div className="flex items-center gap-2">
               <Terminal className="h-3.5 w-3.5 text-fuchsia-400" />
               <span className="font-semibold text-purple-200 text-xs">Live Execution Console</span>

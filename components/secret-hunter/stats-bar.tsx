@@ -7,7 +7,7 @@ const RISK_STYLE: Record<RiskLevel, string> = {
   HIGH: "text-sev-critical",
   MEDIUM: "text-sev-medium",
   LOW: "text-sev-low",
-  CLEAN: "text-[#38d47a]",
+  CLEAN: "text-ok",
 };
 
 export function StatsBar({
@@ -21,7 +21,7 @@ export function StatsBar({
 }) {
   const stats = [
     { label: "Files Scanned", value: filesScanned, icon: FileCode2, className: "text-foreground" },
-    { label: "Findings", value: findingsCount, icon: ShieldAlert, className: findingsCount > 0 ? "text-sev-high" : "text-[#38d47a]" },
+    { label: "Findings", value: findingsCount, icon: ShieldAlert, className: findingsCount > 0 ? "text-sev-high" : "text-ok" },
     { label: "Risk Level", value: riskLevel, icon: Gauge, className: RISK_STYLE[riskLevel] },
   ];
 

@@ -10,7 +10,7 @@ const RISK_TEXT: Record<string, string> = {
   HIGH: "text-sev-critical",
   MEDIUM: "text-sev-medium",
   LOW: "text-sev-low",
-  CLEAN: "text-[#38d47a]",
+  CLEAN: "text-ok",
 };
 
 interface HistoryPanelProps {

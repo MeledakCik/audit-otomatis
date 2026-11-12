@@ -210,12 +210,12 @@ export function SeoMasterView({ isDark = true }: { isDark?: boolean }) {
   const [copiedCode, setCopiedCode] = useState<boolean>(false);
 
   const glassCard = isDark
-    ? "bg-white/[0.04] backdrop-blur-2xl border border-white/[0.11] shadow-[0_24px_60px_-15px_rgba(0,0,0,0.65)]"
-    : "bg-white/75 backdrop-blur-2xl border border-slate-900/[0.08] shadow-[0_20px_50px_-12px_rgba(15,23,42,0.07)]";
+    ? "bg-foreground/[0.04] backdrop-blur-2xl border border-foreground/[0.11] shadow-[0_24px_60px_-15px_rgba(0,0,0,0.65)]"
+    : "bg-foreground/75 backdrop-blur-2xl border border-slate-900/[0.08] shadow-[0_20px_50px_-12px_rgba(15,23,42,0.07)]";
   const glassPill = isDark
-    ? "bg-white/[0.06] backdrop-blur-xl border border-white/[0.1]"
-    : "bg-white/85 backdrop-blur-xl border border-slate-900/[0.08]";
-  const mutedText = isDark ? "text-slate-400" : "text-slate-600";
+    ? "bg-foreground/[0.06] backdrop-blur-xl border border-foreground/[0.1]"
+    : "bg-foreground/85 backdrop-blur-xl border border-slate-900/[0.08]";
+  const mutedText = isDark ? "text-muted" : "text-slate-600";
 
   const filteredSignals = useMemo(
     () => SEO_SIGNALS.filter((s) => s.category === activeCat),
@@ -352,7 +352,7 @@ export const metadata: Metadata = {
             { label: "Security Trust", val: "A+ Grade", sub: "TLS 1.3 · HSTS · CSP", tone: "text-pink-500" }
           ].map((item) => (
             <div key={item.label} className={`rounded-2xl p-4 ${glassPill}`}>
-              <span className={`text-[11px] font-mono uppercase ${mutedText}`}>{item.label}</span>
+              <span className={`text-xs font-mono uppercase ${mutedText}`}>{item.label}</span>
               <p className={`text-2xl font-extrabold mt-1 ${item.tone}`}>{item.val}</p>
               <p className={`text-xs mt-0.5 ${mutedText}`}>{item.sub}</p>
             </div>
@@ -402,7 +402,7 @@ export const metadata: Metadata = {
               <div key={sig.id} className={`rounded-2xl p-4 space-y-1.5 ${glassPill}`}>
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-sm font-bold">{sig.title}</span>
-                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-semibold bg-emerald-500/15 text-emerald-500">
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-semibold bg-emerald-500/15 text-emerald-500">
                     {sig.value}
                   </span>
                 </div>
@@ -425,7 +425,7 @@ export const metadata: Metadata = {
                   title={h.region}
                 >
                   <span className="font-mono font-bold text-emerald-500">{h.code}</span>
-                  <span className={`text-[10px] truncate ml-1.5 ${mutedText}`}>
+                  <span className={`text-xs truncate ml-1.5 ${mutedText}`}>
                     {h.region.split(" ")[0]}
                   </span>
                 </div>
@@ -479,7 +479,7 @@ export const metadata: Metadata = {
           </div>
 
           <pre
-            className={`rounded-2xl p-4 text-[11px] font-mono overflow-x-auto max-h-[340px] leading-relaxed ${glassPill}`}
+            className={`rounded-2xl p-4 text-xs font-mono overflow-x-auto max-h-[340px] leading-relaxed ${glassPill}`}
           >
             {generatedSnippet}
           </pre>
@@ -500,12 +500,12 @@ export function SentinelVaultView({ isDark = true }: { isDark?: boolean }) {
   const [verifyNotice, setVerifyNotice] = useState<string>("");
 
   const glassCard = isDark
-    ? "bg-white/[0.04] backdrop-blur-2xl border border-white/[0.11] shadow-[0_24px_60px_-15px_rgba(0,0,0,0.65)]"
-    : "bg-white/75 backdrop-blur-2xl border border-slate-900/[0.08] shadow-[0_20px_50px_-12px_rgba(15,23,42,0.07)]";
+    ? "bg-foreground/[0.04] backdrop-blur-2xl border border-foreground/[0.11] shadow-[0_24px_60px_-15px_rgba(0,0,0,0.65)]"
+    : "bg-foreground/75 backdrop-blur-2xl border border-slate-900/[0.08] shadow-[0_20px_50px_-12px_rgba(15,23,42,0.07)]";
   const glassPill = isDark
-    ? "bg-white/[0.06] backdrop-blur-xl border border-white/[0.1]"
-    : "bg-white/85 backdrop-blur-xl border border-slate-900/[0.08]";
-  const mutedText = isDark ? "text-slate-400" : "text-slate-600";
+    ? "bg-foreground/[0.06] backdrop-blur-xl border border-foreground/[0.1]"
+    : "bg-foreground/85 backdrop-blur-xl border border-slate-900/[0.08]";
+  const mutedText = isDark ? "text-muted" : "text-slate-600";
 
   const selectedArtifact = useMemo(
     () => VAULT_ARTIFACTS.find((a) => a.id === selectedArtifactId) || VAULT_ARTIFACTS[0],
@@ -559,7 +559,7 @@ export function SentinelVaultView({ isDark = true }: { isDark?: boolean }) {
             { label: "Akses Dekripsi", val: "1x Lihat", sub: "One-Time Burn Token", tone: "text-purple-400" }
           ].map((m) => (
             <div key={m.label} className={`rounded-2xl p-4 ${glassPill}`}>
-              <span className={`text-[11px] font-mono uppercase ${mutedText}`}>{m.label}</span>
+              <span className={`text-xs font-mono uppercase ${mutedText}`}>{m.label}</span>
               <p className={`text-2xl font-extrabold mt-1 ${m.tone}`}>{m.val}</p>
               <p className={`text-xs mt-0.5 ${mutedText}`}>{m.sub}</p>
             </div>
@@ -606,7 +606,7 @@ export function SentinelVaultView({ isDark = true }: { isDark?: boolean }) {
                       {art.path}
                     </span>
                     <span
-                      className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-md ${
+                      className={`text-xs font-mono font-bold px-2 py-0.5 rounded-md ${
                         art.risk === "CRITICAL"
                           ? "bg-rose-500/15 text-rose-500"
                           : art.risk === "HIGH"
@@ -617,7 +617,7 @@ export function SentinelVaultView({ isDark = true }: { isDark?: boolean }) {
                       {art.risk}
                     </span>
                   </div>
-                  <div className={`text-[11px] font-mono mt-1 ${mutedText}`}>{art.cwe}</div>
+                  <div className={`text-xs font-mono mt-1 ${mutedText}`}>{art.cwe}</div>
                 </button>
               );
             })}
@@ -629,12 +629,12 @@ export function SentinelVaultView({ isDark = true }: { isDark?: boolean }) {
               <span className="text-xs font-mono font-bold text-cyan-500">
                 {selectedArtifact.path} · {selectedArtifact.cwe}
               </span>
-              <span className={`text-[11px] font-mono ${mutedText}`}>
+              <span className={`text-xs font-mono ${mutedText}`}>
                 {selectedArtifact.cipherMeta}
               </span>
             </div>
 
-            <div className="p-3.5 rounded-xl bg-black/25 border border-white/10 font-mono text-xs break-all">
+            <div className="p-3.5 rounded-xl bg-sunken border border-border font-mono text-xs break-all">
               {isOwnerVerified
                 ? selectedArtifact.decryptedPreview
                 : selectedArtifact.publicPreview}
@@ -715,12 +715,12 @@ export function SentinelVaultView({ isDark = true }: { isDark?: boolean }) {
                   ? `Tambahkan TXT Record pada DNS ${claimDomain}:`
                   : `Unggah file teks pada path berikut:`}
               </div>
-              <div className="font-mono text-[11px] text-cyan-500 break-all">
+              <div className="font-mono text-xs text-cyan-500 break-all">
                 {claimMethod === "dns"
                   ? `Host: _sentinel-verify.${claimDomain}`
                   : `URL: https://${claimDomain}/.well-known/sentinel-claim.txt`}
               </div>
-              <div className="p-2.5 rounded-xl bg-black/20 font-mono text-[11px] text-emerald-400 break-all">
+              <div className="p-2.5 rounded-xl bg-sunken font-mono text-xs text-emerald-400 break-all">
                 {verificationToken}
               </div>
             </div>

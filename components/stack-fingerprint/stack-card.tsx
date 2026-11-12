@@ -7,13 +7,13 @@ import { cn } from "@/lib/utils";
 import type { DetectedStack, EvidenceTier } from "@/lib/stack-fingerprint/types";
 
 const TIER_META: Record<EvidenceTier, { dot: string; label: string; text: string }> = {
-  header: { dot: "bg-[#38d47a]", label: "HEADER", text: "text-[#38d47a]" },
+  header: { dot: "bg-ok", label: "HEADER", text: "text-ok" },
   html: { dot: "bg-accent", label: "HTML", text: "text-accent" },
   jsHint: { dot: "bg-sev-medium", label: "JS HINT", text: "text-sev-medium" },
 };
 
 function confidenceTone(confidence: number): { bar: string; text: string } {
-  if (confidence >= 85) return { bar: "bg-[#38d47a]", text: "text-[#38d47a]" };
+  if (confidence >= 85) return { bar: "bg-ok", text: "text-ok" };
   if (confidence >= 70) return { bar: "bg-accent", text: "text-accent" };
   return { bar: "bg-sev-medium", text: "text-sev-medium" };
 }

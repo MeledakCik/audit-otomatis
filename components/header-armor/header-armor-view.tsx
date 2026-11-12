@@ -71,7 +71,7 @@ export function HeaderArmorView() {
     <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-[1600px] mx-auto">
       <div className="flex items-start gap-3">
         <div className="h-10 w-10 grid place-items-center rounded-xl bg-gradient-to-br from-[#c084fc] to-[#9333ea] text-black shadow-lg shadow-purple-500/20 shrink-0">
-          <ShieldHalf className="h-5 w-5 text-white" strokeWidth={2.5} />
+          <ShieldHalf className="h-5 w-5 text-foreground" strokeWidth={2.5} />
         </div>
         <div>
           <h1 className="text-lg font-extrabold tracking-tight text-foreground flex items-center gap-2">

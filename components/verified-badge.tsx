@@ -53,15 +53,15 @@ export function VerifiedBadge({ variant = "header", className }: VerifiedBadgePr
             className
           )}
         >
-          <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/[0.08] border border-white/15 shadow-inner">
+          <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-foreground/[0.08] border border-foreground/15 shadow-inner">
             <GoogleDevLogo className="h-4 w-4" />
           </span>
           <span className="flex flex-col">
-            <span className="flex items-center gap-1.5 text-xs sm:text-sm font-extrabold tracking-wide text-white">
+            <span className="flex items-center gap-1.5 text-xs sm:text-sm font-extrabold tracking-wide text-foreground">
               <span>Sudah Terverifikasi oleh Google Developer Bandung</span>
               <BadgeCheck className="h-4 w-4 text-emerald-400 shrink-0" />
             </span>
-            <span className="text-[11px] font-mono text-emerald-200/90">
+            <span className="text-xs font-mono text-emerald-200/90">
               Verified by Google Developer Bandung (GDG Bandung) · Standar Audit Pasif &amp; Brankas AES-256-GCM · Klik detail
             </span>
           </span>
@@ -111,15 +111,15 @@ export function VerifiedBadge({ variant = "header", className }: VerifiedBadgePr
             className
           )}
         >
-          <div className="h-8 w-8 shrink-0 grid place-items-center rounded-lg bg-white/[0.06] border border-white/10 group-hover:border-emerald-400/40 transition-colors">
+          <div className="h-8 w-8 shrink-0 grid place-items-center rounded-lg bg-foreground/[0.06] border border-border group-hover:border-emerald-400/40 transition-colors">
             <GoogleDevLogo className="h-4 w-4" />
           </div>
           <div className="min-w-0 flex-1 leading-tight">
-            <div className="flex items-center gap-1 text-[10px] font-mono uppercase tracking-wider text-emerald-400 font-semibold">
+            <div className="flex items-center gap-1 text-xs font-mono uppercase tracking-wider text-emerald-400 font-semibold">
               <BadgeCheck className="h-3 w-3 shrink-0" />
               Sudah Terverifikasi
             </div>
-            <div className="text-xs font-bold text-white truncate mt-0.5">
+            <div className="text-xs font-bold text-foreground truncate mt-0.5">
               Google Developer Bandung
             </div>
           </div>
@@ -150,13 +150,13 @@ export function VerifiedBadge({ variant = "header", className }: VerifiedBadgePr
           onClick={() => setOpen(false)}
         >
           <div
-            className="relative w-full max-w-lg rounded-2xl border border-emerald-500/35 bg-[#110c1d] p-6 text-slate-100 shadow-2xl shadow-emerald-950/40 animate-fade-up"
+            className="relative w-full max-w-lg rounded-2xl border border-emerald-500/35 bg-[#110c1d] p-6 text-soft shadow-2xl shadow-emerald-950/40 animate-fade-up"
             onClick={(e) => e.stopPropagation()}
           >
             <button
               type="button"
               onClick={() => setOpen(false)}
-              className="absolute right-4 top-4 h-8 w-8 grid place-items-center rounded-full bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white cursor-pointer"
+              className="absolute right-4 top-4 h-8 w-8 grid place-items-center rounded-full bg-foreground/5 text-muted hover:bg-foreground/10 hover:text-foreground cursor-pointer"
               aria-label="Tutup modal verifikasi"
             >
               <X className="h-4 w-4" />
@@ -167,17 +167,17 @@ export function VerifiedBadge({ variant = "header", className }: VerifiedBadgePr
                 <GoogleDevLogo className="h-6 w-6" />
               </div>
               <div>
-                <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 text-[11px] font-mono font-semibold text-emerald-300">
+                <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 text-xs font-mono font-semibold text-emerald-300">
                   <BadgeCheck className="h-3.5 w-3.5 text-emerald-400" />
                   SUDAH TERVERIFIKASI RESMI
                 </div>
-                <h2 className="text-lg font-extrabold text-white mt-1">
+                <h2 className="text-lg font-extrabold text-foreground mt-1">
                   Google Developer Bandung (GDG Bandung)
                 </h2>
               </div>
             </div>
 
-            <p className="mt-4 text-xs leading-relaxed text-slate-300">
+            <p className="mt-4 text-xs leading-relaxed text-soft">
               Platform <strong>Sentinel-ID Auto Security Auditor</strong> sudah terverifikasi oleh{" "}
               <strong>Google Developer Bandung (GDG Bandung)</strong> untuk melakukan{" "}
               <strong>Audit File Sensitif &amp; Brankas Bukti Terenkripsi (AES-256-GCM)</strong> serta deteksi permukaan{" "}
@@ -186,46 +186,46 @@ export function VerifiedBadge({ variant = "header", className }: VerifiedBadgePr
             </p>
 
             <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
-              <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+              <div className="rounded-xl border border-border bg-foreground/[0.03] p-3">
                 <div className="flex items-center gap-1.5 text-emerald-400 font-semibold">
                   <ShieldCheck className="h-4 w-4" />
                   100% Passive GET-Only
                 </div>
-                <p className="mt-1 text-[11px] text-slate-400 leading-relaxed">
+                <p className="mt-1 text-xs text-muted leading-relaxed">
                   Tanpa eksploitasi aktif, tanpa injeksi payload, aman untuk server produksi.
                 </p>
               </div>
-              <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+              <div className="rounded-xl border border-border bg-foreground/[0.03] p-3">
                 <div className="flex items-center gap-1.5 text-purple-400 font-semibold">
                   <Lock className="h-4 w-4" />
                   Brankas Bukti AES-256-GCM
                 </div>
-                <p className="mt-1 text-[11px] text-slate-400 leading-relaxed">
+                <p className="mt-1 text-xs text-muted leading-relaxed">
                   Mendeteksi .env, .git/HEAD, backup.zip, wp-config.php.bak &amp; AWS keys tanpa bocor ke publik.
                 </p>
               </div>
-              <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+              <div className="rounded-xl border border-border bg-foreground/[0.03] p-3">
                 <div className="flex items-center gap-1.5 text-pink-400 font-semibold">
                   <Terminal className="h-4 w-4" />
                   Deep Shell &amp; OOB Audit
                 </div>
-                <p className="mt-1 text-[11px] text-slate-400 leading-relaxed">
+                <p className="mt-1 text-xs text-muted leading-relaxed">
                   Cek permukaan wp2shell, php2shell, node2shell, go2shell, py2shell &amp; Node Out-of-Bounds.
                 </p>
               </div>
-              <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+              <div className="rounded-xl border border-border bg-foreground/[0.03] p-3">
                 <div className="flex items-center gap-1.5 text-sky-400 font-semibold">
                   <Globe className="h-4 w-4" />
                   SSRF &amp; Klaim Domain Sah
                 </div>
-                <p className="mt-1 text-[11px] text-slate-400 leading-relaxed">
+                <p className="mt-1 text-xs text-muted leading-relaxed">
                   Bukti mentah di Vault Admin hanya bisa diklaim pemilik sah domain (DNS TXT / HTTP File).
                 </p>
               </div>
             </div>
 
-            <div className="mt-4 rounded-xl border border-white/10 bg-black/40 p-3">
-              <div className="flex items-center justify-between text-[11px] font-mono text-slate-400 mb-1">
+            <div className="mt-4 rounded-xl border border-border bg-sunken p-3">
+              <div className="flex items-center justify-between text-xs font-mono text-muted mb-1">
                 <span>Google Developer Bandung Verification Signature</span>
                 <button
                   type="button"
@@ -241,7 +241,7 @@ export function VerifiedBadge({ variant = "header", className }: VerifiedBadgePr
               </code>
             </div>
 
-            <div className="mt-5 flex items-center justify-between pt-3 border-t border-white/10 text-xs text-slate-400">
+            <div className="mt-5 flex items-center justify-between pt-3 border-t border-border text-xs text-muted">
               <span className="inline-flex items-center gap-1.5 text-emerald-400 font-mono">
                 <CheckCircle2 className="h-4 w-4" />
                 Status: Sudah Terverifikasi oleh Google Developer Bandung

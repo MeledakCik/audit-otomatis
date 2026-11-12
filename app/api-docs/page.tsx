@@ -31,7 +31,7 @@ interface Endpoint {
 function CodeBlock({ children }: { children: string }) {
   return (
     <pre className="rounded-lg border border-[#333] bg-black px-4 py-3.5 overflow-x-auto text-[12px] leading-relaxed">
-      <code className="font-mono text-[#00FF88] whitespace-pre">{children}</code>
+      <code className="font-mono text-ok whitespace-pre">{children}</code>
     </pre>
   );
 }
@@ -178,7 +178,7 @@ function MethodBadge({ method }: { method: Method }) {
       className={cn(
         "inline-flex items-center justify-center rounded-md border px-2 py-0.5 text-xs font-bold font-mono tracking-widest shrink-0",
         method === "POST"
-          ? "border-[#00FF88]/40 text-[#00FF88] bg-[#00FF88]/10"
+          ? "border-ok/40 text-ok bg-ok/10"
           : "border-sev-low/40 text-sev-low bg-sev-low/10"
       )}
     >

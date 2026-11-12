@@ -40,7 +40,7 @@ export function QcDashboard({
           <div className="flex items-center gap-3 min-w-0">
             <Link
               href="/qc"
-              className="flex items-center justify-center h-8 w-8 rounded-lg border border-white/10 bg-white/[0.02] hover:bg-white/[0.06] text-slate-300 transition-colors shrink-0"
+              className="flex items-center justify-center h-8 w-8 rounded-lg border border-border bg-foreground/[0.02] hover:bg-foreground/[0.06] text-soft transition-colors shrink-0"
               title="Kembali ke QC"
             >
               <span className="text-sm">←</span>
@@ -58,7 +58,7 @@ export function QcDashboard({
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <Link
               href={`/scan/seo-master?domain=${encodeURIComponent(domain)}`}
-              className="rounded-lg border border-purple-500/35 bg-purple-500/15 hover:bg-purple-500/25 px-2.5 py-1 text-[11px] font-mono text-purple-200 transition-colors"
+              className="rounded-lg border border-purple-500/35 bg-purple-500/15 hover:bg-purple-500/25 px-2.5 py-1 text-xs font-mono text-purple-200 transition-colors"
             >
               Buka SEO Master →
             </Link>

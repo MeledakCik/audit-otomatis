@@ -22,7 +22,7 @@ function StatusRow({
         <div className="flex items-center gap-2">
           <span
             className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-bold tracking-widest uppercase ${
-              pass ? "text-[#38d47a] border-[#38d47a]/40 bg-[#38d47a]/10" : "text-sev-critical border-sev-critical/40 bg-sev-critical/10"
+              pass ? "text-ok border-ok/40 bg-ok/10" : "text-sev-critical border-sev-critical/40 bg-sev-critical/10"
             }`}
           >
             {pass ? <Check className="h-3 w-3" /> : <X className="h-3 w-3" />}
@@ -33,7 +33,7 @@ function StatusRow({
         {risk && <SeverityBadge severity={risk} />}
       </div>
       {value && (
-        <div className="rounded-md bg-[#0a0710] border border-border px-2.5 py-1.5 text-xs font-mono text-[#8be9a8] break-all">
+        <div className="rounded-md bg-sunken border border-border px-2.5 py-1.5 text-xs font-mono text-ok break-all">
           {value}
         </div>
       )}

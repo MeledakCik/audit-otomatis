@@ -21,7 +21,7 @@ interface ResultsTableProps {
 
 function StatusCell({ status }: { status: number | null }) {
   if (status === null) return <span className="text-muted-dim">—</span>;
-  const color = status >= 500 ? "text-sev-critical" : status >= 400 ? "text-sev-high" : "text-[#38d47a]";
+  const color = status >= 500 ? "text-sev-critical" : status >= 400 ? "text-sev-high" : "text-ok";
   return <span className={color}>{status}</span>;
 }
 
@@ -150,7 +150,7 @@ export function ResultsTable({ report, checkedCount, onCheckMore, checkingMore, 
                       <RowState status={row.status} />
                     )}
                   </td>
-                  <td className="px-4 py-2.5 text-[#8be9a8] max-w-[220px] truncate" title={row.cname ?? undefined}>
+                  <td className="px-4 py-2.5 text-ok max-w-[220px] truncate" title={row.cname ?? undefined}>
                     {row.cname ?? "—"}
                   </td>
                   <td className="px-4 py-2.5">

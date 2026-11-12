@@ -31,18 +31,18 @@ export function ReportFrame({ id, domain }: { id: string; domain: string }) {
     <div className="flex flex-1 flex-col overflow-hidden">
       <header
         ref={headerRef}
-        className="border-b border-white/10 bg-[#120e1b]/80 backdrop-blur-sm shrink-0"
+        className="border-b border-border bg-panel/80 backdrop-blur-sm shrink-0"
       >
         <div className="mx-auto max-w-7xl px-4 sm:px-6 py-3.5 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
             <Link
               href={`/scan/${id}`}
-              className="flex items-center justify-center h-8 w-8 rounded-lg border border-white/10 bg-white/[0.02] hover:bg-white/[0.06] text-slate-300 transition-colors shrink-0"
+              className="flex items-center justify-center h-8 w-8 rounded-lg border border-border bg-foreground/[0.02] hover:bg-foreground/[0.06] text-soft transition-colors shrink-0"
               title="Kembali ke Scan"
             >
               <span className="text-sm">←</span>
             </Link>
-            <span className="text-sm font-semibold tracking-tight truncate text-slate-200">
+            <span className="text-sm font-semibold tracking-tight truncate text-soft">
               {domain} — <span className="text-purple-400">Report</span>
             </span>
           </div>
@@ -50,14 +50,14 @@ export function ReportFrame({ id, domain }: { id: string; domain: string }) {
             <a
               href={`/api/scan/${id}/report?download=1`}
               download
-              className="inline-flex items-center justify-center rounded-lg border border-white/10 bg-[#1a1426] px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-slate-200 hover:border-purple-500/50 hover:bg-purple-500/10 transition-all shadow-sm"
+              className="inline-flex items-center justify-center rounded-lg border border-border bg-panel px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-soft hover:border-purple-500/50 hover:bg-purple-500/10 transition-all shadow-sm"
             >
               Export .HTML
             </a>
             <a
               href={`/api/scan/${id}/export`}
               download
-              className="inline-flex items-center justify-center rounded-lg border border-white/10 bg-[#1a1426] px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-slate-200 hover:border-purple-500/50 hover:bg-purple-500/10 transition-all shadow-sm"
+              className="inline-flex items-center justify-center rounded-lg border border-border bg-panel px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-soft hover:border-purple-500/50 hover:bg-purple-500/10 transition-all shadow-sm"
             >
               Export .MD
             </a>
@@ -69,7 +69,7 @@ export function ReportFrame({ id, domain }: { id: string; domain: string }) {
             >
               View Graph.json
             </a>
-            <div className="border-l border-white/10 pl-2 ml-1">
+            <div className="border-l border-border pl-2 ml-1">
               <ThemeToggle />
             </div>
           </div>
@@ -78,7 +78,7 @@ export function ReportFrame({ id, domain }: { id: string; domain: string }) {
       <iframe
         src={`/api/scan/${id}/report`}
         title={`Pentest report — ${domain}`}
-        className="w-full border-0 bg-[#0a0710] block"
+        className="w-full border-0 bg-sunken block"
         style={{
           height: iframeHeight != null ? `${iframeHeight}px` : undefined,
           minHeight: iframeHeight != null ? undefined : "70dvh",

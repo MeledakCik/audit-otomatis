@@ -61,12 +61,12 @@ export function ScanDashboard({
   return (
     <div className="flex flex-1 flex-col min-h-full">
       {/* Sticky Scan Header */}
-      <header className="border-b border-white/10 bg-[#100b1a]/85 backdrop-blur-md sticky top-0 z-20">
+      <header className="border-b border-border bg-panel/85 backdrop-blur-md sticky top-0 z-20">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 py-3.5 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
             <Link
               href="/"
-              className="flex items-center justify-center h-9 w-9 rounded-xl border border-white/10 bg-white/[0.03] hover:bg-white/[0.08] text-slate-200 transition-colors shrink-0"
+              className="flex items-center justify-center h-9 w-9 rounded-xl border border-border bg-foreground/[0.03] hover:bg-foreground/[0.08] text-soft transition-colors shrink-0"
               title="Kembali ke Beranda Scan"
             >
               <ArrowLeft className="h-4 w-4" />
@@ -74,14 +74,14 @@ export function ScanDashboard({
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <Globe className="h-3.5 w-3.5 text-purple-400 shrink-0" />
-                <span className="text-sm font-extrabold text-white truncate">
+                <span className="text-sm font-extrabold text-foreground truncate">
                   {domain}
                 </span>
-                <span className="hidden sm:inline-block text-[11px] font-mono text-slate-400 bg-white/[0.04] px-2 py-0.5 rounded-md border border-white/10">
+                <span className="hidden sm:inline-block text-xs font-mono text-muted bg-foreground/[0.04] px-2 py-0.5 rounded-md border border-border">
                   ID: {scanId}
                 </span>
               </div>
-              <div className="text-[11px] font-mono text-slate-400">
+              <div className="text-xs font-mono text-muted">
                 Full Passive Audit &amp; Sentinel Encrypted Vault
               </div>
             </div>
@@ -131,10 +131,10 @@ export function ScanDashboard({
           {SEV_ORDER.map((sev) => (
             <div
               key={sev}
-              className="rounded-2xl border border-white/[0.08] bg-gradient-to-b from-[#161024] to-[#110c1c] px-4 py-3.5 flex items-center justify-between gap-2 shadow-sm"
+              className="rounded-2xl border border-foreground/[0.08] bg-gradient-to-b from-[#161024] to-sunken px-4 py-3.5 flex items-center justify-between gap-2 shadow-sm"
             >
               <div className="flex flex-col gap-0.5 min-w-0">
-                <span className="text-[11px] font-mono uppercase tracking-widest text-slate-400 truncate">
+                <span className="text-xs font-mono uppercase tracking-widest text-muted truncate">
                   {sev}
                 </span>
                 <span
@@ -165,7 +165,7 @@ export function ScanDashboard({
         </div>
 
         {/* Navigation Sub-Tabs inside Scan Dashboard */}
-        <div className="flex flex-wrap items-center gap-2 border-b border-white/10 pb-3">
+        <div className="flex flex-wrap items-center gap-2 border-b border-border pb-3">
           <button
             type="button"
             onClick={() => setActiveTab("overview")}
@@ -173,7 +173,7 @@ export function ScanDashboard({
               "inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-mono font-bold transition-all cursor-pointer",
               activeTab === "overview"
                 ? "bg-purple-600 text-white shadow-lg shadow-purple-600/25"
-                : "border border-white/10 bg-white/[0.03] text-slate-300 hover:text-white"
+                : "border border-border bg-foreground/[0.03] text-soft hover:text-foreground"
             )}
           >
             <Radar className="h-3.5 w-3.5" />
@@ -193,7 +193,7 @@ export function ScanDashboard({
             <Lock className="h-3.5 w-3.5" />
             <span>Sentinel Vault &amp; Klaim Domain</span>
             {counts.CRITICAL > 0 && (
-              <span className="rounded-full bg-red-500 px-1.5 py-0.2 text-[10px] text-white font-extrabold">
+              <span className="rounded-full bg-red-500 px-1.5 py-0.2 text-xs text-white font-extrabold">
                 {counts.CRITICAL} CRIT
               </span>
             )}
@@ -206,7 +206,7 @@ export function ScanDashboard({
               "inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-mono font-bold transition-all cursor-pointer",
               activeTab === "endpoints"
                 ? "bg-purple-600 text-white shadow-lg shadow-purple-600/25"
-                : "border border-white/10 bg-white/[0.03] text-slate-300 hover:text-white"
+                : "border border-border bg-foreground/[0.03] text-soft hover:text-foreground"
             )}
           >
             <Network className="h-3.5 w-3.5" />
@@ -218,8 +218,8 @@ export function ScanDashboard({
         {activeTab === "overview" && (
           <div className="space-y-5">
             <div className="grid lg:grid-cols-5 gap-4 flex-1 min-h-0 animate-fade-up">
-              <Card className="lg:col-span-3 flex flex-col min-h-0 border-white/10 bg-[#120d1d]">
-                <CardHeader className="border-b border-white/[0.06]">
+              <Card className="lg:col-span-3 flex flex-col min-h-0 border-border bg-panel">
+                <CardHeader className="border-b border-foreground/[0.06]">
                   <CardTitle className="flex items-center gap-2">
                     <ShieldAlert className="h-4 w-4 text-purple-400" />
                     <span>Daftar Temuan Keamanan ({findings.length})</span>
@@ -237,13 +237,13 @@ export function ScanDashboard({
                 </div>
               </Card>
 
-              <Card className="lg:col-span-2 flex flex-col min-h-0 border-white/10 bg-[#120d1d]">
-                <CardHeader className="border-b border-white/[0.06]">
+              <Card className="lg:col-span-2 flex flex-col min-h-0 border-border bg-panel">
+                <CardHeader className="border-b border-foreground/[0.06]">
                   <CardTitle className="flex items-center gap-2">
                     <Terminal className="h-4 w-4 text-emerald-400" />
                     <span>Live Telemetry Log</span>
                   </CardTitle>
-                  <span className="text-xs font-mono text-slate-400">
+                  <span className="text-xs font-mono text-muted">
                     {logs.length} event
                   </span>
                 </CardHeader>
@@ -270,12 +270,12 @@ export function ScanDashboard({
         {/* Tab 3: API Explorer & Attack Surface Relation Graph */}
         {activeTab === "endpoints" && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 animate-fade-up">
-            <Card className="flex flex-col min-h-0 border-white/10 bg-[#120d1d]">
-              <CardHeader className="border-b border-white/[0.06]">
+            <Card className="flex flex-col min-h-0 border-border bg-panel">
+              <CardHeader className="border-b border-foreground/[0.06]">
                 <CardTitle>
                   API Explorer — Endpoint Ditemukan ({endpoints.length})
                 </CardTitle>
-                <span className="text-xs text-slate-400">
+                <span className="text-xs text-muted">
                   Klik endpoint untuk uji langsung (GET-only) atau salin cURL
                 </span>
               </CardHeader>
@@ -284,8 +284,8 @@ export function ScanDashboard({
               </div>
             </Card>
 
-            <Card className="flex flex-col min-h-0 border-white/10 bg-[#120d1d]">
-              <CardHeader className="border-b border-white/[0.06]">
+            <Card className="flex flex-col min-h-0 border-border bg-panel">
+              <CardHeader className="border-b border-foreground/[0.06]">
                 <CardTitle>Peta Relasi Page → JS → Endpoint</CardTitle>
                 <a
                   href={`/api/scan/${scanId}/graph`}

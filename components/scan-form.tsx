@@ -69,7 +69,7 @@ export function ScanForm() {
   return (
     <div className="space-y-5">
       {/* Mode Switcher Tabs inside Scan Box */}
-      <div className="grid grid-cols-2 gap-1.5 rounded-xl bg-black/40 p-1.5 border border-white/[0.08]">
+      <div className="grid grid-cols-2 gap-1.5 rounded-xl bg-sunken p-1.5 border border-foreground/[0.08]">
         <button
           type="button"
           onClick={() => setMode("full")}
@@ -77,7 +77,7 @@ export function ScanForm() {
             "flex items-center justify-center gap-2 rounded-lg py-2 px-3 text-xs font-mono font-bold transition-all cursor-pointer",
             mode === "full"
               ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md shadow-purple-600/25"
-              : "text-slate-400 hover:text-white"
+              : "text-muted hover:text-foreground"
           )}
         >
           <Radar className="h-3.5 w-3.5" />
@@ -90,7 +90,7 @@ export function ScanForm() {
             "flex items-center justify-center gap-2 rounded-lg py-2 px-3 text-xs font-mono font-bold transition-all cursor-pointer",
             mode === "sentinel"
               ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-md shadow-pink-600/25"
-              : "text-slate-400 hover:text-white"
+              : "text-muted hover:text-foreground"
           )}
         >
           <Lock className="h-3.5 w-3.5" />
@@ -106,7 +106,7 @@ export function ScanForm() {
               className="text-xs font-mono uppercase tracking-wider text-purple-300/90 font-semibold flex items-center justify-between"
             >
               <span>Domain / URL Target</span>
-              <span className="text-[11px] text-emerald-400 font-normal">
+              <span className="text-xs text-emerald-400 font-normal">
                 WAF &amp; CF Resilient · GDG Bandung Verified
               </span>
             </label>
@@ -118,7 +118,7 @@ export function ScanForm() {
                 value={domainVal}
                 onChange={(e) => setDomainVal(e.target.value)}
                 placeholder="contoh: sentinel-id.net"
-                className="h-11 pl-10 bg-black/40 border-white/15 text-white placeholder:text-slate-500 rounded-xl focus:border-purple-400"
+                className="h-11 pl-10 bg-sunken border-foreground/15 text-foreground placeholder:text-muted rounded-xl focus:border-purple-400"
                 required
                 disabled={pending}
               />
@@ -140,14 +140,14 @@ export function ScanForm() {
                 className={cn("h-3.5 w-3.5 transition-transform", showWafOpts && "rotate-180")}
               />
             </button>
-            <p className="text-[11px] text-slate-400 leading-relaxed">
+            <p className="text-xs text-muted leading-relaxed">
               Tetap memeriksa Header Edge, <code className="text-purple-300">CF-RAY</code>, DNS/SPF/DMARC, well-known files, serta path statis walau domain dilindungi Cloudflare/WAF.
             </p>
             {showWafOpts && (
-              <div className="pt-1.5 space-y-1.5 border-t border-white/10">
+              <div className="pt-1.5 space-y-1.5 border-t border-border">
                 <label
                   htmlFor="cf-clearance-input"
-                  className="text-[11px] font-mono text-slate-300 flex items-center gap-1.5"
+                  className="text-xs font-mono text-soft flex items-center gap-1.5"
                 >
                   <KeyRound className="h-3 w-3 text-purple-400" />
                   <span>CF Clearance Token Pemilik Domain (Opsional):</span>
@@ -157,7 +157,7 @@ export function ScanForm() {
                   value={cfClearance}
                   onChange={(e) => setCfClearance(e.target.value)}
                   placeholder="Masukkan nilai cookie cf_clearance jika ingin mengaudit di balik Interactive Challenge"
-                  className="h-9 bg-black/50 border-white/15 text-xs font-mono text-white placeholder:text-slate-500 rounded-lg"
+                  className="h-9 bg-sunken border-foreground/15 text-xs font-mono text-foreground placeholder:text-muted rounded-lg"
                   disabled={pending}
                 />
               </div>
@@ -165,12 +165,12 @@ export function ScanForm() {
           </div>
 
           {/* Included Modules Pill Strip */}
-          <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] p-3 space-y-2">
-            <div className="text-[11px] font-mono text-slate-400 flex items-center gap-1.5">
+          <div className="rounded-xl border border-foreground/[0.07] bg-foreground/[0.02] p-3 space-y-2">
+            <div className="text-xs font-mono text-muted flex items-center gap-1.5">
               <Sparkles className="h-3 w-3 text-purple-400" />
               <span>Otomatis menjalankan 8 engine keamanan mendalam sekaligus:</span>
             </div>
-            <div className="flex flex-wrap gap-1.5 text-[10px] font-mono">
+            <div className="flex flex-wrap gap-1.5 text-xs font-mono">
               <span className="rounded-md bg-purple-500/15 border border-purple-500/30 px-2 py-0.5 text-purple-200">
                 1. Multi-Page &amp; Edge Crawler
               </span>
@@ -198,13 +198,13 @@ export function ScanForm() {
             </div>
           </div>
 
-          <label className="flex items-start gap-2.5 cursor-pointer group rounded-xl border border-white/[0.06] bg-black/20 p-3 hover:border-purple-500/30 transition-colors">
+          <label className="flex items-start gap-2.5 cursor-pointer group rounded-xl border border-foreground/[0.06] bg-sunken p-3 hover:border-purple-500/30 transition-colors">
             <Checkbox
               checked={checked}
               onCheckedChange={(v) => setChecked(v === true)}
               className="mt-0.5"
             />
-            <span className="text-xs leading-relaxed text-slate-300 group-hover:text-white">
+            <span className="text-xs leading-relaxed text-soft group-hover:text-foreground">
               Saya adalah pemilik sah atau memiliki izin tertulis untuk mengaudit domain ini secara pasif.
             </span>
           </label>
@@ -230,7 +230,7 @@ export function ScanForm() {
             )}
           </Button>
 
-          <div className="flex items-center justify-center gap-2 text-[11px] font-mono text-slate-400 text-center">
+          <div className="flex items-center justify-center gap-2 text-xs font-mono text-muted text-center">
             <ShieldCheck className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
             <span>
               100% Passive GET-Only · Tetap berjalan walau ada Cloudflare/WAF · Terverifikasi Google Developer Bandung

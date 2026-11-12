@@ -36,13 +36,13 @@ export function SelfTestPanel() {
   }
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-[#120d1d] p-4">
+    <div className="rounded-2xl border border-border bg-panel p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <FlaskConical className="h-4 w-4 text-cyan-300" />
           <div>
-            <p className="text-sm font-bold text-white">Self-Test Engine Audit File Sensitif</p>
-            <p className="text-xs text-slate-400">
+            <p className="text-sm font-bold text-foreground">Self-Test Engine Audit File Sensitif</p>
+            <p className="text-xs text-muted">
               Fixture lokal saja — tidak ada request ke domain mana pun. Jalankan sebelum memakai hasil untuk pelaporan.
             </p>
           </div>
@@ -52,7 +52,7 @@ export function SelfTestPanel() {
             <button
               type="button"
               onClick={() => setOpen((o) => !o)}
-              className="inline-flex items-center gap-1 rounded-lg bg-white/5 px-3 py-1.5 text-xs font-mono text-slate-300 hover:text-white cursor-pointer"
+              className="inline-flex items-center gap-1 rounded-lg bg-foreground/5 px-3 py-1.5 text-xs font-mono text-soft hover:text-foreground cursor-pointer"
             >
               {result.ok ? (
                 <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
@@ -78,13 +78,13 @@ export function SelfTestPanel() {
       {err && <p className="mt-2 text-xs text-red-400">{err}</p>}
 
       {result && open && (
-        <ul className="mt-3 max-h-64 space-y-1 overflow-y-auto thin-scroll rounded-xl border border-white/10 bg-black/40 p-3 font-mono text-[11px]">
+        <ul className="mt-3 max-h-64 space-y-1 overflow-y-auto thin-scroll rounded-xl border border-border bg-sunken p-3 font-mono text-xs">
           {result.cases.map((c, i) => (
             <li key={i} className={cn("flex items-start gap-2", c.pass ? "text-emerald-300" : "text-red-300")}>
               {c.pass ? <CheckCircle2 className="mt-0.5 h-3 w-3 shrink-0" /> : <XCircle className="mt-0.5 h-3 w-3 shrink-0" />}
               <span>
                 {c.name}
-                {c.detail && <span className="text-slate-500"> — {c.detail}</span>}
+                {c.detail && <span className="text-muted"> — {c.detail}</span>}
               </span>
             </li>
           ))}

@@ -16,10 +16,10 @@ function CopyPathButton({ path }: { path: string }) {
           setTimeout(() => setCopied(false), 1500);
         });
       }}
-      className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-mono text-muted-dim hover:text-accent hover:bg-white/5 transition-colors shrink-0"
+      className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-mono text-muted-dim hover:text-accent hover:bg-foreground/5 transition-colors shrink-0"
       title="Copy path"
     >
-      {copied ? <Check className="h-3 w-3 text-[#38d47a]" /> : <Copy className="h-3 w-3" />}
+      {copied ? <Check className="h-3 w-3 text-ok" /> : <Copy className="h-3 w-3" />}
       {copied ? "Copied" : "Copy path"}
     </button>
   );
@@ -56,7 +56,7 @@ export function FindingsTable({ findings }: { findings: SecretFinding[] }) {
                     </td>
                     <td className="px-4 py-2.5 text-foreground whitespace-nowrap">{f.type}</td>
                     <td className="px-4 py-2.5 text-muted-dim">{f.file}</td>
-                    <td className="px-4 py-2.5 text-[#8be9a8] max-w-[280px] truncate" title={f.redactedSnippet}>
+                    <td className="px-4 py-2.5 text-ok max-w-[280px] truncate" title={f.redactedSnippet}>
                       {f.redactedSnippet}
                     </td>
                     <td className="px-4 py-2.5 text-right">

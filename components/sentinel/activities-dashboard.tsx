@@ -298,17 +298,17 @@ export function ActivitiesDashboard() {
           return (
             <div
               key={k.label}
-              className="rounded-2xl border border-white/[0.08] bg-gradient-to-b from-[#161025] to-[#110c1c] p-4 flex flex-col justify-between"
+              className="rounded-2xl border border-foreground/[0.08] bg-gradient-to-b from-panel to-sunken p-4 flex flex-col justify-between"
             >
               <div className="flex items-center justify-between gap-2">
-                <span className="text-[11px] font-mono uppercase tracking-wider text-slate-400">
+                <span className="text-xs font-mono uppercase tracking-wider text-muted">
                   {k.label}
                 </span>
                 <Icon className={cn("h-4 w-4 shrink-0", k.accent)} />
               </div>
               <div className="mt-2">
-                <div className="text-2xl font-extrabold text-white tabular-nums">{k.val}</div>
-                <div className="text-[11px] font-mono text-slate-400 mt-0.5">{k.sub}</div>
+                <div className="text-2xl font-extrabold text-foreground tabular-nums">{k.val}</div>
+                <div className="text-xs font-mono text-muted mt-0.5">{k.sub}</div>
               </div>
             </div>
           );
@@ -316,7 +316,7 @@ export function ActivitiesDashboard() {
       </div>
 
       {/* Sub-navigation & Filters Bar */}
-      <div className="rounded-2xl border border-white/10 bg-[#120d1d] p-4 space-y-4">
+      <div className="rounded-2xl border border-border bg-panel p-4 space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
             <button
@@ -326,7 +326,7 @@ export function ActivitiesDashboard() {
                 "inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-mono font-bold transition-all cursor-pointer",
                 subTab === "feed"
                   ? "bg-purple-600 text-white shadow-md shadow-purple-600/25"
-                  : "border border-white/10 bg-white/[0.03] text-slate-300 hover:text-white"
+                  : "border border-border bg-foreground/[0.03] text-soft hover:text-foreground"
               )}
             >
               <Activity className="h-3.5 w-3.5" />
@@ -346,7 +346,7 @@ export function ActivitiesDashboard() {
               <FileJson className="h-3.5 w-3.5" />
               <span>Git &amp; Repo Intel (JSON View)</span>
               {gitActivities.length > 0 && (
-                <span className="rounded-full bg-red-500 px-1.5 py-0.2 text-[10px] text-white font-extrabold">
+                <span className="rounded-full bg-red-500 px-1.5 py-0.2 text-xs text-white font-extrabold">
                   {gitActivities.length}
                 </span>
               )}
@@ -359,7 +359,7 @@ export function ActivitiesDashboard() {
                 "inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-mono font-bold transition-all cursor-pointer",
                 subTab === "users"
                   ? "bg-purple-600 text-white shadow-md shadow-purple-600/25"
-                  : "border border-white/10 bg-white/[0.03] text-slate-300 hover:text-white"
+                  : "border border-border bg-foreground/[0.03] text-soft hover:text-foreground"
               )}
             >
               <Users className="h-3.5 w-3.5" />
@@ -373,7 +373,7 @@ export function ActivitiesDashboard() {
                 "inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-mono font-bold transition-all cursor-pointer",
                 subTab === "scans"
                   ? "bg-purple-600 text-white shadow-md shadow-purple-600/25"
-                  : "border border-white/10 bg-white/[0.03] text-slate-300 hover:text-white"
+                  : "border border-border bg-foreground/[0.03] text-soft hover:text-foreground"
               )}
             >
               <Radar className="h-3.5 w-3.5" />
@@ -393,7 +393,7 @@ export function ActivitiesDashboard() {
             <button
               type="button"
               onClick={load}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] px-3.5 py-2 text-xs font-mono text-slate-200 cursor-pointer"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-foreground/[0.04] hover:bg-foreground/[0.08] px-3.5 py-2 text-xs font-mono text-soft cursor-pointer"
             >
               <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />
               <span>Refresh</span>
@@ -404,13 +404,13 @@ export function ActivitiesDashboard() {
         {/* Search & Filters */}
         <div className="flex flex-col sm:flex-row gap-2.5">
           <div className="relative flex-1">
-            <Search className="h-4 w-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <Search className="h-4 w-4 text-muted absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Cari domain target, URL GitHub/GitLab, IP address, User ID, atau jenis aktivitas..."
-              className="w-full h-10 rounded-xl border border-white/10 bg-black/40 pl-10 pr-4 text-xs font-mono text-white placeholder:text-slate-500 outline-none focus:border-purple-400"
+              className="w-full h-10 rounded-xl border border-border bg-sunken pl-10 pr-4 text-xs font-mono text-foreground placeholder:text-muted outline-none focus:border-purple-400"
             />
           </div>
 
@@ -420,7 +420,7 @@ export function ActivitiesDashboard() {
                 value={moduleFilter}
                 onChange={(e) => setModuleFilter(e.target.value)}
                 aria-label="Filter modul"
-                className="h-10 rounded-xl border border-white/10 bg-black/40 px-3 text-xs font-mono text-slate-200 outline-none focus:border-purple-400"
+                className="h-10 rounded-xl border border-border bg-sunken px-3 text-xs font-mono text-soft outline-none focus:border-purple-400"
               >
                 <option value="ALL">Semua Modul ({activities.length})</option>
                 {uniqueModules.map(([mod, label]) => (
@@ -434,7 +434,7 @@ export function ActivitiesDashboard() {
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
                 aria-label="Filter status"
-                className="h-10 rounded-xl border border-white/10 bg-black/40 px-3 text-xs font-mono text-slate-200 outline-none focus:border-purple-400"
+                className="h-10 rounded-xl border border-border bg-sunken px-3 text-xs font-mono text-soft outline-none focus:border-purple-400"
               >
                 <option value="ALL">Semua Status</option>
                 <option value="CRITICAL">CRITICAL</option>
@@ -451,10 +451,10 @@ export function ActivitiesDashboard() {
 
       {/* SubTab 1: Live User Activity Feed */}
       {subTab === "feed" && (
-        <div className="rounded-2xl border border-white/10 bg-[#120d1d] overflow-hidden shadow-xl">
+        <div className="rounded-2xl border border-border bg-panel overflow-hidden shadow-xl">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="border-b border-white/10 bg-black/30 font-mono uppercase text-[11px] text-slate-400">
+              <thead className="border-b border-border bg-sunken font-mono uppercase text-xs text-muted">
                 <tr>
                   <th className="p-3.5">Waktu</th>
                   <th className="p-3.5">User (UID / IP)</th>
@@ -470,33 +470,33 @@ export function ActivitiesDashboard() {
                   const repoUrl = typeof act.meta?.gitRepoUrl === "string" ? act.meta.gitRepoUrl : null;
                   const repoProvider = typeof act.meta?.gitProvider === "string" ? act.meta.gitProvider : null;
                   return (
-                    <tr key={act.id} className="hover:bg-white/[0.03] transition-colors">
+                    <tr key={act.id} className="hover:bg-foreground/[0.03] transition-colors">
                       <td className="p-3.5 whitespace-nowrap font-mono">
-                        <div className="text-white font-semibold">{relTime(act.timestamp)}</div>
-                        <div className="text-[10px] text-slate-400">{fmtDate(act.timestamp)}</div>
+                        <div className="text-foreground font-semibold">{relTime(act.timestamp)}</div>
+                        <div className="text-xs text-muted">{fmtDate(act.timestamp)}</div>
                       </td>
                       <td className="p-3.5 font-mono">
                         <div className="text-purple-300 font-semibold">{act.userId}</div>
-                        <div className="text-[11px] text-slate-400">{act.ip}</div>
+                        <div className="text-xs text-muted">{act.ip}</div>
                       </td>
                       <td className="p-3.5 whitespace-nowrap">
-                        <span className="inline-flex items-center rounded-lg border border-purple-500/30 bg-purple-500/10 px-2.5 py-1 font-mono text-[11px] font-semibold text-purple-200">
+                        <span className="inline-flex items-center rounded-lg border border-purple-500/30 bg-purple-500/10 px-2.5 py-1 font-mono text-xs font-semibold text-purple-200">
                           {act.moduleLabel}
                         </span>
                       </td>
-                      <td className="p-3.5 font-mono font-bold text-white max-w-[180px] truncate">
+                      <td className="p-3.5 font-mono font-bold text-foreground max-w-[180px] truncate">
                         {act.target}
                       </td>
                       <td className="p-3.5 max-w-md space-y-1">
-                        <div className="font-semibold text-slate-200">{act.action}</div>
-                        <div className="text-slate-400 text-[11px] truncate">{act.summary}</div>
+                        <div className="font-semibold text-soft">{act.action}</div>
+                        <div className="text-muted text-xs truncate">{act.summary}</div>
                         {repoUrl && (
                           <div className="pt-0.5 flex flex-wrap items-center gap-1.5">
                             <a
                               href={repoUrl}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 rounded-md bg-emerald-500/15 border border-emerald-500/35 px-2 py-0.5 font-mono text-[10px] font-bold text-emerald-300 hover:bg-emerald-500/25"
+                              className="inline-flex items-center gap-1 rounded-md bg-emerald-500/15 border border-emerald-500/35 px-2 py-0.5 font-mono text-xs font-bold text-emerald-300 hover:bg-emerald-500/25"
                             >
                               <GitBranch className="h-3 w-3" />
                               <span>{repoProvider?.toUpperCase() || "GIT"}: {repoUrl}</span>
@@ -508,7 +508,7 @@ export function ActivitiesDashboard() {
                       <td className="p-3.5 whitespace-nowrap">
                         <span
                           className={cn(
-                            "inline-flex items-center rounded-full border px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase",
+                            "inline-flex items-center rounded-full border px-2.5 py-0.5 font-mono text-xs font-bold uppercase",
                             STATUS_BADGE[act.status] ?? STATUS_BADGE.SUCCESS
                           )}
                         >
@@ -519,7 +519,7 @@ export function ActivitiesDashboard() {
                         {act.meta?.scanId && act.module === "FULL_SCAN" && (
                           <Link
                             href={`/scan/${act.meta.scanId}`}
-                            className="inline-flex items-center gap-1 rounded-lg border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 px-2.5 py-1 font-mono text-[11px] text-emerald-300"
+                            className="inline-flex items-center gap-1 rounded-lg border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 px-2.5 py-1 font-mono text-xs text-emerald-300"
                           >
                             <span>Scan</span>
                             <ExternalLink className="h-3 w-3" />
@@ -528,7 +528,7 @@ export function ActivitiesDashboard() {
                         <button
                           type="button"
                           onClick={() => setSelectedActivity(act)}
-                          className="inline-flex items-center gap-1 rounded-lg border border-purple-500/30 bg-purple-500/15 hover:bg-purple-500/25 px-2.5 py-1 font-mono text-[11px] font-semibold text-purple-200 cursor-pointer"
+                          className="inline-flex items-center gap-1 rounded-lg border border-purple-500/30 bg-purple-500/15 hover:bg-purple-500/25 px-2.5 py-1 font-mono text-xs font-semibold text-purple-200 cursor-pointer"
                         >
                           <FileJson className="h-3 w-3" />
                           <span>JSON</span>
@@ -539,7 +539,7 @@ export function ActivitiesDashboard() {
                 })}
                 {filteredActivities.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="p-10 text-center font-mono text-slate-400">
+                    <td colSpan={7} className="p-10 text-center font-mono text-muted">
                       {loading
                         ? "Memuat data aktivitas user..."
                         : "Belum ada aktivitas user yang cocok dengan filter."}
@@ -557,14 +557,14 @@ export function ActivitiesDashboard() {
         <div className="space-y-4">
           <div className="rounded-2xl border border-pink-500/30 bg-gradient-to-r from-[#181028] via-[#130d20] to-[#0e0a18] p-5 flex flex-wrap items-center justify-between gap-4">
             <div className="space-y-1">
-              <div className="inline-flex items-center gap-1.5 rounded-full bg-pink-500/15 border border-pink-500/30 px-2.5 py-0.5 text-[10px] font-mono font-bold text-pink-300">
+              <div className="inline-flex items-center gap-1.5 rounded-full bg-pink-500/15 border border-pink-500/30 px-2.5 py-0.5 text-xs font-mono font-bold text-pink-300">
                 <GitBranch className="h-3 w-3" />
                 PASSIVE GIT &amp; REPOSITORY INTELLIGENCE (JSON)
               </div>
-              <h2 className="text-base sm:text-lg font-extrabold text-white">
+              <h2 className="text-base sm:text-lg font-extrabold text-foreground">
                 Hasil Ekstraksi <code className="text-pink-300">/.git/config</code>, <code className="text-pink-300">/logs/HEAD</code>, <code className="text-pink-300">/.git/refs/heads/main</code> &amp; URL Repo GitHub/GitLab
               </h2>
-              <p className="text-xs text-slate-300">
+              <p className="text-xs text-soft">
                 Menampilkan seluruh hasil tangkapan pasif metadata Git dan seluruh aktivitas user dalam format JSON terstruktur.
               </p>
             </div>
@@ -586,11 +586,11 @@ export function ActivitiesDashboard() {
                 return (
                   <div
                     key={act.id}
-                    className="rounded-2xl border border-white/10 bg-[#120d1d] p-5 space-y-4 shadow-xl"
+                    className="rounded-2xl border border-border bg-panel p-5 space-y-4 shadow-xl"
                   >
-                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-3">
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-3">
                       <div className="flex flex-wrap items-center gap-2.5">
-                        <span className="font-mono text-sm font-extrabold text-white">{act.target}</span>
+                        <span className="font-mono text-sm font-extrabold text-foreground">{act.target}</span>
                         {gitIntel?.primaryRepository?.webUrl && (
                           <a
                             href={gitIntel.primaryRepository.webUrl}
@@ -611,7 +611,7 @@ export function ActivitiesDashboard() {
                           </span>
                         )}
                         {gitIntel?.commits?.latestSha && (
-                          <span className="rounded-md bg-white/[0.05] border border-white/10 px-2.5 py-0.5 font-mono text-xs text-slate-300">
+                          <span className="rounded-md bg-foreground/[0.05] border border-border px-2.5 py-0.5 font-mono text-xs text-soft">
                             SHA: {gitIntel.commits.latestSha.slice(0, 12)}
                           </span>
                         )}
@@ -621,7 +621,7 @@ export function ActivitiesDashboard() {
                         <button
                           type="button"
                           onClick={() => copyJson(act.id, jsonPayload)}
-                          className="inline-flex items-center gap-1 rounded-lg border border-white/15 bg-white/5 hover:bg-white/10 px-3 py-1 font-mono text-xs text-emerald-300 cursor-pointer"
+                          className="inline-flex items-center gap-1 rounded-lg border border-foreground/15 bg-foreground/5 hover:bg-foreground/10 px-3 py-1 font-mono text-xs text-emerald-300 cursor-pointer"
                         >
                           {copiedId === act.id ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
                           <span>{copiedId === act.id ? "Tersalin" : "Copy JSON"}</span>
@@ -629,7 +629,7 @@ export function ActivitiesDashboard() {
                       </div>
                     </div>
 
-                    <pre className="rounded-xl bg-[#08060e] border border-white/10 p-4 font-mono text-xs text-emerald-300 whitespace-pre-wrap break-all max-h-96 overflow-y-auto thin-scroll">
+                    <pre className="rounded-xl bg-sunken border border-border p-4 font-mono text-xs text-emerald-300 whitespace-pre-wrap break-all max-h-96 overflow-y-auto thin-scroll">
                       {JSON.stringify(jsonPayload, null, 2)}
                     </pre>
                   </div>
@@ -637,7 +637,7 @@ export function ActivitiesDashboard() {
               })}
             </div>
           ) : (
-            <div className="rounded-2xl border border-white/10 bg-[#120d1d] p-5 space-y-3">
+            <div className="rounded-2xl border border-border bg-panel p-5 space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-mono font-bold text-purple-300 uppercase">
                   Live JSON Dump — Seluruh Aktivitas User ({filteredActivities.length} records)
@@ -645,13 +645,13 @@ export function ActivitiesDashboard() {
                 <button
                   type="button"
                   onClick={() => copyJson("raw_all", filteredActivities)}
-                  className="inline-flex items-center gap-1 rounded-lg border border-white/15 bg-white/5 px-3 py-1 font-mono text-xs text-emerald-300 cursor-pointer"
+                  className="inline-flex items-center gap-1 rounded-lg border border-foreground/15 bg-foreground/5 px-3 py-1 font-mono text-xs text-emerald-300 cursor-pointer"
                 >
                   {copiedId === "raw_all" ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
                   <span>{copiedId === "raw_all" ? "Tersalin" : "Copy JSON"}</span>
                 </button>
               </div>
-              <pre className="rounded-xl bg-[#08060e] border border-white/10 p-4 font-mono text-xs text-emerald-300 whitespace-pre-wrap break-all max-h-[65vh] overflow-y-auto thin-scroll">
+              <pre className="rounded-xl bg-sunken border border-border p-4 font-mono text-xs text-emerald-300 whitespace-pre-wrap break-all max-h-[65vh] overflow-y-auto thin-scroll">
                 {JSON.stringify(filteredActivities, null, 2)}
               </pre>
             </div>
@@ -665,19 +665,19 @@ export function ActivitiesDashboard() {
           {filteredUsers.map((u) => (
             <div
               key={u.userKey}
-              className="rounded-2xl border border-white/10 bg-gradient-to-b from-[#161025] to-[#110c1c] p-5 space-y-3.5 flex flex-col justify-between"
+              className="rounded-2xl border border-border bg-gradient-to-b from-panel to-sunken p-5 space-y-3.5 flex flex-col justify-between"
             >
               <div className="space-y-3">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="font-mono text-sm font-extrabold text-white">{u.userId}</span>
-                      <span className="rounded-md bg-purple-500/20 border border-purple-500/30 px-2 py-0.5 font-mono text-[10px] text-purple-300">
+                      <span className="font-mono text-sm font-extrabold text-foreground">{u.userId}</span>
+                      <span className="rounded-md bg-purple-500/20 border border-purple-500/30 px-2 py-0.5 font-mono text-xs text-purple-300">
                         IP: {u.ip}
                       </span>
                     </div>
-                    <div className="mt-1 flex items-center gap-1.5 text-[11px] text-slate-400 font-mono">
-                      <Monitor className="h-3.5 w-3.5 text-slate-500 shrink-0" />
+                    <div className="mt-1 flex items-center gap-1.5 text-xs text-muted font-mono">
+                      <Monitor className="h-3.5 w-3.5 text-muted shrink-0" />
                       <span className="truncate max-w-sm">{u.userAgent}</span>
                     </div>
                   </div>
@@ -686,7 +686,7 @@ export function ActivitiesDashboard() {
                       {u.totalActivities} aksi
                     </div>
                     {u.criticalHits > 0 && (
-                      <span className="inline-block rounded-full bg-red-500/20 border border-red-500/40 px-2 py-0.5 text-[10px] font-mono font-bold text-red-300">
+                      <span className="inline-block rounded-full bg-red-500/20 border border-red-500/40 px-2 py-0.5 text-xs font-mono font-bold text-red-300">
                         {u.criticalHits} CRITICAL
                       </span>
                     )}
@@ -694,14 +694,14 @@ export function ActivitiesDashboard() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <div className="text-[11px] font-mono text-slate-400">
+                  <div className="text-xs font-mono text-muted">
                     Domain / Target yang Diperiksa ({u.domainsTargeted.length}):
                   </div>
                   <div className="flex flex-wrap gap-1.5">
                     {u.domainsTargeted.slice(0, 8).map((d) => (
                       <span
                         key={d}
-                        className="inline-flex items-center gap-1 rounded-md bg-black/40 border border-white/10 px-2 py-0.5 font-mono text-[11px] text-slate-200"
+                        className="inline-flex items-center gap-1 rounded-md bg-sunken border border-border px-2 py-0.5 font-mono text-xs text-soft"
                       >
                         <Globe className="h-3 w-3 text-purple-400" />
                         {d}
@@ -711,14 +711,14 @@ export function ActivitiesDashboard() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <div className="text-[11px] font-mono text-slate-400">
+                  <div className="text-xs font-mono text-muted">
                     Modul yang Digunakan ({u.modulesUsed.length}):
                   </div>
                   <div className="flex flex-wrap gap-1.5">
                     {u.modulesUsed.map((m) => (
                       <span
                         key={m}
-                        className="rounded-md bg-purple-500/10 border border-purple-500/25 px-2 py-0.5 font-mono text-[10px] text-purple-200"
+                        className="rounded-md bg-purple-500/10 border border-purple-500/25 px-2 py-0.5 font-mono text-xs text-purple-200"
                       >
                         {m}
                       </span>
@@ -727,7 +727,7 @@ export function ActivitiesDashboard() {
                 </div>
               </div>
 
-              <div className="pt-3 border-t border-white/[0.06] flex items-center justify-between text-[11px] font-mono text-slate-400">
+              <div className="pt-3 border-t border-foreground/[0.06] flex items-center justify-between text-xs font-mono text-muted">
                 <span className="flex items-center gap-1">
                   <Clock className="h-3 w-3" />
                   Terakhir aktif: {relTime(u.lastActive)}
@@ -738,7 +738,7 @@ export function ActivitiesDashboard() {
                     setSearch(u.userId);
                     setSubTab("feed");
                   }}
-                  className="text-purple-300 hover:text-white underline cursor-pointer"
+                  className="text-purple-300 hover:text-foreground underline cursor-pointer"
                 >
                   Lihat Semua Log User Ini →
                 </button>
@@ -747,7 +747,7 @@ export function ActivitiesDashboard() {
           ))}
 
           {filteredUsers.length === 0 && (
-            <div className="col-span-full rounded-2xl border border-white/10 bg-[#120d1d] p-10 text-center font-mono text-xs text-slate-400">
+            <div className="col-span-full rounded-2xl border border-border bg-panel p-10 text-center font-mono text-xs text-muted">
               Belum ada data profil user yang tercatat.
             </div>
           )}
@@ -757,16 +757,16 @@ export function ActivitiesDashboard() {
       {/* SubTab 4: All Full Scans & QC Runs */}
       {subTab === "scans" && (
         <div className="space-y-6">
-          <div className="rounded-2xl border border-white/10 bg-[#120d1d] overflow-hidden">
-            <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between">
-              <h2 className="text-sm font-bold text-white">
+          <div className="rounded-2xl border border-border bg-panel overflow-hidden">
+            <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+              <h2 className="text-sm font-bold text-foreground">
                 Semua Sesi Full Passive Scan ({scans.length})
               </h2>
               <button
                 type="button"
                 disabled={busyKey !== null || !(scans.some((s) => isRunning(s.status)) || qcs.some((q) => isRunning(q.status)))}
                 onClick={() => runAction("stop_all", "scan")}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-amber-500/40 bg-amber-500/15 px-3 py-1.5 font-mono text-[11px] text-amber-200 hover:bg-amber-500/25 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-amber-500/40 bg-amber-500/15 px-3 py-1.5 font-mono text-xs text-amber-200 hover:bg-amber-500/25 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <Square className="h-3 w-3" />
                 <span>Hentikan semua yang berjalan</span>
@@ -774,7 +774,7 @@ export function ActivitiesDashboard() {
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead className="border-b border-white/10 bg-black/30 font-mono uppercase text-[11px] text-slate-400">
+                <thead className="border-b border-border bg-sunken font-mono uppercase text-xs text-muted">
                   <tr>
                     <th className="p-3.5">Scan ID</th>
                     <th className="p-3.5">Domain</th>
@@ -787,10 +787,10 @@ export function ActivitiesDashboard() {
                 </thead>
                 <tbody className="divide-y divide-white/[0.06]">
                   {scans.map((s) => (
-                    <tr key={s.id} className="hover:bg-white/[0.03]">
+                    <tr key={s.id} className="hover:bg-foreground/[0.03]">
                       <td className="p-3.5 font-mono text-purple-300">{s.id}</td>
-                      <td className="p-3.5 font-mono font-bold text-white">{s.domain}</td>
-                      <td className="p-3.5 font-mono text-slate-400">{fmtDate(s.createdAt)}</td>
+                      <td className="p-3.5 font-mono font-bold text-foreground">{s.domain}</td>
+                      <td className="p-3.5 font-mono text-muted">{fmtDate(s.createdAt)}</td>
                       <td className="p-3.5 font-mono uppercase">{s.status}</td>
                       <td className="p-3.5 font-mono">{s.pagesCount}</td>
                       <td className="p-3.5 font-mono">
@@ -798,7 +798,7 @@ export function ActivitiesDashboard() {
                         {" · "}
                         <span className="text-amber-400 font-bold">{s.severityCounts?.HIGH ?? 0} HIGH</span>
                         {" · "}
-                        <span className="text-slate-300">{s.findingsCount} total</span>
+                        <span className="text-soft">{s.findingsCount} total</span>
                       </td>
                       <td className="p-3.5 text-right space-x-2 whitespace-nowrap">
                         {isRunning(s.status) && (
@@ -806,7 +806,7 @@ export function ActivitiesDashboard() {
                             type="button"
                             disabled={busyKey !== null}
                             onClick={() => runAction("stop", "scan", s.id)}
-                            className="inline-flex items-center gap-1 rounded-lg border border-amber-500/40 bg-amber-500/15 px-3 py-1 font-mono text-[11px] text-amber-200 hover:bg-amber-500/25 disabled:opacity-40"
+                            className="inline-flex items-center gap-1 rounded-lg border border-amber-500/40 bg-amber-500/15 px-3 py-1 font-mono text-xs text-amber-200 hover:bg-amber-500/25 disabled:opacity-40"
                           >
                             <Square className="h-3 w-3" />
                             <span>Stop</span>
@@ -816,14 +816,14 @@ export function ActivitiesDashboard() {
                           type="button"
                           disabled={busyKey !== null}
                           onClick={() => runAction("delete", "scan", s.id)}
-                          className="inline-flex items-center gap-1 rounded-lg border border-red-500/40 bg-red-500/15 px-3 py-1 font-mono text-[11px] text-red-200 hover:bg-red-500/25 disabled:opacity-40"
+                          className="inline-flex items-center gap-1 rounded-lg border border-red-500/40 bg-red-500/15 px-3 py-1 font-mono text-xs text-red-200 hover:bg-red-500/25 disabled:opacity-40"
                         >
                           <Trash2 className="h-3 w-3" />
                           <span>Hapus</span>
                         </button>
                         <Link
                           href={`/scan/${s.id}`}
-                          className="inline-flex items-center gap-1 rounded-lg border border-purple-500/30 bg-purple-500/15 px-3 py-1 font-mono text-[11px] text-purple-200 hover:bg-purple-500/25"
+                          className="inline-flex items-center gap-1 rounded-lg border border-purple-500/30 bg-purple-500/15 px-3 py-1 font-mono text-xs text-purple-200 hover:bg-purple-500/25"
                         >
                           <span>Dashboard</span>
                           <ExternalLink className="h-3 w-3" />
@@ -833,7 +833,7 @@ export function ActivitiesDashboard() {
                   ))}
                   {scans.length === 0 && (
                     <tr>
-                      <td colSpan={7} className="p-8 text-center font-mono text-slate-400">
+                      <td colSpan={7} className="p-8 text-center font-mono text-muted">
                         Belum ada sesi Full Scan.
                       </td>
                     </tr>
@@ -843,15 +843,15 @@ export function ActivitiesDashboard() {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-white/10 bg-[#120d1d] overflow-hidden">
-            <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between">
-              <h2 className="text-sm font-bold text-white">
+          <div className="rounded-2xl border border-border bg-panel overflow-hidden">
+            <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+              <h2 className="text-sm font-bold text-foreground">
                 Semua Sesi QC Otomatis SEO/Perf/Content ({qcs.length})
               </h2>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead className="border-b border-white/10 bg-black/30 font-mono uppercase text-[11px] text-slate-400">
+                <thead className="border-b border-border bg-sunken font-mono uppercase text-xs text-muted">
                   <tr>
                     <th className="p-3.5">QC ID</th>
                     <th className="p-3.5">Domain</th>
@@ -863,10 +863,10 @@ export function ActivitiesDashboard() {
                 </thead>
                 <tbody className="divide-y divide-white/[0.06]">
                   {qcs.map((q) => (
-                    <tr key={q.id} className="hover:bg-white/[0.03]">
+                    <tr key={q.id} className="hover:bg-foreground/[0.03]">
                       <td className="p-3.5 font-mono text-purple-300">{q.id}</td>
-                      <td className="p-3.5 font-mono font-bold text-white">{q.domain}</td>
-                      <td className="p-3.5 font-mono text-slate-400">{fmtDate(q.createdAt)}</td>
+                      <td className="p-3.5 font-mono font-bold text-foreground">{q.domain}</td>
+                      <td className="p-3.5 font-mono text-muted">{fmtDate(q.createdAt)}</td>
                       <td className="p-3.5 font-mono uppercase">{q.status}</td>
                       <td className="p-3.5 font-mono font-bold text-emerald-400">
                         {q.overallScore ?? "—"}
@@ -877,7 +877,7 @@ export function ActivitiesDashboard() {
                             type="button"
                             disabled={busyKey !== null}
                             onClick={() => runAction("stop", "qc", q.id)}
-                            className="inline-flex items-center gap-1 rounded-lg border border-amber-500/40 bg-amber-500/15 px-3 py-1 font-mono text-[11px] text-amber-200 hover:bg-amber-500/25 disabled:opacity-40"
+                            className="inline-flex items-center gap-1 rounded-lg border border-amber-500/40 bg-amber-500/15 px-3 py-1 font-mono text-xs text-amber-200 hover:bg-amber-500/25 disabled:opacity-40"
                           >
                             <Square className="h-3 w-3" />
                             <span>Stop</span>
@@ -887,14 +887,14 @@ export function ActivitiesDashboard() {
                           type="button"
                           disabled={busyKey !== null}
                           onClick={() => runAction("delete", "qc", q.id)}
-                          className="inline-flex items-center gap-1 rounded-lg border border-red-500/40 bg-red-500/15 px-3 py-1 font-mono text-[11px] text-red-200 hover:bg-red-500/25 disabled:opacity-40"
+                          className="inline-flex items-center gap-1 rounded-lg border border-red-500/40 bg-red-500/15 px-3 py-1 font-mono text-xs text-red-200 hover:bg-red-500/25 disabled:opacity-40"
                         >
                           <Trash2 className="h-3 w-3" />
                           <span>Hapus</span>
                         </button>
                         <Link
                           href={`/qc/${q.id}`}
-                          className="inline-flex items-center gap-1 rounded-lg border border-purple-500/30 bg-purple-500/15 px-3 py-1 font-mono text-[11px] text-purple-200 hover:bg-purple-500/25"
+                          className="inline-flex items-center gap-1 rounded-lg border border-purple-500/30 bg-purple-500/15 px-3 py-1 font-mono text-xs text-purple-200 hover:bg-purple-500/25"
                         >
                           <span>Buka QC</span>
                           <ExternalLink className="h-3 w-3" />
@@ -904,7 +904,7 @@ export function ActivitiesDashboard() {
                   ))}
                   {qcs.length === 0 && (
                     <tr>
-                      <td colSpan={6} className="p-8 text-center font-mono text-slate-400">
+                      <td colSpan={6} className="p-8 text-center font-mono text-muted">
                         Belum ada sesi QC Otomatis.
                       </td>
                     </tr>
@@ -925,22 +925,22 @@ export function ActivitiesDashboard() {
           onClick={() => setSelectedActivity(null)}
         >
           <div
-            className="w-full max-w-2xl max-h-[88vh] overflow-y-auto rounded-2xl border border-purple-500/35 bg-[#120d1e] p-6 text-slate-100 shadow-2xl space-y-4 thin-scroll"
+            className="w-full max-w-2xl max-h-[88vh] overflow-y-auto rounded-2xl border border-purple-500/35 bg-panel p-6 text-soft shadow-2xl space-y-4 thin-scroll"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-start justify-between gap-3 border-b border-white/10 pb-3">
+            <div className="flex items-start justify-between gap-3 border-b border-border pb-3">
               <div>
-                <div className="text-[11px] font-mono text-purple-300 uppercase">
+                <div className="text-xs font-mono text-purple-300 uppercase">
                   JSON Inspector — Detail Aktivitas &amp; Git Intelligence
                 </div>
-                <h3 className="text-base font-extrabold text-white mt-0.5">
+                <h3 className="text-base font-extrabold text-foreground mt-0.5">
                   {selectedActivity.action} ({selectedActivity.target})
                 </h3>
               </div>
               <button
                 type="button"
                 onClick={() => setSelectedActivity(null)}
-                className="h-8 w-8 grid place-items-center rounded-full bg-white/5 text-slate-400 hover:text-white"
+                className="h-8 w-8 grid place-items-center rounded-full bg-foreground/5 text-muted hover:text-foreground"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -956,7 +956,7 @@ export function ActivitiesDashboard() {
                     href={selectedActivity.meta.gitRepoUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-white underline font-bold break-all"
+                    className="text-foreground underline font-bold break-all"
                   >
                     {selectedActivity.meta.gitRepoUrl}
                   </a>
@@ -974,7 +974,7 @@ export function ActivitiesDashboard() {
             )}
 
             <div className="space-y-2">
-              <div className="flex items-center justify-between text-xs font-mono text-slate-400">
+              <div className="flex items-center justify-between text-xs font-mono text-muted">
                 <span> OUTPUT JSON TERSTRUKTUR</span>
                 <button
                   type="button"
@@ -990,7 +990,7 @@ export function ActivitiesDashboard() {
                   <span>{copiedId === "modal_json" ? "Tersalin!" : "Salin JSON"}</span>
                 </button>
               </div>
-              <pre className="rounded-xl bg-[#08060e] border border-white/10 p-4 font-mono text-xs text-emerald-300 whitespace-pre-wrap break-all max-h-96 overflow-y-auto thin-scroll">
+              <pre className="rounded-xl bg-sunken border border-border p-4 font-mono text-xs text-emerald-300 whitespace-pre-wrap break-all max-h-96 overflow-y-auto thin-scroll">
                 {JSON.stringify(
                   parseGitIntelFromActivity(selectedActivity) ?? selectedActivity,
                   null,
@@ -1012,7 +1012,7 @@ export function ActivitiesDashboard() {
               <button
                 type="button"
                 onClick={() => setSelectedActivity(null)}
-                className="rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-xs font-semibold text-slate-200 hover:bg-white/10"
+                className="rounded-xl border border-foreground/15 bg-foreground/5 px-4 py-2 text-xs font-semibold text-soft hover:bg-foreground/10"
               >
                 Tutup
               </button>

@@ -6,21 +6,21 @@ export const metadata = buildPageMetadata("/scan/ssl");
 
 export default function SSLScanPage() {
   return (
-    <div className="min-h-dvh bg-[#0B0F19] text-[#EAF0FA]">
-      <section className="relative overflow-hidden border-b border-[#232B3D] px-6 pb-12 pt-16">
+    <div className="min-h-dvh bg-sunken text-foreground">
+      <section className="relative overflow-hidden border-b border-line px-6 pb-12 pt-16">
         <div className="pointer-events-none absolute inset-0 opacity-[0.15]">
           <div className="ssl-sweep" />
         </div>
         <div className="relative mx-auto max-w-5xl">
           <div className="flex items-center gap-3 mb-3">
-            <span className="font-mono text-xs uppercase tracking-[0.25em] text-[#3FA796]">
+            <span className="font-mono text-xs uppercase tracking-[0.25em] text-ok">
               Sentinel-ID / Security Intel
             </span>
           </div>
           <h1 className="text-3xl font-semibold leading-tight tracking-tight sm:text-4xl">
             SSL/TLS &amp; Certificate Intel Scanner
           </h1>
-          <p className="mt-2 max-w-2xl text-[#A9B4CC]">
+          <p className="mt-2 max-w-2xl text-soft">
             Passive SSL/TLS handshake analyzer. Extract certificate details,
             security grade, and TLS configuration with zero exploitation.
           </p>
@@ -30,7 +30,7 @@ export default function SSLScanPage() {
       <div className="pt-10 pb-24">
         <Suspense
           fallback={
-            <div className="mx-auto max-w-5xl px-6 py-12 text-center text-xs font-mono text-[#7C89A6]">
+            <div className="mx-auto max-w-5xl px-6 py-12 text-center text-xs font-mono text-muted">
               Loading SSL Scanner...
             </div>
           }

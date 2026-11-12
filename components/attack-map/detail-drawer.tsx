@@ -18,15 +18,15 @@ export function DetailDrawer({
   const color = NODE_COLORS[node.type];
 
   return (
-    <div className="absolute top-0 right-0 h-full w-full sm:w-80 bg-[#0f0b16] border-l border-white/[0.08] shadow-2xl z-20 flex flex-col">
-      <div className="flex items-center justify-between px-4 py-3.5 border-b border-white/[0.06]">
+    <div className="absolute top-0 right-0 h-full w-full sm:w-80 bg-panel border-l border-foreground/[0.08] shadow-2xl z-20 flex flex-col">
+      <div className="flex items-center justify-between px-4 py-3.5 border-b border-foreground/[0.06]">
         <div className="flex items-center gap-2 min-w-0">
           <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ background: color, boxShadow: `0 0 6px 1px ${color}90` }} />
           <span className="text-xs font-mono font-bold uppercase tracking-widest" style={{ color }}>
             {node.type}
           </span>
         </div>
-        <button onClick={onClose} className="text-muted-dim hover:text-white transition-colors">
+        <button onClick={onClose} className="text-muted-dim hover:text-foreground transition-colors">
           <X className="h-4 w-4" />
         </button>
       </div>
@@ -87,7 +87,7 @@ export function DetailDrawer({
       </div>
 
       {node.type !== "EXTERNAL" && (
-        <div className="p-4 border-t border-white/[0.06] space-y-2">
+        <div className="p-4 border-t border-foreground/[0.06] space-y-2">
           <div className="text-xs font-mono uppercase tracking-widest text-muted-dim">Deep-dive tools</div>
           <Link
             href={`/scan/headers?domain=${encodeURIComponent(hostname)}`}
@@ -104,7 +104,7 @@ export function DetailDrawer({
         </div>
       )}
       {node.type === "EXTERNAL" && (
-        <div className="p-4 border-t border-white/[0.06]">
+        <div className="p-4 border-t border-foreground/[0.06]">
           <a
             href={node.url}
             target="_blank"

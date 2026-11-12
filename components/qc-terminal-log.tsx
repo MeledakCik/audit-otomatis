@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import type { QcLogEvent } from "@/lib/qc-types";
 
 const TYPE_COLOR: Record<QcLogEvent["type"], string> = {
-  log: "text-slate-400",
+  log: "text-muted",
   status: "text-purple-300",
   module_done: "text-cyan-300",
   done: "text-emerald-400",
@@ -47,12 +47,12 @@ export function QcTerminalLog({ logs }: { logs: QcLogEvent[] }) {
   }, [logs.length]);
 
   return (
-    <div className="h-full flex flex-col overflow-hidden bg-[#0a0710] text-xs font-mono leading-relaxed">
+    <div className="h-full flex flex-col overflow-hidden bg-sunken text-xs font-mono leading-relaxed">
       <div className="flex-1 overflow-y-auto thin-scroll px-4 py-3 flex flex-col gap-1">
-        {logs.length === 0 && <p className="text-slate-400 italic">menunggu koneksi stream…</p>}
+        {logs.length === 0 && <p className="text-muted italic">menunggu koneksi stream…</p>}
         {logs.map((evt, i) => (
           <div key={i} className={cn("flex items-start gap-3 py-0.5", TYPE_ROW_HIGHLIGHT[evt.type])}>
-            <span className="text-slate-400 shrink-0 select-none">{timeLabel(evt.timestamp)}</span>
+            <span className="text-muted shrink-0 select-none">{timeLabel(evt.timestamp)}</span>
             <span className={cn("whitespace-pre-wrap break-all flex-1 min-w-0", TYPE_COLOR[evt.type])}>
               {lineText(evt)}
             </span>
