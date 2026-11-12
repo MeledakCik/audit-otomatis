@@ -1,9 +1,10 @@
 import Link from "next/link";
 import {
-  ArrowRight, ShieldCheck, Radar, Lock, TrendingUp, Network, ClipboardCheck, Check,
+  ArrowRight, ShieldCheck, Radar, Lock, TrendingUp, Network, ClipboardCheck, Check, Globe, AtSign,
 } from "lucide-react";
 import { GlassCanvas } from "@/components/landing/glass-canvas";
 import { LandingNav } from "@/components/landing/landing-nav";
+import { AUTHOR } from "@/lib/author";
 
 const FEATURES = [
   { icon: ShieldCheck, title: "Audit pasif", desc: "GET/HEAD saja, maks 100 request" },
@@ -128,11 +129,29 @@ export function LandingPage() {
             </Link>
           </div>
         </section>
+        {/* AUTHOR */}
+        <section id="author" className="px-4 sm:px-6 pb-14">
+          <div className="max-w-3xl mx-auto glass-panel rounded-3xl p-6 sm:p-8 flex flex-col sm:flex-row sm:items-center gap-5">
+            <span className="w-14 h-14 rounded-full bg-gradient-accent flex items-center justify-center text-white text-xl font-bold shrink-0">K</span>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm text-muted">Dibuat oleh</p>
+              <p className="text-xl font-bold">{AUTHOR.name}</p>
+            </div>
+            <div className="flex flex-wrap gap-2.5">
+              <a href={AUTHOR.websiteUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium glass-pill hover:border-accent/40">
+                <Globe className="w-4 h-4 text-accent" aria-hidden /> {AUTHOR.website}
+              </a>
+              <a href={AUTHOR.instagramUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium glass-pill hover:border-accent/40">
+                <AtSign className="w-4 h-4 text-accent" aria-hidden /> {AUTHOR.instagramHandle}
+              </a>
+            </div>
+          </div>
+        </section>
       </main>
 
       <footer className="px-4 sm:px-6 pb-10">
         <div className="max-w-6xl mx-auto border-t border-border pt-6 flex flex-wrap items-center justify-between gap-3 text-sm text-muted">
-          <span>© {new Date().getFullYear()} Sentinel-ID</span>
+          <span>© {new Date().getFullYear()} Sentinel-ID · oleh <a href={AUTHOR.websiteUrl} target="_blank" rel="noopener noreferrer" className="hover:text-foreground underline-offset-4 hover:underline">{AUTHOR.name}</a></span>
           <nav aria-label="Tautan footer" className="flex gap-4">
             <Link href="/docs" className="hover:text-foreground">Dokumentasi</Link>
             <Link href="/api-docs" className="hover:text-foreground">API</Link>

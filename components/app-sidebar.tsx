@@ -7,10 +7,11 @@ import {
   Shield, Search, TrendingUp, Lock, ClipboardCheck, Clock, Terminal,
   ShieldAlert, KeyRound, AlertTriangle, FileCode2, Award, Wrench,
   Network, Globe, Radio, Layers, Eye, UserCheck, ShieldCheck,
-  BookOpen, Code2, Settings, ChevronRight, ChevronDown,
+  BookOpen, Code2, Settings, ChevronRight, ChevronDown, AtSign,
   PanelLeftClose, PanelLeftOpen, X,
 } from "lucide-react";
 import { SENTINEL_NAV_ITEMS, type NavModuleItem } from "@/lib/nav-items";
+import { AUTHOR } from "@/lib/author";
 
 export { SENTINEL_NAV_ITEMS };
 export type { NavModuleItem };
@@ -184,11 +185,21 @@ export function AppSidebar({
 
         {!slim && (
           <div className="pt-2.5 border-t border-border">
-            <div className="glass-pill rounded-2xl p-2.5 flex items-center gap-2.5 min-w-0">
-              <div className="w-8 h-8 rounded-full bg-gradient-accent flex items-center justify-center text-white text-xs font-bold shrink-0">K</div>
-              <div className="min-w-0">
-                <div className="text-xs font-mono uppercase text-muted-dim">Lead Author</div>
-                <div className="text-sm font-bold truncate">Kasyaf · v3.6</div>
+            <div className="glass-pill rounded-2xl p-3 space-y-2.5 min-w-0">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-8 h-8 rounded-full bg-gradient-accent flex items-center justify-center text-white text-xs font-bold shrink-0">K</div>
+                <div className="min-w-0">
+                  <div className="text-xs text-muted-dim">Author</div>
+                  <div className="text-sm font-bold truncate">{AUTHOR.name}</div>
+                </div>
+              </div>
+              <div className="flex flex-col gap-1 text-sm">
+                <a href={AUTHOR.websiteUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-soft hover:text-accent truncate">
+                  <Globe className="w-4 h-4 shrink-0" aria-hidden /> {AUTHOR.website}
+                </a>
+                <a href={AUTHOR.instagramUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-soft hover:text-accent truncate">
+                  <AtSign className="w-4 h-4 shrink-0" aria-hidden /> {AUTHOR.instagramHandle}
+                </a>
               </div>
             </div>
           </div>
