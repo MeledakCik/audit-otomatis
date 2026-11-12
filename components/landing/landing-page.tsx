@@ -6,7 +6,7 @@ import {
 import { GlassCanvas } from "@/components/landing/glass-canvas";
 import { LandingNav } from "@/components/landing/landing-nav";
 import { AUTHOR } from "@/lib/author";
-
+import Image from "next/image";
 const FEATURES = [
   {
     icon: ShieldCheck,
@@ -80,7 +80,7 @@ const cta =
 export function LandingPage() {
   return (
     <div className="relative min-h-dvh overflow-x-clip bg-background selection:bg-accent/30">
-      
+
       {/* ===== GLOBAL AMBIENT BACKGROUND ===== */}
       {/* Memberikan pendaran warna di seluruh halaman agar tidak hitam pekat */}
       <div className="fixed inset-0 -z-20 pointer-events-none overflow-hidden">
@@ -95,7 +95,7 @@ export function LandingPage() {
         {/* ===== HERO ===== */}
         <section className="relative isolate min-h-[100svh] flex items-center pt-32 pb-20 px-4 sm:px-6">
           <GlassCanvas className="absolute inset-0 -z-10 w-full h-full opacity-80 [mask-image:linear-gradient(to_bottom,black_50%,transparent_100%)]" />
-          
+
           <div className="max-w-6xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
             {/* Kiri: pesan utama */}
             <div className="lg:col-span-7 space-y-7">
@@ -255,7 +255,7 @@ export function LandingPage() {
             <ol className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 relative">
               {/* Garis penghubung visual di desktop */}
               <div className="hidden lg:block absolute top-[48px] left-[10%] right-[10%] h-[2px] bg-gradient-to-r from-transparent via-accent/30 to-transparent -z-10" />
-              
+
               {STEPS.map((s, i) => (
                 <li key={s.title} className="glass-panel rounded-2xl p-6 space-y-3 relative bg-background/80 backdrop-blur-md">
                   <div className="flex items-center justify-between">
@@ -281,7 +281,7 @@ export function LandingPage() {
           <div className="max-w-4xl mx-auto rounded-3xl p-8 sm:p-12 text-center space-y-6 relative overflow-hidden glass-panel border-accent/20">
             {/* Efek glow di belakang CTA */}
             <div className="absolute inset-0 bg-gradient-to-b from-accent/10 to-transparent -z-10" />
-            
+
             <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-balance">
               Siap memeriksa domain Anda?
             </h2>
@@ -299,32 +299,48 @@ export function LandingPage() {
 
         {/* ===== AUTHOR ===== */}
         <section id="author" className="px-4 sm:px-6 pb-20 relative">
-          <div className="max-w-4xl mx-auto glass-panel rounded-3xl p-6 sm:p-8 flex flex-col sm:flex-row sm:items-center gap-6">
-            <span className="w-16 h-16 rounded-2xl bg-gradient-accent flex items-center justify-center text-white text-2xl font-bold shrink-0 shadow-lg shadow-accent/20">
-              K
-            </span>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm text-muted">Dirancang dan dikembangkan oleh</p>
-              <p className="text-xl font-bold">{AUTHOR.name}</p>
+          <div className="max-w-4xl mx-auto glass-panel rounded-3xl p-6 sm:p-8 flex flex-col sm:flex-row sm:items-center gap-6 group/card hover:border-accent/30 transition-colors duration-300">
+
+            {/* CONTAINER FOTO PROFIL */}
+            <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden shrink-0 border-2 border-accent/20 shadow-lg shadow-accent/10 group-hover/card:border-accent/50 transition-all duration-300">
+              <Image
+                src="https://www.kasyaf.id/images/profile.png" // Ganti dengan URL https://www.kasyaf.id/profile jika diizinkan di next.config.js
+                alt={`Foto profil ${AUTHOR.name}`}
+                fill
+                sizes="(max-width: 640px) 80px, 96px"
+                className="object-cover object-center transition-transform duration-500 group-hover/card:scale-110"
+                priority={false}
+              />
             </div>
-            <div className="flex flex-wrap gap-3">
+
+            {/* INFO TEKS */}
+            <div className="flex-1 min-w-0 text-center sm:text-left">
+              <p className="text-sm text-muted mb-1">Dirancang dan dikembangkan oleh</p>
+              <p className="text-xl font-bold text-foreground">{AUTHOR.name}</p>
+              {/* Anda bisa menambahkan role/title di sini jika ada */}
+              {/* <p className="text-xs text-accent font-medium mt-0.5">Security Researcher & Developer</p> */}
+            </div>
+
+            {/* TOMBOL LINK */}
+            <div className="flex flex-wrap items-center justify-center sm:justify-end gap-3 shrink-0">
               <a
                 href={AUTHOR.websiteUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium glass-pill hover:border-accent/40 hover:bg-foreground/5 transition-all"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium glass-pill hover:border-accent/40 hover:bg-foreground/5 hover:text-accent transition-all duration-300"
               >
-                <Globe className="w-4 h-4 text-accent" aria-hidden /> {AUTHOR.website}
+                <Globe className="w-4 h-4" aria-hidden /> {AUTHOR.website}
               </a>
               <a
                 href={AUTHOR.instagramUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium glass-pill hover:border-accent/40 hover:bg-foreground/5 transition-all"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium glass-pill hover:border-accent/40 hover:bg-foreground/5 hover:text-accent transition-all duration-300"
               >
-                <AtSign className="w-4 h-4 text-accent" aria-hidden /> {AUTHOR.instagramHandle}
+                <AtSign className="w-4 h-4" aria-hidden /> {AUTHOR.instagramHandle}
               </a>
             </div>
+
           </div>
         </section>
       </main>
