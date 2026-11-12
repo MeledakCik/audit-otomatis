@@ -1,7 +1,7 @@
 import Link from "next/link";
 import {
   ArrowRight, ShieldCheck, Radar, Lock, TrendingUp, Network, ClipboardCheck,
-  Check, Globe, AtSign, EyeOff, ServerCog, FileCheck2,
+  Check, Globe, AtSign, EyeOff, ServerCog, FileCheck2, Sparkles, Terminal
 } from "lucide-react";
 import { GlassCanvas } from "@/components/landing/glass-canvas";
 import { LandingNav } from "@/components/landing/landing-nav";
@@ -41,10 +41,10 @@ const FEATURES = [
 ];
 
 const STEPS = [
-  { title: "Masukkan domain", desc: "Satu domain, tanpa login, tanpa verifikasi kepemilikan." },
-  { title: "Crawl pasif", desc: "Mesin menjelajah halaman publik dan memetakan permukaan serangan." },
-  { title: "Lihat temuan", desc: "Daftar temuan terprioritas lengkap dengan bukti dan tingkat keparahan." },
-  { title: "Klaim bukti", desc: "Simpan bukti terenkripsi dan bagikan laporan ke tim atau klien." },
+  { title: "Masukkan domain", desc: "Satu domain, tanpa login, tanpa verifikasi kepemilikan.", icon: Terminal },
+  { title: "Crawl pasif", desc: "Mesin menjelajah halaman publik dan memetakan permukaan serangan.", icon: Radar },
+  { title: "Lihat temuan", desc: "Daftar temuan terprioritas lengkap dengan bukti dan tingkat keparahan.", icon: Sparkles },
+  { title: "Klaim bukti", desc: "Simpan bukti terenkripsi dan bagikan laporan ke tim atau klien.", icon: FileCheck2 },
 ];
 
 const TRUST = ["Tanpa login", "GET-only", "Zero-exploit", "AES-256", "Data terenkripsi"];
@@ -75,22 +75,27 @@ const PRINCIPLES = [
 ];
 
 const cta =
-  "inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl text-base font-semibold text-white bg-gradient-accent hover:brightness-110 transition";
+  "inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl text-base font-semibold text-white bg-gradient-accent hover:brightness-110 hover:shadow-[0_0_20px_rgba(var(--accent),0.4)] transition-all duration-300";
 
 export function LandingPage() {
   return (
-    <div className="relative min-h-dvh overflow-x-clip">
+    <div className="relative min-h-dvh overflow-x-clip bg-background selection:bg-accent/30">
+      
+      {/* ===== GLOBAL AMBIENT BACKGROUND ===== */}
+      {/* Memberikan pendaran warna di seluruh halaman agar tidak hitam pekat */}
+      <div className="fixed inset-0 -z-20 pointer-events-none overflow-hidden">
+        <div className="absolute -top-[20%] left-1/2 -translate-x-1/2 w-[80vw] h-[60vh] bg-accent/10 blur-[120px] rounded-full mix-blend-screen opacity-50" />
+        <div className="absolute top-[40%] -left-[10%] w-[50vw] h-[50vh] bg-accent-2/10 blur-[120px] rounded-full mix-blend-screen opacity-40" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[60vw] h-[60vh] bg-accent/5 blur-[150px] rounded-full mix-blend-screen opacity-30" />
+      </div>
+
       <LandingNav />
 
-      <main id="main">
+      <main id="main" className="relative">
         {/* ===== HERO ===== */}
-        <section className="relative isolate min-h-[100svh] flex items-center pt-28 pb-16 px-4 sm:px-6">
-          <GlassCanvas className="absolute inset-0 -z-10 w-full h-full opacity-80" />
-          <div
-            aria-hidden
-            className="absolute inset-x-0 bottom-0 h-40 -z-10 bg-gradient-to-t from-background to-transparent"
-          />
-
+        <section className="relative isolate min-h-[100svh] flex items-center pt-32 pb-20 px-4 sm:px-6">
+          <GlassCanvas className="absolute inset-0 -z-10 w-full h-full opacity-80 [mask-image:linear-gradient(to_bottom,black_50%,transparent_100%)]" />
+          
           <div className="max-w-6xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
             {/* Kiri: pesan utama */}
             <div className="lg:col-span-7 space-y-7">
@@ -104,33 +109,21 @@ export function LandingPage() {
                 <span className="text-gradient-accent">dalam hitungan menit.</span>
               </h1>
 
-              <p
-                className="text-lg text-soft max-w-xl animate-fade-up"
-                style={{ animationDelay: "70ms" }}
-              >
+              <p className="text-lg text-soft max-w-xl animate-fade-up" style={{ animationDelay: "70ms" }}>
                 Masukkan domain, dapatkan temuan terprioritas lengkap dengan bukti — tanpa
                 eksploit, tanpa login, dan tanpa mengubah apa pun pada target.
               </p>
 
-              <div
-                className="flex flex-wrap gap-3 animate-fade-up"
-                style={{ animationDelay: "140ms" }}
-              >
+              <div className="flex flex-wrap gap-3 animate-fade-up" style={{ animationDelay: "140ms" }}>
                 <Link href="/dashboard" className={cta}>
                   Mulai audit sekarang <ArrowRight className="w-5 h-5" aria-hidden />
                 </Link>
-                <a
-                  href="#fitur"
-                  className="inline-flex items-center px-6 py-3.5 rounded-xl text-base font-semibold glass-pill hover:border-accent/40 transition"
-                >
+                <a href="#fitur" className="inline-flex items-center px-6 py-3.5 rounded-xl text-base font-semibold glass-pill hover:border-accent/40 hover:bg-foreground/5 transition-all">
                   Lihat fitur
                 </a>
               </div>
 
-              <ul
-                className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-muted animate-fade-up"
-                style={{ animationDelay: "200ms" }}
-              >
+              <ul className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-muted animate-fade-up" style={{ animationDelay: "200ms" }}>
                 {TRUST.map((t) => (
                   <li key={t} className="inline-flex items-center gap-1.5">
                     <Check className="w-4 h-4 text-ok" aria-hidden /> {t}
@@ -140,11 +133,8 @@ export function LandingPage() {
             </div>
 
             {/* Kanan: preview dashboard */}
-            <div
-              className="lg:col-span-5 animate-fade-up"
-              style={{ animationDelay: "160ms" }}
-            >
-              <div className="glass-panel rounded-3xl p-5 sm:p-6 space-y-5">
+            <div className="lg:col-span-5 animate-fade-up" style={{ animationDelay: "160ms" }}>
+              <div className="glass-panel rounded-3xl p-5 sm:p-6 space-y-5 shadow-2xl shadow-accent/5">
                 <div className="flex items-center justify-between gap-3">
                   <div className="min-w-0">
                     <p className="text-xs text-muted">Hasil audit</p>
@@ -165,20 +155,14 @@ export function LandingPage() {
                     <span>Tidak ada file sensitif terbuka</span>
                   </li>
                   <li className="flex items-start gap-2.5">
-                    <span className="w-4 text-center text-warn font-bold shrink-0 mt-0.5" aria-hidden>
-                      !
-                    </span>
+                    <span className="w-4 text-center text-warn font-bold shrink-0 mt-0.5" aria-hidden>!</span>
                     <span>CSP masih memuat <code className="text-xs">unsafe-inline</code></span>
                   </li>
                 </ul>
 
                 <div className="grid grid-cols-3 gap-2 text-center">
-                  {[
-                    ["0", "Critical"],
-                    ["2", "Medium"],
-                    ["4", "Low"],
-                  ].map(([v, l]) => (
-                    <div key={l} className="rounded-xl bg-foreground/[0.04] py-3">
+                  {[["0", "Critical"], ["2", "Medium"], ["4", "Low"]].map(([v, l]) => (
+                    <div key={l} className="rounded-xl bg-foreground/[0.04] py-3 border border-border/50">
                       <div className="text-xl font-bold tabular-nums">{v}</div>
                       <div className="text-xs text-muted">{l}</div>
                     </div>
@@ -195,42 +179,39 @@ export function LandingPage() {
         </section>
 
         {/* ===== STATS / TRUST BAR ===== */}
-        <section className="px-4 sm:px-6 pb-6">
-          <div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-3">
+        <section className="px-4 sm:px-6 relative z-10">
+          <div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
             {STATS.map((s) => (
-              <div key={s.label} className="glass-panel rounded-2xl px-5 py-4 text-center">
-                <div className="text-2xl font-bold tabular-nums text-gradient-accent">
+              <div key={s.label} className="glass-panel rounded-2xl px-5 py-6 text-center hover:border-accent/30 transition-colors">
+                <div className="text-3xl font-extrabold tabular-nums text-gradient-accent">
                   {s.value}
                 </div>
-                <div className="text-xs text-muted mt-0.5">{s.label}</div>
+                <div className="text-sm text-muted mt-1">{s.label}</div>
               </div>
             ))}
           </div>
         </section>
 
         {/* ===== FITUR ===== */}
-        <section id="fitur" className="px-4 sm:px-6 py-14 sm:py-20">
-          <div className="max-w-6xl mx-auto space-y-8">
-            <header className="space-y-2 max-w-2xl">
-              <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Fitur utama</h2>
-              <p className="text-soft">
+        <section id="fitur" className="px-4 sm:px-6 py-20 sm:py-28 relative">
+          <div className="max-w-6xl mx-auto space-y-10">
+            <header className="space-y-3 max-w-2xl">
+              <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">Fitur utama</h2>
+              <p className="text-lg text-soft">
                 Semua yang Anda butuhkan untuk memahami risiko keamanan dan kualitas teknis
                 sebuah domain — dalam satu dashboard.
               </p>
             </header>
 
-            <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
               {FEATURES.map(({ icon: Icon, title, desc }) => (
-                <li
-                  key={title}
-                  className="glass-panel rounded-2xl p-5 flex items-start gap-4 hover:border-accent/40 hover:-translate-y-0.5 transition"
-                >
-                  <span className="w-11 h-11 rounded-xl bg-accent/10 text-accent flex items-center justify-center shrink-0">
-                    <Icon className="w-5 h-5" aria-hidden />
+                <li key={title} className="group glass-panel rounded-2xl p-6 flex flex-col gap-4 hover:border-accent/40 hover:-translate-y-1 hover:shadow-xl hover:shadow-accent/5 transition-all duration-300">
+                  <span className="w-12 h-12 rounded-xl bg-accent/10 text-accent flex items-center justify-center shrink-0 group-hover:scale-110 group-hover:bg-accent/20 transition-all duration-300">
+                    <Icon className="w-6 h-6" aria-hidden />
                   </span>
                   <div className="min-w-0">
-                    <h3 className="text-base font-semibold">{title}</h3>
-                    <p className="text-sm text-muted mt-1 leading-relaxed">{desc}</p>
+                    <h3 className="text-lg font-semibold mb-1.5">{title}</h3>
+                    <p className="text-sm text-muted leading-relaxed">{desc}</p>
                   </div>
                 </li>
               ))}
@@ -239,25 +220,23 @@ export function LandingPage() {
         </section>
 
         {/* ===== PRINSIP KEAMANAN ===== */}
-        <section id="keamanan" className="px-4 sm:px-6 py-14 sm:py-20">
-          <div className="max-w-6xl mx-auto space-y-8">
-            <header className="space-y-2 max-w-2xl">
-              <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">
-                Kenapa audit pasif?
-              </h2>
-              <p className="text-soft">
+        <section id="keamanan" className="px-4 sm:px-6 py-20 bg-foreground/[0.02] border-y border-border/40 relative">
+          <div className="max-w-6xl mx-auto space-y-10">
+            <header className="space-y-3 max-w-2xl">
+              <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">Kenapa audit pasif?</h2>
+              <p className="text-lg text-soft">
                 Keamanan tidak harus invasif. Kami merancang setiap pemeriksaan agar aman
                 bagi target dan dapat dipertanggungjawabkan hasilnya.
               </p>
             </header>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
               {PRINCIPLES.map(({ icon: Icon, title, desc }) => (
-                <div key={title} className="glass-panel rounded-2xl p-6 space-y-3">
+                <div key={title} className="glass-panel rounded-2xl p-6 space-y-4 hover:border-accent/30 transition-colors">
                   <span className="w-10 h-10 rounded-xl bg-accent/10 text-accent flex items-center justify-center">
                     <Icon className="w-5 h-5" aria-hidden />
                   </span>
-                  <h3 className="text-base font-semibold">{title}</h3>
+                  <h3 className="text-lg font-semibold">{title}</h3>
                   <p className="text-sm text-muted leading-relaxed">{desc}</p>
                 </div>
               ))}
@@ -266,21 +245,31 @@ export function LandingPage() {
         </section>
 
         {/* ===== CARA KERJA ===== */}
-        <section id="cara-kerja" className="px-4 sm:px-6 py-14 sm:py-20">
-          <div className="max-w-6xl mx-auto space-y-8">
-            <header className="space-y-2 max-w-2xl">
-              <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Cara kerja</h2>
-              <p className="text-soft">Empat langkah, tanpa setup rumit.</p>
+        <section id="cara-kerja" className="px-4 sm:px-6 py-20 sm:py-28 relative">
+          <div className="max-w-6xl mx-auto space-y-10">
+            <header className="space-y-3 max-w-2xl">
+              <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">Cara kerja</h2>
+              <p className="text-lg text-soft">Empat langkah mudah, tanpa setup rumit.</p>
             </header>
 
-            <ol className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <ol className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 relative">
+              {/* Garis penghubung visual di desktop */}
+              <div className="hidden lg:block absolute top-[48px] left-[10%] right-[10%] h-[2px] bg-gradient-to-r from-transparent via-accent/30 to-transparent -z-10" />
+              
               {STEPS.map((s, i) => (
-                <li key={s.title} className="glass-panel rounded-2xl p-5 space-y-2">
-                  <span className="text-sm font-mono font-semibold text-accent">
-                    {String(i + 1).padStart(2, "0")}
-                  </span>
-                  <p className="text-base font-semibold">{s.title}</p>
-                  <p className="text-sm text-muted leading-relaxed">{s.desc}</p>
+                <li key={s.title} className="glass-panel rounded-2xl p-6 space-y-3 relative bg-background/80 backdrop-blur-md">
+                  <div className="flex items-center justify-between">
+                    <span className="w-10 h-10 rounded-full bg-accent/10 text-accent flex items-center justify-center">
+                      <s.icon className="w-5 h-5" aria-hidden />
+                    </span>
+                    <span className="text-sm font-mono font-bold text-accent/50">
+                      0{i + 1}
+                    </span>
+                  </div>
+                  <div>
+                    <p className="text-lg font-semibold">{s.title}</p>
+                    <p className="text-sm text-muted leading-relaxed mt-1">{s.desc}</p>
+                  </div>
                 </li>
               ))}
             </ol>
@@ -288,37 +277,42 @@ export function LandingPage() {
         </section>
 
         {/* ===== CTA ===== */}
-        <section className="px-4 sm:px-6 pb-20">
-          <div className="max-w-3xl mx-auto glass-panel rounded-3xl p-8 sm:p-12 text-center space-y-5">
-            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-balance">
+        <section className="px-4 sm:px-6 pb-24 relative">
+          <div className="max-w-4xl mx-auto rounded-3xl p-8 sm:p-12 text-center space-y-6 relative overflow-hidden glass-panel border-accent/20">
+            {/* Efek glow di belakang CTA */}
+            <div className="absolute inset-0 bg-gradient-to-b from-accent/10 to-transparent -z-10" />
+            
+            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-balance">
               Siap memeriksa domain Anda?
             </h2>
-            <p className="text-soft max-w-md mx-auto">
+            <p className="text-lg text-soft max-w-lg mx-auto">
               Mulai audit pertama Anda dalam hitungan detik. Tidak perlu kartu kredit, tidak
               perlu login.
             </p>
-            <Link href="/dashboard" className={cta}>
-              Mulai audit sekarang <ArrowRight className="w-5 h-5" aria-hidden />
-            </Link>
+            <div className="pt-2">
+              <Link href="/dashboard" className={cta}>
+                Mulai audit sekarang <ArrowRight className="w-5 h-5" aria-hidden />
+              </Link>
+            </div>
           </div>
         </section>
 
         {/* ===== AUTHOR ===== */}
-        <section id="author" className="px-4 sm:px-6 pb-14">
-          <div className="max-w-3xl mx-auto glass-panel rounded-3xl p-6 sm:p-8 flex flex-col sm:flex-row sm:items-center gap-5">
-            <span className="w-14 h-14 rounded-full bg-gradient-accent flex items-center justify-center text-white text-xl font-bold shrink-0">
+        <section id="author" className="px-4 sm:px-6 pb-20 relative">
+          <div className="max-w-4xl mx-auto glass-panel rounded-3xl p-6 sm:p-8 flex flex-col sm:flex-row sm:items-center gap-6">
+            <span className="w-16 h-16 rounded-2xl bg-gradient-accent flex items-center justify-center text-white text-2xl font-bold shrink-0 shadow-lg shadow-accent/20">
               K
             </span>
             <div className="flex-1 min-w-0">
-              <p className="text-sm text-muted">Dibuat dan dikelola oleh</p>
+              <p className="text-sm text-muted">Dirancang dan dikembangkan oleh</p>
               <p className="text-xl font-bold">{AUTHOR.name}</p>
             </div>
-            <div className="flex flex-wrap gap-2.5">
+            <div className="flex flex-wrap gap-3">
               <a
                 href={AUTHOR.websiteUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium glass-pill hover:border-accent/40 transition"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium glass-pill hover:border-accent/40 hover:bg-foreground/5 transition-all"
               >
                 <Globe className="w-4 h-4 text-accent" aria-hidden /> {AUTHOR.website}
               </a>
@@ -326,7 +320,7 @@ export function LandingPage() {
                 href={AUTHOR.instagramUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium glass-pill hover:border-accent/40 transition"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium glass-pill hover:border-accent/40 hover:bg-foreground/5 transition-all"
               >
                 <AtSign className="w-4 h-4 text-accent" aria-hidden /> {AUTHOR.instagramHandle}
               </a>
@@ -335,24 +329,24 @@ export function LandingPage() {
         </section>
       </main>
 
-      <footer className="px-4 sm:px-6 pb-10">
-        <div className="max-w-6xl mx-auto border-t border-border pt-6 flex flex-wrap items-center justify-between gap-3 text-sm text-muted">
+      <footer className="px-4 sm:px-6 pb-10 relative">
+        <div className="max-w-6xl mx-auto border-t border-border/50 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted">
           <span>
             © {new Date().getFullYear()} Sentinel-ID · oleh{" "}
             <a
               href={AUTHOR.websiteUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-foreground underline-offset-4 hover:underline"
+              className="hover:text-foreground text-accent underline-offset-4 hover:underline transition-colors"
             >
               {AUTHOR.name}
             </a>
           </span>
-          <nav aria-label="Tautan footer" className="flex gap-4">
-            <Link href="/docs" className="hover:text-foreground">
+          <nav aria-label="Tautan footer" className="flex gap-6">
+            <Link href="/docs" className="hover:text-foreground transition-colors">
               Dokumentasi
             </Link>
-            <Link href="/api-docs" className="hover:text-foreground">
+            <Link href="/api-docs" className="hover:text-foreground transition-colors">
               API
             </Link>
           </nav>
