@@ -9,9 +9,6 @@
 //    pertama milik user (atau membuat database `sentinel-id-db` jika belum ada), lalu
 //    men-generate database JWT token secara dinamis dan menyimpannya di cache memori.
 
-const DEFAULT_TURSO_API_TOKEN =
-  "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJWM01mLWRwNUVmR2RWUHFmQVlPc0xBIiwib3JnX2lkIjoxMDAwMjk2MDcwfQ.pStpf7dEMxRpfBDwoxLPQj2bBUy9NqaksRRBMYebClIiL_tv0_ONKOP9jz4fHvuTDznQubYDrOeGo20tmvgYCQ";
-
 export interface TursoEndpoint {
   httpUrl: string; // https://<db>-<org>.turso.io
   authToken: string;
@@ -115,7 +112,7 @@ export async function resolveTursoEndpoint(): Promise<TursoEndpoint | null> {
       const platformToken = (
         process.env.TURSO_API_TOKEN ||
         explicitDbToken ||
-        DEFAULT_TURSO_API_TOKEN
+        ""
       ).trim();
 
       // If user explicitly provided TURSO_DATABASE_URL and TURSO_AUTH_TOKEN, try direct pipeline first
@@ -354,6 +351,11 @@ export async function ensureTursoSchema(): Promise<boolean> {
     // ignore
   }
   return false;
+}
+
+export function hasTursoConfiguration(): boolean {
+  return [process.env.TURSO_API_TOKEN, process.env.TURSO_AUTH_TOKEN, process.env.LIBSQL_AUTH_TOKEN]
+    .some((value) => !!value?.trim());
 }
 
 export function cellToString(cell?: HranaRowCell): string | null {

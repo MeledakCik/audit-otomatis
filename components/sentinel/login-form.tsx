@@ -3,156 +3,80 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ShieldAlert, Lock, User, Eye, EyeOff, ArrowLeft, CheckCircle2, AlertTriangle } from "lucide-react";
-import { VerifiedBadge } from "@/components/verified-badge";
+import { ArrowLeft, Eye, EyeOff, Lock } from "lucide-react";
+
+const inputClass = "h-11 w-full rounded-xl border border-border bg-sunken px-3 text-sm text-foreground";
 
 export function LoginForm() {
   const router = useRouter();
   const [user, setUser] = useState("");
   const [pass, setPass] = useState("");
   const [showPass, setShowPass] = useState(false);
-  const [err, setErr] = useState("");
+  const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
+  async function submit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
     setBusy(true);
-    setErr("");
+    setError("");
     try {
-      const res = await fetch("/api/admin/login", {
+      const response = await fetch("/api/admin/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ user, pass }),
       });
-      if (res.ok) {
-        router.replace("/admin/activities");
+      if (response.ok) {
+        router.replace("/admin/test");
         router.refresh();
         return;
       }
-      const j = await res.json().catch(() => ({}));
-      setErr(j.error ?? "Login gagal");
+      const data = await response.json().catch(() => ({}));
+      setError(data.error ?? "Gagal masuk.");
       setPass("");
     } catch {
-      setErr("Gagal menghubungi server autentikasi.");
+      setError("Gagal menghubungi server autentikasi.");
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <div className="min-h-dvh w-full flex flex-col justify-between p-4 sm:p-8 bg-sunken">
-      {/* Top Bar */}
-      <div className="mx-auto w-full max-w-5xl flex items-center justify-between">
-        <Link
-          href="/"
-          className="inline-flex items-center gap-2 rounded-xl border border-border bg-foreground/[0.03] hover:bg-foreground/[0.08] px-3.5 py-2 text-xs font-mono text-soft transition-colors"
-        >
-          <ArrowLeft className="h-3.5 w-3.5" />
-          Kembali ke Beranda User
-        </Link>
-        <VerifiedBadge variant="admin" />
-      </div>
-
-      {/* Center Login Card */}
-      <div className="mx-auto w-full max-w-md my-auto py-8">
-        <div className="rounded-3xl border border-purple-500/30 bg-gradient-to-b from-[#171128] via-[#120d1f] to-sunken p-6 sm:p-8 space-y-6">
-          <div className="flex flex-col items-center text-center space-y-2">
-            <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-purple-600 to-pink-600 grid place-items-center text-white">
-              <ShieldAlert className="h-7 w-7" />
-            </div>
-            <div className="inline-flex items-center gap-1.5 rounded-full bg-purple-500/15 border border-purple-500/30 px-3 py-0.5 text-xs font-mono font-bold uppercase tracking-widest text-purple-300">
-              RESTRICTED ACCESS
-            </div>
-            <h1 className="text-2xl font-extrabold text-foreground tracking-tight">
-              Admin Command Center
-            </h1>
-            <p className="text-xs text-muted leading-relaxed">
-              Pantau seluruh data &amp; aktivitas user secara real-time, kelola brankas bukti AES-256-GCM, dan verifikasi klaim domain.
-            </p>
+    <div className="mx-auto max-w-md px-1 py-8 sm:py-14">
+      <Link href="/dashboard" className="mb-4 inline-flex min-h-10 items-center gap-2 rounded-lg text-sm text-muted hover:text-foreground">
+        <ArrowLeft aria-hidden className="size-4" /> Dasbor pengguna
+      </Link>
+      <section className="glass-panel space-y-5 rounded-2xl p-5 sm:p-7">
+        <div className="flex items-center gap-3">
+          <div className="grid size-10 place-items-center rounded-xl bg-accent/10 text-accent">
+            <Lock aria-hidden className="size-5" />
           </div>
-
-          <form onSubmit={submit} className="space-y-4">
-            <div className="space-y-1.5">
-              <label htmlFor="admin-user" className="text-xs font-mono uppercase tracking-wider text-soft font-semibold">
-                Username Admin
-              </label>
-              <div className="relative">
-                <User className="h-4 w-4 text-purple-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                <input
-                  id="admin-user"
-                  className="w-full h-11 rounded-xl border border-foreground/15 bg-sunken pl-10 pr-4 text-sm text-foreground placeholder:text-muted outline-none focus:border-purple-400"
-                  placeholder="Masukkan username admin"
-                  autoComplete="username"
-                  value={user}
-                  onChange={(e) => setUser(e.target.value)}
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <label htmlFor="admin-pass" className="text-xs font-mono uppercase tracking-wider text-soft font-semibold">
-                Password
-              </label>
-              <div className="relative">
-                <Lock className="h-4 w-4 text-purple-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                <input
-                  id="admin-pass"
-                  className="w-full h-11 rounded-xl border border-foreground/15 bg-sunken pl-10 pr-10 text-sm text-foreground placeholder:text-muted outline-none focus:border-purple-400"
-                  placeholder="••••••••••••"
-                  type={showPass ? "text" : "password"}
-                  autoComplete="current-password"
-                  value={pass}
-                  onChange={(e) => setPass(e.target.value)}
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPass((s) => !s)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-foreground"
-                  aria-label={showPass ? "Sembunyikan password" : "Tampilkan password"}
-                >
-                  {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-            </div>
-
-            {err && (
-              <div
-                role="alert"
-                className="flex items-center gap-2 rounded-xl border border-red-500/40 bg-red-500/10 px-3.5 py-2.5 text-xs text-red-300"
-              >
-                <AlertTriangle className="h-4 w-4 text-red-400 shrink-0" />
-                <span>{err}</span>
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={busy}
-              className="w-full h-11 rounded-xl bg-gradient-to-r from-purple-600 via-fuchsia-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-xs font-bold uppercase tracking-wider text-white disabled:opacity-50 cursor-pointer"
-            >
-              {busy ? "Memverifikasi Sesi…" : "Masuk ke Admin Console →"}
-            </button>
-          </form>
-
-          <div className="pt-3 border-t border-border grid grid-cols-2 gap-2 text-xs font-mono text-muted">
-            <div className="flex items-center gap-1.5">
-              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
-              <span>Bcrypt Timing-Safe</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
-              <span>JWT HS256 + Redis</span>
-            </div>
-          </div>
+          <h1 className="text-2xl font-bold tracking-tight">Masuk sebagai admin</h1>
         </div>
-      </div>
-
-      {/* Bottom Footer */}
-      <div className="mx-auto w-full max-w-5xl text-center text-xs font-mono text-muted">
-        Sentinel-ID Auto Security Auditor · Verified by Google Developer Bandung
-      </div>
+        <form onSubmit={submit} className="space-y-4">
+          <div className="space-y-1.5">
+            <label htmlFor="admin-user" className="text-sm font-medium">Nama pengguna</label>
+            <input id="admin-user" className={inputClass} autoComplete="username" value={user} onChange={(event) => setUser(event.target.value)} required />
+          </div>
+          <div className="space-y-1.5">
+            <label htmlFor="admin-pass" className="text-sm font-medium">Kata sandi</label>
+            <div className="relative">
+              <input id="admin-pass" className={`${inputClass} pr-12`} type={showPass ? "text" : "password"} autoComplete="current-password" value={pass} onChange={(event) => setPass(event.target.value)} required />
+              <button
+                type="button"
+                onClick={() => setShowPass(!showPass)}
+                aria-label={showPass ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"}
+                className="absolute inset-y-0 right-0 grid w-11 place-items-center rounded-xl text-muted hover:text-foreground"
+              >
+                {showPass ? <EyeOff aria-hidden className="size-4" /> : <Eye aria-hidden className="size-4" />}
+              </button>
+            </div>
+          </div>
+          {error && <p role="alert" className="text-sm text-danger">{error}</p>}
+          <button type="submit" disabled={busy} className="h-11 w-full rounded-xl bg-gradient-accent text-sm font-semibold text-white hover:brightness-110 disabled:opacity-60">
+            {busy ? "Memverifikasi…" : "Masuk"}
+          </button>
+        </form>
+      </section>
     </div>
   );
 }

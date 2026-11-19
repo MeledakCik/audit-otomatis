@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { KeyRound, RefreshCw, CheckCircle2, XCircle, Clock, Search, AlertTriangle } from "lucide-react";
+import { RefreshCw, CheckCircle2, XCircle, Clock, Search, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Item {
@@ -23,18 +23,23 @@ export function RequestsTable() {
     action: "ACC" | "REJECT";
   } | null>(null);
   const [busy, setBusy] = useState(false);
+  const [loadError, setLoadError] = useState(false);
 
-  const load = useCallback(async () => {
-    const r = await fetch("/api/admin/requests");
-    if (r.status === 401) {
-      window.location.href = "/admin/login";
-      return;
-    }
-    setItems((await r.json()).items ?? []);
+  const load = useCallback((signal?: AbortSignal) => {
+    return fetch("/api/admin/requests", { signal }).then(async (r) => {
+      if (r.status === 401) return window.location.replace("/admin/login");
+      if (!r.ok) throw new Error();
+      setItems((await r.json()).items ?? []);
+      setLoadError(false);
+    }).catch(() => {
+      if (!signal?.aborted) setLoadError(true);
+    });
   }, []);
 
   useEffect(() => {
-    load();
+    const controller = new AbortController();
+    void load(controller.signal);
+    return () => controller.abort();
   }, [load]);
 
   async function executeDecision() {
@@ -47,6 +52,7 @@ export function RequestsTable() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ key: confirmModal.key, action: confirmModal.action }),
       });
+      if (r.status === 401) return window.location.replace("/admin/login");
       const j = await r.json();
       setMsg({
         text: r.ok
@@ -56,6 +62,9 @@ export function RequestsTable() {
       });
       setConfirmModal(null);
       await load();
+    } catch {
+      setMsg({ text: "Gagal menghubungi server. Muat ulang untuk melihat status klaim.", ok: false });
+      setConfirmModal(null);
     } finally {
       setBusy(false);
     }
@@ -81,41 +90,37 @@ export function RequestsTable() {
 
   return (
     <section className="space-y-4">
-      <div className="rounded-2xl border border-border bg-panel p-5 flex flex-wrap items-center justify-between gap-4">
+      <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="space-y-1">
-          <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/15 border border-amber-500/30 px-2.5 py-0.5 text-xs font-mono font-bold text-amber-300">
-            <KeyRound className="h-3 w-3" />
-            VERIFIKASI KEPEMILIKAN DOMAIN
-          </div>
-          <h1 className="text-lg font-extrabold text-foreground">
-            Permintaan Klaim Domain ({items?.length ?? "…"})
-          </h1>
-          <p className="text-xs text-muted">
-            Setujui (ACC) permintaan yang telah lulus verifikasi DNS TXT / HTTP File untuk menerbitkan token sekali-pakai (berlaku 10 menit).
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Klaim domain</h1>
+          <p className="text-sm text-muted">
+            Setujui klaim terverifikasi untuk memberi pemilik akses sekali pakai ke bukti di Vault.
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
-          <div className="relative">
+        <div className="flex w-full items-center gap-2 sm:w-auto">
+          <div className="relative min-w-0 flex-1">
             <Search className="h-3.5 w-3.5 text-muted absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
+              aria-label="Cari klaim domain"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Cari domain / status..."
-              className="h-9 rounded-xl border border-border bg-sunken pl-9 pr-3 text-xs font-mono text-foreground placeholder:text-muted outline-none focus:border-purple-400"
+              className="h-10 w-full rounded-xl border border-border bg-sunken pl-9 pr-3 text-sm placeholder:text-muted"
             />
           </div>
           <button
             type="button"
-            onClick={load}
+            onClick={() => void load()}
             className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-foreground/[0.04] hover:bg-foreground/[0.08] px-3.5 py-2 text-xs font-mono text-soft cursor-pointer"
           >
             <RefreshCw className="h-3.5 w-3.5" />
-            <span>Refresh</span>
+            <span>Muat ulang</span>
           </button>
         </div>
       </div>
+      {loadError && <p role="alert" className="text-sm text-danger">Gagal memuat klaim. Coba muat ulang.</p>}
 
       {msg && (
         <div
@@ -130,7 +135,7 @@ export function RequestsTable() {
         </div>
       )}
 
-      <div className="overflow-x-auto rounded-2xl border border-border bg-panel shadow-xl">
+      <div className="overflow-x-auto rounded-2xl border border-border bg-panel">
         <table className="w-full text-left text-xs">
           <thead className="border-b border-border bg-sunken font-mono uppercase text-xs text-muted">
             <tr>
@@ -199,10 +204,10 @@ export function RequestsTable() {
                 </td>
               </tr>
             ))}
-            {filtered.length === 0 && (
+            {filtered.length === 0 && !loadError && (
               <tr>
                 <td colSpan={5} className="p-10 text-center font-mono text-muted">
-                  Belum ada permintaan klaim kepemilikan domain.
+                  {items === null ? "Memuat klaim…" : search.trim() ? "Klaim tidak ditemukan." : "Belum ada klaim domain."}
                 </td>
               </tr>
             )}

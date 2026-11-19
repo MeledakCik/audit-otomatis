@@ -16,7 +16,8 @@
  */
 
 import dns from "node:dns/promises";
-import net from "node:net";
+import { addAbortListener } from "node:events";
+import { BlockList, isIPv4, isIPv6 } from "node:net";
 
 export class SsrfBlockedError extends Error {
   constructor(message: string) {
@@ -25,46 +26,28 @@ export class SsrfBlockedError extends Error {
   }
 }
 
-// Cloud metadata endpoints — these must always be blocked regardless of
-// the private-range check, since 169.254.169.254 is the classic SSRF
-// target for stealing cloud credentials.
-const BLOCKED_EXACT_IPS = new Set([
-  "169.254.169.254", // AWS / Azure / GCP metadata
-  "100.100.100.200", // Alibaba Cloud metadata
-]);
-
-function isPrivateIPv4(ip: string): boolean {
-  const parts = ip.split(".").map(Number);
-  if (parts.length !== 4 || parts.some((p) => Number.isNaN(p))) return false;
-  const [a, b] = parts;
-  if (a === 10) return true; // 10.0.0.0/8
-  if (a === 127) return true; // loopback
-  if (a === 169 && b === 254) return true; // link-local + metadata
-  if (a === 172 && b >= 16 && b <= 31) return true; // 172.16.0.0/12
-  if (a === 192 && b === 168) return true; // 192.168.0.0/16
-  if (a === 0) return true; // "this network"
-  if (a >= 224) return true; // multicast / reserved
-  return false;
+const specialUse = new BlockList();
+for (const [address, prefix] of [
+  ["0.0.0.0", 8], ["10.0.0.0", 8], ["100.64.0.0", 10],
+  ["127.0.0.0", 8], ["169.254.0.0", 16], ["172.16.0.0", 12],
+  ["192.0.0.0", 24], ["192.0.2.0", 24], ["192.88.99.0", 24],
+  ["192.168.0.0", 16], ["198.18.0.0", 15], ["198.51.100.0", 24],
+  ["203.0.113.0", 24], ["224.0.0.0", 3],
+] as const) {
+  specialUse.addSubnet(address, prefix);
 }
+specialUse.addSubnet("2001::", 23, "ipv6");
+specialUse.addSubnet("2001:db8::", 32, "ipv6");
+specialUse.addSubnet("2002::", 16, "ipv6");
+specialUse.addSubnet("3fff::", 20, "ipv6");
 
-function isPrivateIPv6(ip: string): boolean {
-  const norm = ip.toLowerCase();
-  if (norm === "::1") return true; // loopback
-  if (norm.startsWith("fe80:")) return true; // link-local
-  if (norm.startsWith("fc") || norm.startsWith("fd")) return true; // unique local
-  if (norm.startsWith("::ffff:")) {
-    // IPv4-mapped IPv6 — recheck the embedded v4 address
-    const v4 = norm.split(":").pop() ?? "";
-    if (net.isIPv4(v4)) return isPrivateIPv4(v4);
-  }
-  return false;
-}
+const globalUnicast = new BlockList();
+globalUnicast.addSubnet("2000::", 3, "ipv6");
 
 export function isBlockedIp(ip: string): boolean {
-  if (BLOCKED_EXACT_IPS.has(ip)) return true;
-  if (net.isIPv4(ip)) return isPrivateIPv4(ip);
-  if (net.isIPv6(ip)) return isPrivateIPv6(ip);
-  return true; // unknown shape -> fail closed
+  if (isIPv4(ip)) return specialUse.check(ip);
+  if (isIPv6(ip)) return ip.includes("%") || !globalUnicast.check(ip, "ipv6") || specialUse.check(ip, "ipv6");
+  return true;
 }
 
 export interface CheckedTarget {
@@ -76,7 +59,7 @@ export interface CheckedTarget {
  * Validates that `rawUrl` is safe to fetch server-side. Throws
  * SsrfBlockedError (or a generic Error for malformed input) if not.
  */
-export async function assertPublicHttpsTarget(rawUrl: string): Promise<CheckedTarget> {
+export async function assertPublicHttpsTarget(rawUrl: string, signal?: AbortSignal): Promise<CheckedTarget> {
   let url: URL;
   try {
     url = new URL(rawUrl);
@@ -85,7 +68,7 @@ export async function assertPublicHttpsTarget(rawUrl: string): Promise<CheckedTa
   }
 
   if (url.protocol !== "https:") {
-    throw new Error("Only https:// URLs are supported.");
+    throw new SsrfBlockedError("Only https:// URLs are supported.");
   }
   if (url.username || url.password) {
     throw new SsrfBlockedError("URLs with embedded credentials aren't allowed.");
@@ -97,22 +80,28 @@ export async function assertPublicHttpsTarget(rawUrl: string): Promise<CheckedTa
     throw new SsrfBlockedError("Only the default https port (443) is supported.");
   }
 
-  const hostname = url.hostname;
+  const hostname = url.hostname.replace(/\.$/, "");
 
   // Reject raw IP literals outright — this is a domain scanner, not a
   // generic internal-network prober.
-  if (net.isIPv4(hostname) || net.isIPv6(hostname)) {
+  if (isIPv4(hostname) || hostname.startsWith("[")) {
     throw new SsrfBlockedError("Scanning raw IP addresses isn't supported — use a domain name.");
   }
-  if (hostname === "localhost" || hostname.endsWith(".local")) {
+  if (!hostname.includes(".") || hostname.endsWith(".localhost") || hostname.endsWith(".local")) {
     throw new SsrfBlockedError("Local hostnames aren't allowed.");
   }
 
   let addresses: string[];
+  signal?.throwIfAborted();
   try {
-    const records = await dns.lookup(hostname, { all: true, verbatim: false });
+    const lookup = dns.lookup(hostname, { all: true, verbatim: false });
+    const records = signal ? await new Promise<Awaited<typeof lookup>>((resolve, reject) => {
+      const listener = addAbortListener(signal, () => reject(signal.reason));
+      void lookup.then(resolve, reject).finally(() => listener[Symbol.dispose]());
+    }) : await lookup;
     addresses = records.map((r) => r.address);
   } catch {
+    signal?.throwIfAborted();
     throw new Error(`Couldn't resolve ${hostname}.`);
   }
   if (addresses.length === 0) {

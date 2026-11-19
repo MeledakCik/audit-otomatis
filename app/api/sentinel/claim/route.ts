@@ -78,8 +78,8 @@ export async function POST(req: Request) {
   if (!rec) return NextResponse.json({ error: "Mulai klaim dulu." }, { status: 400 });
   if (rec.status !== "AWAITING_PROOF") return NextResponse.json(view(rec));
 
-  const [dnsOk, fileOk] = await Promise.all([verifyDns(domain, rec.challenge), verifyFile(domain, rec.challenge)]);
-  if (!dnsOk && !fileOk) {
+  const method = await verifyDns(domain, rec.challenge) ? "dns" : await verifyFile(domain, rec.challenge) ? "file" : null;
+  if (!method) {
     await logUserActivity({
       req,
       userId: uid,
@@ -95,7 +95,6 @@ export async function POST(req: Request) {
     );
   }
 
-  const method = dnsOk ? "dns" : "file";
   rec = { ...rec, status: "PENDING", proof: { method, verifiedAt: Date.now() } };
   await putAuth(rec);
 

@@ -3,57 +3,69 @@ import { isAssessablePage } from "@/lib/tester";
 import { validateDomainInput } from "@/lib/validate-domain";
 import { runHeaderChecks, scoreFromChecks, gradeFromScore } from "@/lib/header-scan/checks";
 import { logUserActivity } from "@/lib/activity-store";
+import { requestPublicHttps } from "@/lib/public-https";
+import { SsrfBlockedError } from "@/lib/ssrf-guard";
 
+export const runtime = "nodejs";
+export const maxDuration = 15;
 const FETCH_TIMEOUT_MS = 10_000;
+const MAX_REDIRECTS = 4;
+const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
+
+async function readPage(url: string, signal: AbortSignal) {
+  let response = await requestPublicHttps(url, requestOptions(signal));
+  let redirects = 0;
+  while (REDIRECT_STATUSES.has(response.statusCode)) {
+    const location = response.headers.get("location");
+    if (!location) break;
+    if (redirects === MAX_REDIRECTS) throw new Error("Terlalu banyak pengalihan.");
+    response = await requestPublicHttps(new URL(location, response.url).href, requestOptions(signal));
+    redirects += 1;
+  }
+  return response;
+}
+
+function requestOptions(signal: AbortSignal) {
+  return {
+    method: "GET" as const,
+    userAgent: "Sentinel-ID-HeaderArmorChecker/1.0 (+https://www.sentinel-id.net)",
+    accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    maxBodyBytes: 2000,
+    signal,
+  };
+}
 
 interface ScanBody {
   domain?: string;
 }
 
 export async function POST(req: Request) {
-  let body: ScanBody;
-  try {
-    body = (await req.json()) as ScanBody;
-  } catch {
+  const body = await req.json().catch(() => null) as ScanBody | null;
+  if (!body || typeof body.domain !== "string") {
     return Response.json({ ok: false, error: "Body request tidak valid (harus JSON)." }, { status: 400 });
   }
 
-  const raw = (body.domain ?? "").toString();
+  const raw = body.domain;
   const validation = validateDomainInput(raw);
   if (!validation.ok || !validation.normalizedUrl) {
     return Response.json({ ok: false, error: validation.error ?? "Domain tidak valid." }, { status: 400 });
   }
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  const timeout = AbortSignal.timeout(FETCH_TIMEOUT_MS);
+  const signal = AbortSignal.any([timeout, req.signal]);
 
   try {
-    const res = await fetch(validation.normalizedUrl, {
-      method: "GET",
-      redirect: "follow",
-      signal: controller.signal,
-      headers: {
-        "User-Agent": "Sentinel-ID-HeaderArmorChecker/1.0 (+https://www.sentinel-id.net)",
-        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Accept-Language": "id-ID,id;q=0.9,en;q=0.8",
-      },
-    });
-    clearTimeout(timeout);
-
-    const rawHeaders: Record<string, string> = {};
-    res.headers.forEach((value, key) => {
-      rawHeaders[key] = value;
-    });
+    const res = await readPage(validation.normalizedUrl, signal);
+    const rawHeaders = Object.fromEntries(res.headers);
 
     // Jangan memberi nilai dari halaman blokir/challenge WAF: header-nya milik platform, bukan situs.
-    const snippet = (await res.text().catch(() => "")).slice(0, 2000);
-    const waf = detectWafAndEdgeInfo(res.status, res.headers, snippet);
-    if (!isAssessablePage(res.status, res.headers.get("content-type") ?? "", waf.challenged)) {
+    const waf = detectWafAndEdgeInfo(res.statusCode, res.headers, res.bodyPrefix);
+    if (!isAssessablePage(res.statusCode, res.headers.get("content-type") ?? "", waf.challenged)) {
       return Response.json(
         {
           ok: false,
-          error: `Target membalas HTTP ${res.status}${waf.challenged ? ` (diblokir/challenge ${waf.provider})` : ""}, bukan halaman HTML asli. Header pada respons ini tidak mewakili situs, jadi tidak dinilai. Coba lagi nanti atau cek header dari browser.`,
-          statusCode: res.status,
+          error: `Target membalas HTTP ${res.statusCode}${waf.challenged ? ` (diblokir/challenge ${waf.provider})` : ""}. Header respons tersedia untuk inspeksi. Penilaian memerlukan halaman HTML utama.`,
+          statusCode: res.statusCode,
           rawHeaders,
         },
         { status: 422 }
@@ -70,8 +82,8 @@ export async function POST(req: Request) {
       createdAt: Date.now(),
       targetUrl: validation.normalizedUrl,
       hostname,
-      finalUrl: res.url || validation.normalizedUrl,
-      statusCode: res.status,
+      finalUrl: res.url.href,
+      statusCode: res.statusCode,
       score,
       grade,
       checks,
@@ -84,14 +96,16 @@ export async function POST(req: Request) {
       action: "Audit HTTP Security Headers",
       target: hostname,
       status: score < 50 ? "WARNING" : "SUCCESS",
-      summary: `Skor Header: ${score}/100 (Grade ${grade}) · HTTP ${res.status}`,
-      meta: { score, grade, statusCode: res.status },
+      summary: `Skor Header: ${score}/100 (Grade ${grade}) · HTTP ${res.statusCode}`,
+      meta: { score, grade, statusCode: res.statusCode },
     });
 
     return Response.json({ ok: true, report });
   } catch (err) {
-    clearTimeout(timeout);
-    const aborted = err instanceof Error && err.name === "AbortError";
+    if (err instanceof SsrfBlockedError) {
+      return Response.json({ ok: false, error: "Target atau tujuan pengalihan harus menggunakan HTTPS dan alamat publik." }, { status: 422 });
+    }
+    const aborted = timeout.aborted;
     await logUserActivity({
       req,
       module: "HEADER_ARMOR",
@@ -107,7 +121,7 @@ export async function POST(req: Request) {
           ? "Timeout — target tidak merespons dalam 10 detik."
           : "Gagal menghubungi target. Pastikan domain aktif dan dapat diakses publik.",
       },
-      { status: 502 }
+      { status: aborted ? 504 : 502 }
     );
   }
 }

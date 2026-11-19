@@ -4,15 +4,15 @@ import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:
  * AES-256-GCM. Format: v1.<iv>.<tag>.<ciphertext> (base64url).
  * AAD = nama key Redis → ciphertext tidak bisa "dipindah" ke key lain.
  * ADMIN_VAULT_KEY: 32 byte, hex (64 char) atau base64.
- * Jika belum diset di environment Vercel, turunkan kunci deterministik 32-byte
- * dari JWT_SECRET / UPSTASH_REDIS_REST_TOKEN / fallback internal agar server tidak crash.
+ * Derivasi dari rahasia runtime yang sudah dikonfigurasi dipertahankan agar
+ * bukti dari konfigurasi lama masih dapat dibaca.
  */
 function getKey(): Buffer {
   const raw =
     process.env.ADMIN_VAULT_KEY ||
     process.env.JWT_SECRET ||
-    process.env.UPSTASH_REDIS_REST_TOKEN ||
-    "sentinel-id-default-vault-key-32b-fallback";
+    process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (!raw?.trim()) throw new Error("Kunci enkripsi Vault belum dikonfigurasi.");
 
   if (/^[0-9a-fA-F]{64}$/.test(raw)) {
     return Buffer.from(raw, "hex");

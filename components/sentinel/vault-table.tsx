@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  Lock,
   Search,
   RefreshCw,
   Eye,
@@ -48,33 +47,43 @@ export function VaultTable() {
   const [open, setOpen] = useState<{ key: string; ev: Ev } | null>(null);
   const [viewMode, setViewMode] = useState<"json" | "raw">("json");
   const [err, setErr] = useState("");
+  const [loadError, setLoadError] = useState(false);
   const [search, setSearch] = useState("");
   const [copied, setCopied] = useState(false);
 
-  const load = useCallback(async () => {
-    const r = await fetch("/api/admin/vault");
-    if (r.status === 401) {
-      window.location.href = "/admin/login";
-      return;
-    }
-    setItems((await r.json()).items ?? []);
+  const load = useCallback((signal?: AbortSignal) => {
+    return fetch("/api/admin/vault", { signal }).then(async (r) => {
+      if (r.status === 401) return window.location.replace("/admin/login");
+      if (!r.ok) throw new Error();
+      setItems((await r.json()).items ?? []);
+      setLoadError(false);
+    }).catch(() => {
+      if (!signal?.aborted) setLoadError(true);
+    });
   }, []);
 
   useEffect(() => {
-    load();
+    const controller = new AbortController();
+    void load(controller.signal);
+    return () => controller.abort();
   }, [load]);
 
   async function view(key: string) {
     setErr("");
-    const r = await fetch("/api/admin/vault", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ key }),
-    });
-    const j = await r.json();
-    if (!r.ok) return setErr(j.error ?? "Gagal mendekripsi entry");
-    setOpen({ key, ev: j.evidence });
-    setViewMode("json");
+    try {
+      const r = await fetch("/api/admin/vault", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key }),
+      });
+      if (r.status === 401) return window.location.replace("/admin/login");
+      const j = await r.json();
+      if (!r.ok) return setErr(j.error ?? "Gagal mendekripsi bukti.");
+      setOpen({ key, ev: j.evidence });
+      setViewMode("json");
+    } catch {
+      setErr("Gagal memuat bukti. Coba lagi.");
+    }
   }
 
   function copyContent(text: string) {
@@ -140,52 +149,40 @@ export function VaultTable() {
 
   return (
     <section className="space-y-4">
-      <SelfTestPanel />
-      <div className="rounded-2xl border border-border bg-panel p-5 flex flex-wrap items-center justify-between gap-4">
+      <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="space-y-1">
-          <div className="inline-flex items-center gap-1.5 rounded-full bg-pink-500/15 border border-pink-500/30 px-2.5 py-0.5 text-xs font-mono font-bold text-pink-300">
-            <Lock className="h-3 w-3" />
-            AES-256-GCM · AAD KEY-BOUND · JSON VAULT
-          </div>
-          <h1 className="text-lg font-extrabold text-foreground">
-            Encrypted Evidence &amp; Git Intelligence Vault ({items?.length ?? "…"} item aktif)
-          </h1>
-          <p className="text-xs text-muted">
-            Menyimpan bukti temuan CRITICAL (<code className="text-pink-300">/.git/config</code>,{" "}
-            <code className="text-pink-300">/logs/HEAD</code>, <code className="text-pink-300">/.git/refs/heads/main</code>,{" "}
-            <code className="text-pink-300">/.env</code>) beserta ekstraksi URL GitHub/GitLab dalam tampilan JSON terstruktur.
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Vault</h1>
+          <p className="text-sm text-muted">
+            Bukti audit terenkripsi yang masih aktif.
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
-          <div className="relative">
+        <div className="flex w-full items-center gap-2 sm:w-auto">
+          <div className="relative min-w-0 flex-1">
             <Search className="h-3.5 w-3.5 text-muted absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
+              aria-label="Cari bukti"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Cari domain / ID..."
-              className="h-9 rounded-xl border border-border bg-sunken pl-9 pr-3 text-xs font-mono text-foreground placeholder:text-muted outline-none focus:border-purple-400"
+              className="h-10 w-full rounded-xl border border-border bg-sunken pl-9 pr-3 text-sm placeholder:text-muted"
             />
           </div>
           <button
             type="button"
-            onClick={load}
+            onClick={() => void load()}
             className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-foreground/[0.04] hover:bg-foreground/[0.08] px-3.5 py-2 text-xs font-mono text-soft cursor-pointer"
           >
             <RefreshCw className="h-3.5 w-3.5" />
-            <span>Refresh</span>
+            <span>Muat ulang</span>
           </button>
         </div>
       </div>
 
-      {err && (
-        <div className="rounded-xl border border-red-500/40 bg-red-500/10 p-3 text-xs text-red-300">
-          {err}
-        </div>
-      )}
+      {(loadError || err) && <p role="alert" className="text-sm text-danger">{err || "Gagal memuat Vault. Coba muat ulang."}</p>}
 
-      <div className="overflow-x-auto rounded-2xl border border-border bg-panel shadow-xl">
+      <div className="overflow-x-auto rounded-2xl border border-border bg-panel">
         <table className="w-full text-left text-xs">
           <thead className="border-b border-border bg-sunken font-mono uppercase text-xs text-muted">
             <tr>
@@ -225,16 +222,17 @@ export function VaultTable() {
                 </td>
               </tr>
             ))}
-            {filtered.length === 0 && (
+            {filtered.length === 0 && !loadError && (
               <tr>
                 <td colSpan={5} className="p-10 text-center font-mono text-muted">
-                  Vault saat ini kosong atau tidak ada domain yang cocok.
+                  {items === null ? "Memuat Vault…" : search.trim() ? "Bukti tidak ditemukan." : "Vault masih kosong."}
                 </td>
               </tr>
             )}
           </tbody>
         </table>
       </div>
+      <SelfTestPanel />
 
       {open && (
         <div

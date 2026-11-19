@@ -7,6 +7,7 @@
 import { Redis } from "@upstash/redis";
 import {
   ensureTursoSchema,
+  hasTursoConfiguration,
   tursoPipeline,
   sqlArg,
   cellToString,
@@ -48,6 +49,12 @@ function globToSqlLike(pattern: string): string {
   return pattern.replace(/%/g, "\\%").replace(/_/g, "\\_").replace(/\*/g, "%").replace(/\?/g, "_");
 }
 
+function getUpstashConfiguration() {
+  const url = (process.env.UPSTASH_REDIS_REST_URL ?? process.env.KV_REST_API_URL ?? "").trim();
+  const token = (process.env.UPSTASH_REDIS_REST_TOKEN ?? process.env.KV_REST_API_TOKEN ?? "").trim();
+  return url && token && /^https?:\/\//i.test(url) ? { url, token } : null;
+}
+
 function getUpstashClient(): Redis | null {
   if (
     globalForSentinelMem.__sentinelUpstashDeadUntil &&
@@ -55,13 +62,11 @@ function getUpstashClient(): Redis | null {
   ) {
     return null;
   }
-  const url = (process.env.UPSTASH_REDIS_REST_URL ?? process.env.KV_REST_API_URL ?? "").trim();
-  const token = (process.env.UPSTASH_REDIS_REST_TOKEN ?? process.env.KV_REST_API_TOKEN ?? "").trim();
-  if (!url || !token || !/^https?:\/\//i.test(url)) return null;
+  const config = getUpstashConfiguration();
+  if (!config) return null;
   if (!globalForSentinelMem.__sentinelUpstashClient) {
     globalForSentinelMem.__sentinelUpstashClient = new Redis({
-      url,
-      token,
+      ...config,
       automaticDeserialization: false,
     });
   }
@@ -216,9 +221,29 @@ class HybridSentinelStore {
   }
 
   async getdel<T = string>(key: string): Promise<T | null> {
-    const val = await this.get<T>(key);
-    await this.del(key);
-    return val;
+    // Token hanya boleh dikonsumsi di penyimpanan utama. Backup bisa masih memuat salinannya.
+    if (getUpstashConfiguration()) {
+      const upstash = getUpstashClient();
+      if (!upstash) throw new Error("Penyimpanan token belum tersedia.");
+      const value = await upstash.getdel<T>(key);
+      memStore.delete(key);
+      return value;
+    }
+
+    if (hasTursoConfiguration()) {
+      if (!(await ensureTursoSchema())) throw new Error("Penyimpanan token belum tersedia.");
+      const result = await tursoPipeline([{
+        sql: "DELETE FROM sentinel_kv WHERE k = ? AND (exp IS NULL OR exp > ?) RETURNING v",
+        args: [sqlArg(key), sqlArg(Date.now())],
+      }]);
+      if (!result) throw new Error("Penyimpanan token belum tersedia.");
+      memStore.delete(key);
+      return cellToString(result[0]?.rows?.[0]?.[0]) as T | null;
+    }
+
+    const entry = memStore.get(key);
+    memStore.delete(key);
+    return entry && !isExpired(entry) ? entry.value as T : null;
   }
 
   async mget<T extends unknown[] = (string | null)[]>(...keys: string[]): Promise<T> {

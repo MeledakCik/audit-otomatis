@@ -1,21 +1,17 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   Activity,
   Users,
   Radar,
-  ShieldAlert,
-  Lock,
-  KeyRound,
   Search,
   RefreshCw,
   ExternalLink,
   Clock,
   Globe,
   Monitor,
-  Eye,
   X,
   FileJson,
   GitBranch,
@@ -119,25 +115,36 @@ export function ActivitiesDashboard() {
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [selectedActivity, setSelectedActivity] = useState<UserActivityRecord | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState(false);
+  const activeLoad = useRef<AbortController | null>(null);
 
   const load = useCallback(async () => {
+    activeLoad.current?.abort();
+    const controller = new AbortController();
+    activeLoad.current = controller;
     setLoading(true);
     try {
-      const r = await fetch("/api/admin/activities");
+      const r = await fetch("/api/admin/activities", { signal: controller.signal });
       if (r.status === 401) {
-        window.location.href = "/admin/login";
+        window.location.replace("/admin/login");
         return;
       }
+      if (!r.ok) throw new Error();
       const data = await r.json();
-      if (data.ok) {
-        setStats(data.stats);
-        setActivities(data.activities ?? []);
-        setUsers(data.users ?? []);
-        setScans(data.scans ?? []);
-        setQcs(data.qcs ?? []);
-      }
+      if (controller.signal.aborted) return;
+      setStats(data.stats);
+      setActivities(data.activities ?? []);
+      setUsers(data.users ?? []);
+      setScans(data.scans ?? []);
+      setQcs(data.qcs ?? []);
+      setLoadError(false);
+    } catch {
+      if (!controller.signal.aborted) setLoadError(true);
     } finally {
-      setLoading(false);
+      if (activeLoad.current === controller && !controller.signal.aborted) {
+        activeLoad.current = null;
+        setLoading(false);
+      }
     }
   }, []);
 
@@ -176,9 +183,19 @@ export function ActivitiesDashboard() {
   }
 
   useEffect(() => {
-    load();
-    const t = setInterval(load, 15000);
-    return () => clearInterval(t);
+    function refreshVisible() {
+      if (document.visibilityState === "visible" && !activeLoad.current) void load();
+    }
+
+    refreshVisible();
+    const timer = setInterval(refreshVisible, 15000);
+    document.addEventListener("visibilitychange", refreshVisible);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener("visibilitychange", refreshVisible);
+      activeLoad.current?.abort();
+      activeLoad.current = null;
+    };
   }, [load]);
 
   function copyJson(id: string, payload: unknown) {
@@ -247,138 +264,50 @@ export function ActivitiesDashboard() {
   }, [users, search]);
 
   return (
-    <div className="space-y-6">
-      {/* KPI Overview Row */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+    <div className="space-y-4">
+      <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Aktivitas pengguna</h1>
+      <dl className="grid grid-cols-2 gap-3 rounded-2xl border border-border bg-panel p-4 sm:grid-cols-3 lg:grid-cols-6">
         {[
-          {
-            label: "Total Aktivitas",
-            val: stats?.totalActivities ?? 0,
-            sub: "Semua modul",
-            icon: Activity,
-            accent: "text-purple-400",
-          },
-          {
-            label: "Data User Unik",
-            val: stats?.uniqueUsers ?? 0,
-            sub: "Berdasarkan UID/IP",
-            icon: Users,
-            accent: "text-sky-400",
-          },
-          {
-            label: "Full Scan & QC",
-            val: (stats?.totalScans ?? 0) + (stats?.totalQcs ?? 0),
-            sub: `${stats?.totalScans ?? 0} Scan · ${stats?.totalQcs ?? 0} QC`,
-            icon: Radar,
-            accent: "text-emerald-400",
-          },
-          {
-            label: "Event Critical",
-            val: stats?.criticalEventsCount ?? 0,
-            sub: "Eksposur kritis & Git",
-            icon: ShieldAlert,
-            accent: "text-red-400",
-          },
-          {
-            label: "Item di Vault",
-            val: stats?.vaultItemsCount ?? 0,
-            sub: "AES-256-GCM",
-            icon: Lock,
-            accent: "text-pink-400",
-          },
-          {
-            label: "Klaim Domain",
-            val: stats?.pendingClaimsCount ?? 0,
-            sub: `${stats?.totalClaimsCount ?? 0} total klaim`,
-            icon: KeyRound,
-            accent: "text-amber-400",
-          },
-        ].map((k) => {
-          const Icon = k.icon;
-          return (
-            <div
-              key={k.label}
-              className="rounded-2xl border border-foreground/[0.08] bg-gradient-to-b from-panel to-sunken p-4 flex flex-col justify-between"
-            >
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-xs font-mono uppercase tracking-wider text-muted">
-                  {k.label}
-                </span>
-                <Icon className={cn("h-4 w-4 shrink-0", k.accent)} />
-              </div>
-              <div className="mt-2">
-                <div className="text-2xl font-extrabold text-foreground tabular-nums">{k.val}</div>
-                <div className="text-xs font-mono text-muted mt-0.5">{k.sub}</div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+          { label: "Aktivitas", value: stats?.totalActivities },
+          { label: "Pengguna", value: stats?.uniqueUsers },
+          { label: "Scan & QC", value: stats && stats.totalScans + stats.totalQcs },
+          { label: "Temuan kritis", value: stats?.criticalEventsCount },
+          { label: "Bukti di Vault", value: stats?.vaultItemsCount, href: "/admin/vault" },
+          { label: "Klaim menunggu", value: stats?.pendingClaimsCount, href: "/admin/requests" },
+        ].map(({ label, value, href }) => (
+          <div key={label}>
+            <dt className="text-xs text-muted">
+              {href ? <Link href={href} className="hover:text-accent hover:underline">{label}</Link> : label}
+            </dt>
+            <dd className="mt-1 text-lg font-semibold tabular-nums">{value ?? "—"}</dd>
+          </div>
+        ))}
+      </dl>
+      {loadError && <p role="alert" className="text-sm text-danger">Gagal memuat aktivitas. Coba muat ulang.</p>}
 
-      {/* Sub-navigation & Filters Bar */}
-      <div className="rounded-2xl border border-border bg-panel p-4 space-y-4">
+      <div className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setSubTab("feed")}
-              className={cn(
-                "inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-mono font-bold transition-all cursor-pointer",
-                subTab === "feed"
-                  ? "bg-purple-600 text-white"
-                  : "border border-border bg-foreground/[0.03] text-soft hover:text-foreground"
-              )}
-            >
-              <Activity className="h-3.5 w-3.5" />
-              <span>Log Semua Aktivitas ({activities.length})</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setSubTab("gitjson")}
-              className={cn(
-                "inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-mono font-bold transition-all cursor-pointer",
-                subTab === "gitjson"
-                  ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white"
-                  : "border border-pink-500/35 bg-pink-500/10 text-pink-200 hover:bg-pink-500/20"
-              )}
-            >
-              <FileJson className="h-3.5 w-3.5" />
-              <span>Git &amp; Repo Intel (JSON View)</span>
-              {gitActivities.length > 0 && (
-                <span className="rounded-full bg-red-500 px-1.5 py-0.2 text-xs text-white font-extrabold">
-                  {gitActivities.length}
-                </span>
-              )}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setSubTab("users")}
-              className={cn(
-                "inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-mono font-bold transition-all cursor-pointer",
-                subTab === "users"
-                  ? "bg-purple-600 text-white"
-                  : "border border-border bg-foreground/[0.03] text-soft hover:text-foreground"
-              )}
-            >
-              <Users className="h-3.5 w-3.5" />
-              <span>Data &amp; Profil User ({users.length})</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setSubTab("scans")}
-              className={cn(
-                "inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-mono font-bold transition-all cursor-pointer",
-                subTab === "scans"
-                  ? "bg-purple-600 text-white"
-                  : "border border-border bg-foreground/[0.03] text-soft hover:text-foreground"
-              )}
-            >
-              <Radar className="h-3.5 w-3.5" />
-              <span>Semua Sesi Scan &amp; QC ({scans.length + qcs.length})</span>
-            </button>
+          <div role="group" aria-label="Tampilan aktivitas" className="flex flex-wrap items-center gap-1">
+            {([
+              { id: "feed", label: "Log", icon: Activity },
+              { id: "gitjson", label: "Temuan Git", icon: FileJson },
+              { id: "users", label: "Pengguna", icon: Users },
+              { id: "scans", label: "Sesi Scan & QC", icon: Radar },
+            ] as const).map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setSubTab(id)}
+                aria-pressed={subTab === id}
+                className={cn(
+                  "inline-flex min-h-10 items-center gap-1.5 rounded-xl px-2.5 text-sm font-medium transition-colors sm:px-3",
+                  subTab === id ? "bg-accent/10 text-accent" : "text-muted hover:bg-foreground/5 hover:text-foreground"
+                )}
+              >
+                <Icon aria-hidden className="size-4" />
+                {label}
+              </button>
+            ))}
           </div>
 
           <div className="flex items-center gap-2">
@@ -393,10 +322,11 @@ export function ActivitiesDashboard() {
             <button
               type="button"
               onClick={load}
+              disabled={loading}
               className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-foreground/[0.04] hover:bg-foreground/[0.08] px-3.5 py-2 text-xs font-mono text-soft cursor-pointer"
             >
               <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />
-              <span>Refresh</span>
+              <span>Muat ulang</span>
             </button>
           </div>
         </div>
@@ -407,9 +337,10 @@ export function ActivitiesDashboard() {
             <Search className="h-4 w-4 text-muted absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
+              aria-label="Cari aktivitas atau pengguna"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Cari domain target, URL GitHub/GitLab, IP address, User ID, atau jenis aktivitas..."
+              placeholder="Cari domain, repositori, IP, atau pengguna…"
               className="w-full h-10 rounded-xl border border-border bg-sunken pl-10 pr-4 text-xs font-mono text-foreground placeholder:text-muted outline-none focus:border-purple-400"
             />
           </div>
@@ -451,7 +382,7 @@ export function ActivitiesDashboard() {
 
       {/* SubTab 1: Live User Activity Feed */}
       {subTab === "feed" && (
-        <div className="rounded-2xl border border-border bg-panel overflow-hidden shadow-xl">
+        <div className="overflow-hidden rounded-2xl border border-border bg-panel">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead className="border-b border-border bg-sunken font-mono uppercase text-xs text-muted">

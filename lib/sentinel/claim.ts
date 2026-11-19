@@ -1,31 +1,38 @@
 import dns from "node:dns/promises";
-import { assertPublicHttpsTarget } from "@/lib/ssrf-guard";
+import { requestPublicHttps } from "@/lib/public-https";
 import { randomBytes } from "node:crypto";
 
 export const newChallenge = () => `sentinel-verify-${randomBytes(12).toString("hex")}`;
 
 /** TXT di _sentinel-verify.<domain> atau di apex berisi challenge. */
 export async function verifyDns(domain: string, challenge: string): Promise<boolean> {
-  for (const name of [`_sentinel-verify.${domain}`, domain]) {
-    try {
-      const recs = await dns.resolveTxt(name);
-      if (recs.some((chunks) => chunks.join("").trim() === challenge)) return true;
-    } catch { /* NXDOMAIN / no data → lanjut */ }
+  const resolver = new dns.Resolver({ timeout: 2000, tries: 1 });
+  try {
+    await Promise.any([`_sentinel-verify.${domain}`, domain].map(async (name) => {
+      const records = await resolver.resolveTxt(name);
+      if (!records.some((chunks) => chunks.join("").trim() === challenge)) throw new Error("Bukti TXT tidak ditemukan.");
+    }));
+    return true;
+  } catch {
+    return false;
+  } finally {
+    resolver.cancel();
   }
-  return false;
 }
 
 /** https://<domain>/<challenge>.txt harus 200 dan berisi challenge. Tanpa redirect, SSRF-guarded. */
 export async function verifyFile(domain: string, challenge: string): Promise<boolean> {
+  if (!/^sentinel-verify-[0-9a-f]{24}$/.test(challenge)) return false;
   try {
-    const { url } = await assertPublicHttpsTarget(`https://${domain}/${challenge}.txt`);
-    const ctl = new AbortController();
-    const t = setTimeout(() => ctl.abort(), 8000);
-    try {
-      const res = await fetch(url, { redirect: "manual", signal: ctl.signal, headers: { "User-Agent": "Sentinel-ID Verifier/1.0" } });
-      if (res.status !== 200) return false;
-      const body = (await res.text()).slice(0, 4096);
-      return body.includes(challenge);
-    } finally { clearTimeout(t); }
-  } catch { return false; }
+    const response = await requestPublicHttps(`https://${domain}/${challenge}.txt`, {
+      method: "GET",
+      signal: AbortSignal.timeout(8000),
+      userAgent: "Sentinel-ID Verifier/1.0",
+      accept: "text/plain,application/octet-stream",
+      maxBodyBytes: 4096,
+    });
+    return response.statusCode === 200 && !response.bodyTruncated && response.bodyPrefix.trim() === challenge;
+  } catch {
+    return false;
+  }
 }

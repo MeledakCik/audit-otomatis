@@ -12,6 +12,34 @@ interface CheckDef {
   evaluate: (headers: Record<string, string>) => { pass: boolean; value: string | null };
 }
 
+const knownReferrerPolicies = new Set([
+  "no-referrer", "no-referrer-when-downgrade", "same-origin", "origin",
+  "strict-origin", "origin-when-cross-origin", "strict-origin-when-cross-origin", "unsafe-url",
+]);
+const strictReferrerPolicies = new Set(["no-referrer", "same-origin", "strict-origin", "strict-origin-when-cross-origin"]);
+
+function policyDirectives(value: string, directive: string): string[][] {
+  return value.split(",").flatMap((policy) => {
+    const entry = policy.split(";")
+      .map((part) => part.trim().split(/\s+/))
+      .find(([name]) => name.toLowerCase() === directive);
+    return entry ? [entry.slice(1)] : [];
+  });
+}
+
+function hasScriptRestrictions(value: string): boolean {
+  return value.split(",").some((policy) => {
+    const defaults = policyDirectives(policy, "script-src")[0] ?? policyDirectives(policy, "default-src")[0];
+    if (!defaults) return false;
+    const elements = policyDirectives(policy, "script-src-elem")[0] ?? defaults;
+    const attributes = policyDirectives(policy, "script-src-attr")[0] ?? defaults;
+    return [elements, attributes].every((sources) => {
+      const hasNonceOrHash = sources.some((source) => /^'(?:nonce-|sha(?:256|384|512)-)[A-Za-z0-9+/_=-]+'$/i.test(source));
+      return !sources.includes("*") && (!sources.includes("'unsafe-inline'") || hasNonceOrHash);
+    });
+  });
+}
+
 // Bobot total = 100 (20 + 25 + 15 + 10 + 10 + 10 + 10)
 const CHECK_DEFS: CheckDef[] = [
   {
@@ -24,7 +52,9 @@ const CHECK_DEFS: CheckDef[] = [
     fixSnippetValue: "max-age=63072000; includeSubDomains; preload",
     evaluate: (h) => {
       const v = h["strict-transport-security"] ?? null;
-      return { pass: !!v, value: v };
+      const ages = v?.split(";").map((part) => part.trim()).filter((part) => /^max-age(?:\s*=|\s*$)/i.test(part)) ?? [];
+      const age = ages[0]?.match(/^max-age\s*=\s*(?:"(\d+)"|(\d+))$/i);
+      return { pass: ages.length === 1 && !!age && Number(age[1] ?? age[2]) > 0, value: v };
     },
   },
   {
@@ -32,12 +62,12 @@ const CHECK_DEFS: CheckDef[] = [
     headerName: "Content-Security-Policy",
     weight: 25,
     severity: "CRITICAL",
-    risk: "Tanpa CSP, mitigasi XSS jauh lebih lemah — script asing yang berhasil disisipkan (lewat input, dependency, atau supply-chain) bisa jalan bebas di halaman.",
+    risk: "Sumber skrip perlu dibatasi lewat script-src atau default-src pada kebijakan CSP yang diterapkan browser.",
     fixSnippetKey: "Content-Security-Policy",
     fixSnippetValue: "default-src 'self'; script-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'self'",
     evaluate: (h) => {
       const v = h["content-security-policy"] ?? null;
-      return { pass: !!v, value: v };
+      return { pass: !!v && hasScriptRestrictions(v), value: v };
     },
   },
   {
@@ -50,11 +80,14 @@ const CHECK_DEFS: CheckDef[] = [
     fixSnippetValue: "SAMEORIGIN",
     evaluate: (h) => {
       const xfo = h["x-frame-options"] ?? null;
-      const csp = h["content-security-policy"] ?? "";
-      const hasFrameAncestors = /frame-ancestors/i.test(csp);
-      if (xfo) return { pass: true, value: xfo };
-      if (hasFrameAncestors) return { pass: true, value: "via CSP frame-ancestors" };
-      return { pass: false, value: null };
+      const ancestors = policyDirectives(h["content-security-policy"] ?? "", "frame-ancestors");
+      if (ancestors.length > 0) {
+        const pass = ancestors.some((sources) => sources.every((source) =>
+          source === "'self'" || source === "'none'" || /^https?:\/\/(?:\*\.)?[^*\s/:]+(?::\d+)?$/i.test(source)
+        ));
+        return { pass, value: "via CSP frame-ancestors" };
+      }
+      return { pass: /^(deny|sameorigin)$/i.test(xfo?.trim() ?? ""), value: xfo };
     },
   },
   {
@@ -67,7 +100,7 @@ const CHECK_DEFS: CheckDef[] = [
     fixSnippetValue: "nosniff",
     evaluate: (h) => {
       const v = h["x-content-type-options"] ?? null;
-      return { pass: v?.toLowerCase() === "nosniff", value: v };
+      return { pass: v?.trim().toLowerCase() === "nosniff", value: v };
     },
   },
   {
@@ -80,7 +113,9 @@ const CHECK_DEFS: CheckDef[] = [
     fixSnippetValue: "strict-origin-when-cross-origin",
     evaluate: (h) => {
       const v = h["referrer-policy"] ?? null;
-      return { pass: !!v, value: v };
+      const effective = v?.split(",").map((item) => item.trim().toLowerCase())
+        .filter((item) => knownReferrerPolicies.has(item)).at(-1);
+      return { pass: !!effective && strictReferrerPolicies.has(effective), value: v };
     },
   },
   {
@@ -93,7 +128,12 @@ const CHECK_DEFS: CheckDef[] = [
     fixSnippetValue: "camera=(), microphone=(), geolocation=()",
     evaluate: (h) => {
       const v = h["permissions-policy"] ?? null;
-      return { pass: !!v, value: v };
+      const entries = v?.split(",").map((part) => part.trim()) ?? [];
+      const pass = ["camera", "microphone", "geolocation"].every((feature) => {
+        const rules = entries.filter((part) => new RegExp(`^${feature}\\s*=`, "i").test(part));
+        return rules.length === 1 && /^\(\s*(?:self\s*)?\)$/i.test(rules[0].split("=")[1].trim());
+      });
+      return { pass, value: v };
     },
   },
   {
@@ -106,7 +146,8 @@ const CHECK_DEFS: CheckDef[] = [
     fixSnippetValue: "same-origin",
     evaluate: (h) => {
       const v = h["cross-origin-opener-policy"] ?? null;
-      return { pass: !!v, value: v };
+      const policy = v?.split(";")[0]?.trim();
+      return { pass: policy === "same-origin" || policy === "same-origin-allow-popups" || policy === "noopener-allow-popups", value: v };
     },
   },
 ];
@@ -119,7 +160,7 @@ module.exports = {
       {
         source: '/(.*)',
         headers: [
-          { key: '${key}', value: '${value}' },
+          { key: ${JSON.stringify(key)}, value: ${JSON.stringify(value)} },
         ],
       },
     ];
@@ -128,7 +169,7 @@ module.exports = {
 }
 
 export function runHeaderChecks(rawHeaders: Record<string, string>): HeaderCheckResult[] {
-  const lower: Record<string, string> = {};
+  const lower: Record<string, string> = Object.create(null);
   for (const [k, v] of Object.entries(rawHeaders)) lower[k.toLowerCase()] = v;
 
   return CHECK_DEFS.map((def) => {
@@ -166,7 +207,7 @@ export function gradeFromScore(score: number): Grade {
 export function generateHardeningKit(checks: HeaderCheckResult[]): string {
   const missing = checks.filter((c) => !c.pass);
   const headerEntries = missing
-    .map((c) => `          { key: '${c.fixSnippetKey}', value: '${c.fixSnippetValue}' },`)
+    .map((c) => `          { key: ${JSON.stringify(c.fixSnippetKey)}, value: ${JSON.stringify(c.fixSnippetValue)} },`)
     .join("\n");
 
   if (missing.length === 0) {

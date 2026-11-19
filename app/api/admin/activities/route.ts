@@ -25,6 +25,7 @@ export async function GET(req: Request) {
     const existingScanIds = new Set(
       recordedActivities.map((a) => a.meta?.scanId).filter(Boolean)
     );
+    const existingActivityIds = new Set(recordedActivities.map((activity) => activity.id));
 
     const syntheticActivities: UserActivityRecord[] = [];
 
@@ -89,7 +90,7 @@ export async function GET(req: Request) {
 
     for (const a of authRequests) {
       const synthId = `auth_${a.rec.domain}_${a.rec.createdAt}`;
-      if (recordedActivities.some((x) => x.id === synthId)) continue;
+      if (existingActivityIds.has(synthId)) continue;
       syntheticActivities.push({
         id: synthId,
         timestamp: a.rec.createdAt,

@@ -1,105 +1,70 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { Activity, Lock, KeyRound, LogOut, ArrowUpRight, ShieldAlert } from "lucide-react";
-import { VerifiedBadge } from "@/components/verified-badge";
+import { usePathname } from "next/navigation";
+import { Activity, ArrowUpRight, FlaskConical, KeyRound, Lock, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+const items = [
+  { href: "/admin/test", label: "Uji Domain", icon: FlaskConical },
+  { href: "/admin/activities", label: "Aktivitas", icon: Activity },
+  { href: "/admin/vault", label: "Vault", icon: Lock },
+  { href: "/admin/requests", label: "Klaim", icon: KeyRound },
+];
 
 export function AdminNav() {
   const path = usePathname();
-  const router = useRouter();
-
-  const navItems = [
-    {
-      href: "/admin/activities",
-      label: "Aktivitas & Data User",
-      icon: Activity,
-    },
-    {
-      href: "/admin/vault",
-      label: "Encrypted Vault",
-      icon: Lock,
-    },
-    {
-      href: "/admin/requests",
-      label: "Klaim Domain (ACC)",
-      icon: KeyRound,
-    },
-  ];
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(false);
 
   async function logout() {
-    await fetch("/api/admin/logout", { method: "POST" });
-    router.replace("/admin/login");
-    router.refresh();
+    setBusy(true);
+    setError(false);
+    try {
+      const response = await fetch("/api/admin/logout", { method: "POST" });
+      if (!response.ok && response.status !== 401) throw new Error();
+      window.location.replace("/admin/login");
+    } catch {
+      setBusy(false);
+      setError(true);
+    }
   }
 
   return (
-    <header className="mb-8 space-y-4">
-      {/* Top Command Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-purple-500/25 bg-gradient-to-r from-[#150f24] via-[#110c1d] to-sunken px-5 py-4 shadow-xl">
-        <div className="flex items-center gap-3.5">
-          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-purple-600 to-pink-600 grid place-items-center text-white">
-            <ShieldAlert className="h-5 w-5" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-base font-extrabold tracking-wide text-foreground">
-                SENTINEL-ID ADMIN CONSOLE
-              </span>
-              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 text-xs font-mono text-emerald-300">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                TELEMETRY LIVE
-              </span>
-            </div>
-            <p className="text-xs font-mono text-muted">
-              Pusat Monitoring Aktivitas User · Brankas AES-256-GCM · Verifikasi Kepemilikan Domain
-            </p>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2.5">
-          <VerifiedBadge variant="admin" />
-          <Link
-            href="/"
-            className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-foreground/[0.04] hover:bg-foreground/[0.08] px-3.5 py-1.5 text-xs font-mono text-soft transition-colors"
-          >
-            <span>Lihat User Scanner</span>
-            <ArrowUpRight className="h-3.5 w-3.5" />
+    <header className="space-y-2">
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-border pb-3">
+        <nav aria-label="Menu admin" className="grid w-full grid-cols-4 gap-1 sm:flex sm:w-auto sm:flex-wrap">
+          {items.map(({ href, label, icon: Icon }) => (
+            <Link
+              key={href}
+              href={href}
+              aria-current={path === href ? "page" : undefined}
+              className={cn(
+                "inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl px-1 text-xs font-medium transition-colors sm:px-3 sm:text-sm",
+                path === href ? "bg-accent/10 text-accent" : "text-muted hover:bg-foreground/5 hover:text-foreground"
+              )}
+            >
+              <Icon aria-hidden className="hidden size-4 shrink-0 sm:block" />
+              {label}
+            </Link>
+          ))}
+        </nav>
+        <div className="flex items-center gap-2 text-sm text-muted">
+          <Link href="/dashboard" className="inline-flex min-h-10 items-center gap-1.5 rounded-xl px-2.5 hover:bg-foreground/5 hover:text-foreground">
+            Dasbor pengguna <ArrowUpRight aria-hidden className="size-4" />
           </Link>
           <button
             type="button"
             onClick={logout}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 px-3.5 py-1.5 text-xs font-mono font-semibold text-red-300 transition-colors cursor-pointer"
+            disabled={busy}
+            className="inline-flex min-h-10 items-center gap-1.5 rounded-xl px-2.5 hover:bg-foreground/5 hover:text-foreground disabled:opacity-50"
           >
-            <LogOut className="h-3.5 w-3.5" />
-            <span>Logout</span>
+            <LogOut aria-hidden className="size-4" /> {busy ? "Keluar…" : "Keluar"}
           </button>
         </div>
       </div>
-
-      {/* Navigation Tabs */}
-      <nav aria-label="Menu Admin" className="flex flex-wrap items-center gap-2">
-        {navItems.map((item) => {
-          const active = path?.startsWith(item.href);
-          const Icon = item.icon;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-mono font-bold transition-all",
-                active
-                  ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white"
-                  : "border border-border bg-panel text-soft hover:text-foreground hover:border-purple-500/40"
-              )}
-            >
-              <Icon className="h-4 w-4" />
-              <span>{item.label}</span>
-            </Link>
-          );
-        })}
-      </nav>
+      {error && <p role="alert" className="text-sm text-danger">Gagal keluar. Coba lagi.</p>}
     </header>
   );
 }
