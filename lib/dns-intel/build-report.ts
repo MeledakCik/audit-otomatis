@@ -1,3 +1,4 @@
+import { registrableDomain } from "@/lib/registrable-domain";
 import { resolveAllRecords } from "./resolve";
 import { analyzeSpf, analyzeDmarc, analyzeDkimHint, detectMxProvider, detectTakeoverHints } from "./analyze";
 import type { DnsIntelReport } from "./types";
@@ -11,10 +12,14 @@ export async function buildDnsIntelReport(domain: string): Promise<DnsIntelRepor
 
   const { records, recordRows, queryErrors, dmarcTxt } = await resolveAllRecords(domain);
 
-  const spf = analyzeSpf(records.TXT);
-  const dmarc = analyzeDmarc(dmarcTxt);
-  const dkimHint = analyzeDkimHint(records.TXT);
-  const mxProvider = detectMxProvider(records.MX);
+  // SPF/DMARC/DKIM/MX berlaku di domain induk (www.kasyaf.id → kasyaf.id).
+  const mailDomain = registrableDomain(domain);
+  const mail = mailDomain === domain ? { records, dmarcTxt } : await resolveAllRecords(mailDomain);
+
+  const spf = analyzeSpf(mail.records.TXT);
+  const dmarc = analyzeDmarc(mail.dmarcTxt);
+  const dkimHint = analyzeDkimHint(mail.records.TXT);
+  const mxProvider = detectMxProvider(mail.records.MX);
   const takeoverHints = detectTakeoverHints(records.CNAME);
 
   const scanDurationMs = Math.round(performance.now() - start);

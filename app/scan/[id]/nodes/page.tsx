@@ -312,7 +312,7 @@ export default function NodeExplorerPage() {
                   onClick={() => setSelectedId(isSelected ? null : node.id)}
                   className={`group relative flex flex-col justify-between p-5 rounded-3xl border transition-all duration-300 cursor-pointer backdrop-blur-xl shadow-xl hover:-translate-y-1 ${
                     isSelected
-                      ? "bg-gradient-to-br from-[#111827] to-[#0d1322] border-emerald-500/80 shadow-emerald-950/50 ring-2 ring-emerald-500/30 scale-[1.01]"
+                      ? "bg-accent/10 border border-accent/20 border-emerald-500/80 shadow-emerald-950/50 ring-2 ring-emerald-500/30 scale-[1.01]"
                       : "bg-sunken/70 hover:bg-panel/80 border-zinc-800/80 hover:border-zinc-700/80 hover:shadow-2xl"
                   }`}
                 >

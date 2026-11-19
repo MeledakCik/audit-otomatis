@@ -13,14 +13,34 @@
  */
 
 import type { AuditFinding } from "./types";
+import { chromeHeaders, detectWafAndEdgeInfo } from "../crawler";
 
 const SENSITIVE_PATH_MARKERS = ["/api/admin", "/api/me", "/api/user"] as const;
 const RATE_LIMIT_HEADER_NAMES = [
-  "x-ratelimit-limit",
+  // IETF draft-ietf-httpapi-ratelimit-headers (versi baru & lama)
+  "ratelimit",
+  "ratelimit-policy",
   "ratelimit-limit",
-  "x-rate-limit-limit",
+  "ratelimit-remaining",
+  // Konvensi lama / vendor
+  "x-ratelimit-limit",
   "x-ratelimit-remaining",
+  "x-ratelimit-reset",
+  "x-rate-limit-limit",
 ] as const;
+
+/** Rate-limit header hanya relevan untuk endpoint dinamis (API/auth), bukan file statis. */
+const API_LIKE_PATH = /\/(?:api|graphql|auth|login|signin|oauth|token|session|v\d+\/api)(?:\/|$|\?)/i;
+const STATIC_FILE = /\.(?:txt|xml|json|js|mjs|css|map|png|jpe?g|gif|svg|webp|avif|ico|woff2?|ttf|pdf)(?:\?|$)/i;
+
+export function shouldCheckRateLimit(url: string): boolean {
+  try {
+    const { pathname } = new URL(url);
+    return API_LIKE_PATH.test(pathname) && !STATIC_FILE.test(pathname);
+  } catch {
+    return false;
+  }
+}
 
 export interface AuthCheckResult {
   url: string;
@@ -50,7 +70,14 @@ export async function checkAuthBypass(endpoint: string): Promise<AuthCheckResult
 
   let res: Response;
   try {
-    res = await fetch(endpoint, { method: "GET", credentials: "omit" });
+    // UA/Accept seperti browser: fetch default (UA "node") sering diblokir bot-filter
+    // sehingga yang dinilai justru halaman blokir, bukan endpoint aslinya.
+    res = await fetch(endpoint, {
+      method: "GET",
+      credentials: "omit",
+      redirect: "follow",
+      headers: { ...(chromeHeaders() as Record<string, string>), Accept: "application/json, text/plain, */*" },
+    });
   } catch {
     return { url: endpoint, reachable: false, status: null, findings };
   }
@@ -64,12 +91,21 @@ export async function checkAuthBypass(endpoint: string): Promise<AuthCheckResult
     });
   }
 
-  if (!hasRateLimitHeader(res.headers)) {
+  const snippet = (await res.clone().text().catch(() => "")).slice(0, 2000);
+  const waf = detectWafAndEdgeInfo(res.status, res.headers, snippet);
+  const finalUrl = res.url || endpoint;
+  if (
+    !waf.challenged &&
+    res.status !== 404 &&
+    shouldCheckRateLimit(finalUrl) &&
+    !hasRateLimitHeader(res.headers) &&
+    !(res.status === 429 && res.headers.has("retry-after"))
+  ) {
     findings.push({
       type: "MISSING_RATE_LIMIT_HEADER",
       severity: "low",
       url: endpoint,
-      evidence: `Response dari ${endpoint} tidak mengandung header rate-limit umum (x-ratelimit-limit / ratelimit-limit)`,
+      evidence: `HTTP ${res.status} dari ${finalUrl} tidak mengandung header rate-limit (RateLimit / RateLimit-Policy / X-RateLimit-*)`,
     });
   }
 

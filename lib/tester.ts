@@ -252,32 +252,91 @@ export async function testExposedFiles(
   return findings;
 }
 
-export async function testSecurityHeaders(origin: string, cfClearance?: string): Promise<Finding[]> {
+export interface HeaderSnapshot {
+  url: string;
+  status: number;
+  headers: Record<string, string>;
+  contentType?: string;
+  /** Potongan body (untuk mendeteksi halaman challenge). */
+  bodySnippet?: string;
+}
+
+/** True bila respons layak dinilai sebagai halaman asli aplikasi (bukan blokir/redirect/challenge). */
+export function isAssessablePage(status: number, contentType: string, challenged: boolean): boolean {
+  return status >= 200 && status < 300 && /text\/html|application\/xhtml/i.test(contentType) && !challenged;
+}
+
+/**
+ * Audit security headers.
+ * - Pakai snapshot halaman HTML 2xx dari crawl awal bila ada (0 request tambahan,
+ *   dan diambil SEBELUM fase probing yang bisa memicu WAF).
+ * - Header TIDAK dinilai dari halaman blokir/challenge WAF (403/429/503, x-vercel-mitigated,
+ *   cf-mitigated) — header di halaman itu milik platform, bukan aplikasi.
+ */
+export async function testSecurityHeaders(
+  origin: string,
+  cfClearance?: string,
+  snapshot?: HeaderSnapshot | null
+): Promise<Finding[]> {
   try {
-    const res = await fetch(origin, {
-      method: "GET",
-      headers: chromeHeaders(undefined, cfClearance),
-    });
-    const text = (await res.text()).slice(0, 2000);
-    const waf = detectWafAndEdgeInfo(res.status, res.headers, text);
-    const headerFindings = analyzeSecurityHeaders(res.headers, origin);
+    let status: number;
+    let headers: Headers;
+    let text = "";
+    let evaluatedUrl = origin;
+
+    if (snapshot) {
+      status = snapshot.status;
+      headers = new Headers(snapshot.headers);
+      evaluatedUrl = snapshot.url;
+      text = (snapshot.bodySnippet ?? "").slice(0, 2000);
+    } else {
+      const res = await fetch(origin, {
+        method: "GET",
+        headers: chromeHeaders(undefined, cfClearance),
+      });
+      status = res.status;
+      headers = res.headers;
+      text = (await res.text()).slice(0, 2000);
+    }
+
+    const waf = detectWafAndEdgeInfo(status, headers, text);
+    const contentType = headers.get("content-type") ?? snapshot?.contentType ?? "";
+    const findings: Finding[] = [];
 
     if (waf.detected) {
-      headerFindings.unshift({
+      findings.push({
         id: newId(),
         severity: "INFO",
-        title: `Proteksi WAF / Edge Aktif: ${waf.provider}${waf.challenged ? " (Interactive Challenge Active)" : ""}`,
+        title: `Proteksi WAF / Edge Aktif: ${waf.provider}${waf.challenged ? " (Challenge aktif)" : ""}`,
         endpoint: origin,
-        evidence: `HTTP ${res.status}${waf.cfRay ? ` · CF-RAY: ${waf.cfRay}` : ""}${waf.serverHeader ? ` · Server: ${waf.serverHeader}` : ""}${waf.cacheStatus ? ` · Cache: ${waf.cacheStatus}` : ""}`,
-        impact: waf.challenged
-          ? "WAF mengaktifkan tantangan interaktif pada rute utama, namun pemeriksaan pasif pada Header Edge, DNS/CT Logs, serta path statis tetap berhasil dijalankan."
-          : "Domain berada di balik lapisan WAF/CDN yang membantu memitigasi serangan lapisan aplikasi dan DDoS.",
-        fix: "Pastikan origin server IP tidak bocor melalui record DNS langsung (SPF/MX/subdomain lama) dan terapkan HSTS serta CSP di level Edge.",
+        evidence: `HTTP ${status}${waf.cfRay ? ` · CF-RAY: ${waf.cfRay}` : ""}${waf.serverHeader ? ` · Server: ${waf.serverHeader}` : ""}${waf.cacheStatus ? ` · Cache: ${waf.cacheStatus}` : ""}`,
+        impact: "Domain berada di balik lapisan WAF/CDN yang membantu memitigasi serangan lapisan aplikasi dan DDoS.",
+        fix: "Pastikan IP origin tidak bocor lewat DNS lama/subdomain, dan header keamanan dikirim dari aplikasi.",
         category: "passive-discovery",
+        confidence: "verified",
       });
     }
 
-    return headerFindings;
+    if (!isAssessablePage(status, contentType, waf.challenged)) {
+      findings.push({
+        id: newId(),
+        severity: "INFO",
+        title: `Security headers tidak dapat dinilai (HTTP ${status}${waf.challenged ? ", diblokir/ditantang WAF" : ""})`,
+        endpoint: evaluatedUrl,
+        evidence: `Respons bukan halaman HTML asli aplikasi: status ${status}, content-type ${contentType || "-"}, server ${waf.serverHeader ?? "-"}.`,
+        impact:
+          "Header pada halaman blokir/challenge berasal dari platform (WAF/CDN), bukan dari aplikasi. Menilainya akan menghasilkan false positive.",
+        fix: "Ulangi scan (IP scanner mungkin sedang ditantang WAF) atau cek header langsung dari browser (DevTools → Network).",
+        category: "passive-discovery",
+        confidence: "verified",
+      });
+      return findings;
+    }
+
+    for (const f of analyzeSecurityHeaders(headers, evaluatedUrl)) {
+      findings.push({ ...f, confidence: f.confidence ?? "verified" });
+    }
+    return findings;
   } catch {
     return [];
   }

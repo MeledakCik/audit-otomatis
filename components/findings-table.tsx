@@ -94,7 +94,14 @@ export function FindingsTable({ findings }: { findings: Finding[] }) {
                   {f.confidence && (
                     <Row
                       label="Keyakinan"
-                      value={f.confidence === "verified" ? "Terverifikasi dari isi respons" : "Berbasis versi terdeteksi (perlu verifikasi manual)"}
+                      value={
+                        {
+                          verified: "Terverifikasi dari isi respons",
+                          "version-based": "Berbasis versi terdeteksi (perlu verifikasi manual)",
+                          likely: "Kemungkinan besar (pola + konteks), tetap review manual",
+                          "pattern-only": "Hanya cocok pola, perlu review manual",
+                        }[f.confidence]
+                      }
                     />
                   )}
                   {typeof f.cvss === "number" && (

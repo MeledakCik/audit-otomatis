@@ -22,7 +22,7 @@ export function TopBar({ onScan, loading, hasReport, onFitView, onExportPng, onE
   return (
     <div className="border-b border-foreground/[0.06] bg-panel px-4 sm:px-6 py-3 flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-3">
-        <div className="h-8 w-8 grid place-items-center rounded-lg bg-gradient-to-br from-[#c084fc] to-[#9333ea] text-black shadow-lg shadow-purple-500/20 shrink-0">
+        <div className="h-8 w-8 grid place-items-center rounded-lg bg-accent/10 border border-accent/20 text-accent shrink-0">
           <ShieldHalf className="h-4 w-4 text-foreground" strokeWidth={2.5} />
         </div>
         <div className="mr-2">

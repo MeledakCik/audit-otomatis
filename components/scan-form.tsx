@@ -76,7 +76,7 @@ export function ScanForm() {
           className={cn(
             "flex items-center justify-center gap-2 rounded-lg py-2 px-3 text-xs font-mono font-bold transition-all cursor-pointer",
             mode === "full"
-              ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md shadow-purple-600/25"
+              ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white"
               : "text-muted hover:text-foreground"
           )}
         >
@@ -89,7 +89,7 @@ export function ScanForm() {
           className={cn(
             "flex items-center justify-center gap-2 rounded-lg py-2 px-3 text-xs font-mono font-bold transition-all cursor-pointer",
             mode === "sentinel"
-              ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-md shadow-pink-600/25"
+              ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white"
               : "text-muted hover:text-foreground"
           )}
         >

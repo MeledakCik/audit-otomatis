@@ -76,10 +76,19 @@ export function detectWafAndEdgeInfo(
   else if (xVercel || server.includes("vercel")) provider = "Vercel Edge Network";
 
   const ch = detectCloudflareChallenge(status, headers, bodySnippet);
+  // Vercel Firewall / Bot Protection: header x-vercel-mitigated (challenge|deny)
+  // atau halaman "Vercel Security Checkpoint". Halaman ini dikirim platform,
+  // bukan aplikasi, jadi header keamanannya tidak mewakili situs.
+  const vercelMitigated = (headers.get("x-vercel-mitigated") ?? "").toLowerCase();
+  const vercelChallenge =
+    /challenge|deny/.test(vercelMitigated) || /Vercel Security Checkpoint/i.test(bodySnippet);
+  const genericBlock =
+    (status === 403 || status === 429 || status === 503) &&
+    /access denied|request blocked|attention required|security check|captcha/i.test(bodySnippet);
   return {
-    detected: provider !== "None" || Boolean(ch),
+    detected: provider !== "None" || Boolean(ch) || vercelChallenge,
     provider: provider === "None" && ch ? "Cloudflare / Edge WAF" : provider,
-    challenged: Boolean(ch) || cfMitigated === "challenge",
+    challenged: Boolean(ch) || cfMitigated === "challenge" || vercelChallenge || genericBlock,
     status,
     cfRay,
     cacheStatus: cfCache,

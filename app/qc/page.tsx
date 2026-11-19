@@ -52,7 +52,7 @@ export default function QcPage() {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-border bg-[#130f1d] p-6 shadow-xl shadow-purple-950/20">
+          <div className="rounded-2xl border border-border bg-[#130f1d] p-6">
             <div className="mb-4">
               <div className="text-xs font-mono tracking-widest uppercase text-purple-300/80 font-semibold">
                 Target Domain

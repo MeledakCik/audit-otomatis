@@ -190,6 +190,26 @@ export const SEO_ROUTES_REGISTRY: Record<string, SeoRouteConfig> = {
     priority: 0.95,
     changeFrequency: "daily",
   },
+  "/scan/source": {
+    path: "/scan/source",
+    title: "Source Code Audit (ZIP) — Secret, OWASP Top 10, Docker, CI & Dependency Scanner",
+    titleEn: "Free Source Code Security Audit — Upload a ZIP to Find Secrets, OWASP Top 10 Bugs & Vulnerable Dependencies",
+    description:
+      "Audit statis kode sumber dari ZIP: deteksi secret & API key ter-commit, berkas sensitif, SQL injection, XSS, SSRF, command injection, konfigurasi Docker/GitHub Actions, dan dependensi rentan (OSV.dev). Kode tidak disimpan.",
+    descriptionEn:
+      "Static security audit for your source code ZIP: leaked secrets, sensitive files, OWASP Top 10 patterns across JS/TS, PHP, Python, Go, Java/Kotlin and C#, Docker & CI misconfigurations, plus vulnerable dependencies from OSV.dev. Code is never stored.",
+    keywords: [
+      "source code security audit",
+      "SAST online gratis",
+      "secret scanner zip",
+      "cek kerentanan kode",
+      "dependency vulnerability scanner",
+      "audit keamanan kode sumber",
+    ],
+    category: "Security Scanner",
+    priority: 0.9,
+    changeFrequency: "weekly",
+  },
   "/scan/headers": {
     path: "/scan/headers",
     title: "HTTP Security Headers Checker (Header Armor) — CSP, HSTS, X-Frame-Options & Referrer-Policy",

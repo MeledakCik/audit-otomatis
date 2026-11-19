@@ -38,6 +38,28 @@ export interface Sink extends AuditFinding {
   type: SinkType;
   line: number;
   snippet: string;
+  /** Berada di bundle framework (React/Next/Vue runtime) → hampir selalu aman. */
+  framework?: boolean;
+  /** Ada sumber data yang bisa dikontrol user (location, postMessage, ...) dekat sink. */
+  tainted?: boolean;
+}
+
+const TAINT_SOURCE_RE =
+  /\blocation\.(?:hash|search|href)\b|document\.(?:URL|documentURI|referrer|cookie)\b|\bwindow\.name\b|URLSearchParams|\.data\b[^;]{0,40}message|addEventListener\(\s*['"]message['"]/;
+const DANGEROUS_SINK_RE =
+  /\.(?:innerHTML|outerHTML)\s*=|insertAdjacentHTML\s*\(|document\.write(?:ln)?\s*\(|\beval\s*\(|new\s+Function\s*\(|location\.(?:href|assign|replace)\s*[=(]/;
+
+/** Bundle framework/vendor yang sink-nya bagian dari runtime (bukan kode aplikasi). */
+export function isFrameworkBundle(label = "", content = ""): boolean {
+  if (/\/_next\/static\/|\/node_modules\/|\/vendor[s]?[.-]|react-dom|framework-[a-f0-9]+\.js|webpack-runtime|\/_nuxt\/|polyfills?[.-]/i.test(label)) {
+    return true;
+  }
+  const head = content.slice(0, 4000);
+  return /Minified React error|__SECRET_INTERNALS_DO_NOT_USE|react-dom\.production|__NEXT_P|webpackChunk_N_E/.test(head);
+}
+
+function windowAround(content: string, index: number, radius = 300): string {
+  return content.slice(Math.max(0, index - radius), Math.min(content.length, index + radius));
 }
 
 interface SinkPatternDef {
@@ -57,8 +79,19 @@ const SINK_PATTERNS: SinkPatternDef[] = [
     regex: /\bset(?:Timeout|Interval)\s*\(\s*(?:`[^`]*`|'[^']*'|"[^"]*")/g,
     severity: "high",
   },
-  { type: "location.hash", regex: /\blocation\.hash\b/g, severity: "medium" },
-  { type: "location.search", regex: /\blocation\.search\b/g, severity: "medium" },
+  // location.hash/search adalah SUMBER, bukan sink: hanya dilaporkan kalau mengalir ke sink berbahaya di dekatnya.
+  {
+    type: "location.hash",
+    regex: /\blocation\.hash\b/g,
+    severity: "medium",
+    validateMatch: (_s, full, i) => DANGEROUS_SINK_RE.test(windowAround(full, i)),
+  },
+  {
+    type: "location.search",
+    regex: /\blocation\.search\b/g,
+    severity: "medium",
+    validateMatch: (_s, full, i) => DANGEROUS_SINK_RE.test(windowAround(full, i)),
+  },
   // node2shell — HANYA pemanggilan child_process / execSync / spawnSync / execFile nyata (BUKAN RegExp.prototype.exec!)
   {
     type: "node2shell_child_process",
@@ -122,8 +155,9 @@ function snippetAround(content: string, index: number, radius = 40): string {
  * Otomatis melewati (skip) inline script Next.js RSC Flight payload (`self.__next_f.push`)
  * dan blok JSON murni agar teks UI/artikel tidak memicu false-positive.
  */
-export function findDomSinks(jsContent: string): Sink[] {
+export function findDomSinks(jsContent: string, label = ""): Sink[] {
   if (!jsContent) return [];
+  const framework = isFrameworkBundle(label, jsContent);
   const trimmed = jsContent.trim();
 
   // Skip Next.js RSC hydration data payload atau JSON-LD schema
@@ -161,6 +195,8 @@ export function findDomSinks(jsContent: string): Sink[] {
         evidence: `line ${line}: ${snippet}`,
         line,
         snippet,
+        framework,
+        tainted: TAINT_SOURCE_RE.test(windowAround(jsContent, m.index)),
       });
       if (m.index === regex.lastIndex) regex.lastIndex++;
     }

@@ -325,7 +325,7 @@ export function ActivitiesDashboard() {
               className={cn(
                 "inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-mono font-bold transition-all cursor-pointer",
                 subTab === "feed"
-                  ? "bg-purple-600 text-white shadow-md shadow-purple-600/25"
+                  ? "bg-purple-600 text-white"
                   : "border border-border bg-foreground/[0.03] text-soft hover:text-foreground"
               )}
             >
@@ -339,7 +339,7 @@ export function ActivitiesDashboard() {
               className={cn(
                 "inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-mono font-bold transition-all cursor-pointer",
                 subTab === "gitjson"
-                  ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-md shadow-pink-600/25"
+                  ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white"
                   : "border border-pink-500/35 bg-pink-500/10 text-pink-200 hover:bg-pink-500/20"
               )}
             >
@@ -358,7 +358,7 @@ export function ActivitiesDashboard() {
               className={cn(
                 "inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-mono font-bold transition-all cursor-pointer",
                 subTab === "users"
-                  ? "bg-purple-600 text-white shadow-md shadow-purple-600/25"
+                  ? "bg-purple-600 text-white"
                   : "border border-border bg-foreground/[0.03] text-soft hover:text-foreground"
               )}
             >
@@ -372,7 +372,7 @@ export function ActivitiesDashboard() {
               className={cn(
                 "inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-mono font-bold transition-all cursor-pointer",
                 subTab === "scans"
-                  ? "bg-purple-600 text-white shadow-md shadow-purple-600/25"
+                  ? "bg-purple-600 text-white"
                   : "border border-border bg-foreground/[0.03] text-soft hover:text-foreground"
               )}
             >
@@ -555,7 +555,7 @@ export function ActivitiesDashboard() {
       {/* SubTab 2: Dedicated Git & Repository Intelligence JSON View */}
       {subTab === "gitjson" && (
         <div className="space-y-4">
-          <div className="rounded-2xl border border-pink-500/30 bg-gradient-to-r from-[#181028] via-[#130d20] to-[#0e0a18] p-5 flex flex-wrap items-center justify-between gap-4">
+          <div className="rounded-2xl border border-pink-500/30 bg-accent/10 border border-accent/20 p-5 flex flex-wrap items-center justify-between gap-4">
             <div className="space-y-1">
               <div className="inline-flex items-center gap-1.5 rounded-full bg-pink-500/15 border border-pink-500/30 px-2.5 py-0.5 text-xs font-mono font-bold text-pink-300">
                 <GitBranch className="h-3 w-3" />

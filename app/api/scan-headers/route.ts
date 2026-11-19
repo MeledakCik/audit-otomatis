@@ -1,3 +1,5 @@
+import { detectWafAndEdgeInfo } from "@/lib/crawler";
+import { isAssessablePage } from "@/lib/tester";
 import { validateDomainInput } from "@/lib/validate-domain";
 import { runHeaderChecks, scoreFromChecks, gradeFromScore } from "@/lib/header-scan/checks";
 import { logUserActivity } from "@/lib/activity-store";
@@ -32,6 +34,8 @@ export async function POST(req: Request) {
       signal: controller.signal,
       headers: {
         "User-Agent": "Sentinel-ID-HeaderArmorChecker/1.0 (+https://www.sentinel-id.net)",
+        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "id-ID,id;q=0.9,en;q=0.8",
       },
     });
     clearTimeout(timeout);
@@ -40,6 +44,21 @@ export async function POST(req: Request) {
     res.headers.forEach((value, key) => {
       rawHeaders[key] = value;
     });
+
+    // Jangan memberi nilai dari halaman blokir/challenge WAF: header-nya milik platform, bukan situs.
+    const snippet = (await res.text().catch(() => "")).slice(0, 2000);
+    const waf = detectWafAndEdgeInfo(res.status, res.headers, snippet);
+    if (!isAssessablePage(res.status, res.headers.get("content-type") ?? "", waf.challenged)) {
+      return Response.json(
+        {
+          ok: false,
+          error: `Target membalas HTTP ${res.status}${waf.challenged ? ` (diblokir/challenge ${waf.provider})` : ""}, bukan halaman HTML asli. Header pada respons ini tidak mewakili situs, jadi tidak dinilai. Coba lagi nanti atau cek header dari browser.`,
+          statusCode: res.status,
+          rawHeaders,
+        },
+        { status: 422 }
+      );
+    }
 
     const checks = runHeaderChecks(rawHeaders);
     const score = scoreFromChecks(checks);

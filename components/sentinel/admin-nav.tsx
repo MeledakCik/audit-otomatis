@@ -39,7 +39,7 @@ export function AdminNav() {
       {/* Top Command Bar */}
       <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-purple-500/25 bg-gradient-to-r from-[#150f24] via-[#110c1d] to-sunken px-5 py-4 shadow-xl">
         <div className="flex items-center gap-3.5">
-          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-purple-600 to-pink-600 grid place-items-center text-white shadow-lg shadow-purple-600/25">
+          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-purple-600 to-pink-600 grid place-items-center text-white">
             <ShieldAlert className="h-5 w-5" />
           </div>
           <div>
@@ -90,7 +90,7 @@ export function AdminNav() {
               className={cn(
                 "inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-mono font-bold transition-all",
                 active
-                  ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg shadow-purple-600/25"
+                  ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white"
                   : "border border-border bg-panel text-soft hover:text-foreground hover:border-purple-500/40"
               )}
             >

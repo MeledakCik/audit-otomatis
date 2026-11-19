@@ -728,7 +728,7 @@ export function SentinelVaultView({ isDark = true }: { isDark?: boolean }) {
             <div className="flex gap-2">
               <button
                 type="submit"
-                className="flex-1 py-3 px-4 rounded-2xl font-semibold text-xs text-white bg-gradient-to-r from-pink-500 via-purple-600 to-indigo-600 hover:opacity-95 transition shadow-lg shadow-pink-500/20"
+                className="flex-1 py-3 px-4 rounded-2xl font-semibold text-xs text-white bg-gradient-to-r from-pink-500 via-purple-600 to-indigo-600 hover:opacity-95 transition"
               >
                 Verifikasi &amp; Buka Bukti (1x Lihat)
               </button>

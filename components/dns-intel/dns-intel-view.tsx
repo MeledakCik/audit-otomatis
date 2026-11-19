@@ -55,7 +55,7 @@ export function DnsIntelView() {
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-[1600px] mx-auto">
       <div className="flex items-start gap-3">
-        <div className="h-10 w-10 grid place-items-center rounded-xl bg-gradient-to-br from-[#22d3ee] to-[#0891b2] shadow-lg shadow-cyan-500/20 shrink-0">
+        <div className="h-10 w-10 grid place-items-center rounded-xl bg-accent/10 border border-accent/20 shrink-0">
           <Radar className="h-5 w-5 text-black" strokeWidth={2.5} />
         </div>
         <div>

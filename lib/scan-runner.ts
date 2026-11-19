@@ -1,9 +1,10 @@
 // lib/scan-runner.ts
+import { registrableDomain } from "./registrable-domain";
 import { crawlSite, endpointNodeId, jsNodeId } from "./site-crawler";
 import { analyzeJsSource, analyzeInlineScripts, fetchJsFiles } from "./js-analyzer";
 import { scanSecrets } from "./secret-scanner";
 import { fingerprintLibraries, libraryDetectionsToFindings, detectNextJs } from "./library-fingerprint";
-import { testResponseLeakage, testAntiAutomation, testExposedFiles, testSecurityHeaders, type ExposedHit } from "./tester";
+import { testResponseLeakage, testAntiAutomation, testExposedFiles, testSecurityHeaders, isAssessablePage, type ExposedHit } from "./tester";
 import { publishScanCriticals, publishDossier, dossierPublicFindings } from "./sentinel/publish";
 import { collectComponents, runCveIntel, cveHitsToFindings, emptyIntel, type CveIntelResult } from "./vuln/cve-intel";
 import {
@@ -106,6 +107,30 @@ export async function runScan(
       `Crawl selesai: ${crawl.pages.length} snapshot halaman/edge, ${crawl.allInternalLinks.length} link internal unik, ${crawl.allScripts.length} file JS unik, ${crawl.allForms.length} form.`
     );
 
+    // ---- Security headers: dinilai dari respons crawl awal (sebelum probing yang bisa memicu WAF) ----
+    {
+      const homeSnap = crawl.pages.find(
+        (p) => isAssessablePage(p.status, p.contentType ?? "", false) && !crawl.cloudflare
+      );
+      await log(
+        scanId,
+        homeSnap
+          ? `Mengecek security headers dari respons crawl ${homeSnap.url} (HTTP ${homeSnap.status}, tanpa request tambahan)...`
+          : "Mengecek security headers & postur Edge WAF/Cloudflare..."
+      );
+      const headerFindings = homeSnap
+        ? await testSecurityHeaders(origin, cfClearance, {
+            url: homeSnap.url,
+            status: homeSnap.status,
+            headers: homeSnap.headers ?? {},
+            contentType: homeSnap.contentType,
+            bodySnippet: homeSnap.html?.slice(0, 2000),
+          })
+        : await budget.spend(() => testSecurityHeaders(origin, cfClearance));
+      if (!homeSnap) await bumpRequestCount(scanId);
+      if (headerFindings) for (const f of headerFindings) await addFinding(scanId, f);
+    }
+
     // ---- Inspeksi Struktural DOM pada Setiap Halaman Hasil Crawl untuk WebShell & FileManager ----
     let crawledShellCount = 0;
     for (const page of crawl.pages) {
@@ -185,7 +210,7 @@ export async function runScan(
         await log(scanId, `[VULN-LIB] ${f.severity} — ${f.title}`);
       }
 
-      const sinks = findDomSinks(file.text).slice(0, MAX_SINK_FINDINGS_PER_FILE);
+      const sinks = findDomSinks(file.text, file.label).slice(0, MAX_SINK_FINDINGS_PER_FILE);
       if (sinks.length > 0) {
         for (const f of domSinksToFindings(sinks, file.label)) {
           await addFinding(scanId, f);
@@ -277,20 +302,32 @@ export async function runScan(
 
     // ---- Pemeriksaan DNS / DoH (SPF, DMARC, CNAME Takeover Hints) — tidak terpengaruh HTTP WAF/Cloudflare ----
     try {
+      // SPF/DMARC/MX berlaku di domain induk (eTLD+1); CNAME takeover tetap di host yang dipindai.
+      const mailDomain = registrableDomain(domainHost);
       const dnsRes = await resolveAllRecords(domainHost);
-      const spf = analyzeSpf(dnsRes.records.TXT);
-      const dmarc = analyzeDmarc(dnsRes.dmarcTxt);
+      const mailDns = mailDomain === domainHost ? dnsRes : await resolveAllRecords(mailDomain);
+      const spf = analyzeSpf(mailDns.records.TXT);
+      const dmarc = analyzeDmarc(mailDns.dmarcTxt);
       const takeoverHints = detectTakeoverHints(dnsRes.records.CNAME);
+      // Domain tanpa MX = tidak menerima/biasanya tidak mengirim email → saran "null SPF" + DMARC reject.
+      const hasMx = (mailDns.records.MX ?? []).length > 0;
+      const spfFix = hasMx
+        ? "Tambahkan TXT SPF yang hanya mengizinkan server pengirim Anda, akhiri dengan `-all` (mis. `v=spf1 include:_spf.google.com -all` untuk Google Workspace)."
+        : "Domain ini tidak punya MX (tidak memakai email). Kunci total dengan TXT `v=spf1 -all` agar siapa pun tidak bisa mengirim atas nama domain ini.";
+      const dmarcFix = hasMx
+        ? "Tambahkan TXT `_dmarc` dengan `v=DMARC1; p=quarantine; rua=mailto:dmarc@<domain>` lalu naikkan ke `p=reject` setelah laporan bersih."
+        : "Tambahkan TXT `_dmarc` dengan `v=DMARC1; p=reject; sp=reject; adkim=s; aspf=s` (domain tidak mengirim email).";
 
       if (spf.risk === "HIGH") {
         await addFinding(scanId, {
           id: `dns_spf_${Date.now()}`,
           severity: "MEDIUM",
           title: `[DNS / Anti-Spoofing] ${spf.found ? "Konfigurasi SPF terlalu longgar (+all)" : "SPF Record tidak ditemukan"}`,
-          endpoint: `dns://${domainHost}`,
-          evidence: spf.value ? `TXT: ${spf.value}` : "Tidak ada TXT record v=spf1 pada apex domain",
+          endpoint: `dns://${mailDomain}`,
+          evidence: spf.value ? `TXT ${mailDomain}: ${spf.value}` : `Tidak ada TXT record v=spf1 pada ${mailDomain}${hasMx ? "" : " (MX juga kosong)"}`,
           impact: spf.note,
-          fix: "Tambahkan record TXT SPF yang ketat (mis. `v=spf1 include:_spf.google.com ~all` atau `-all`).",
+          fix: spfFix,
+          confidence: "verified",
           category: "passive-discovery",
         });
       }
@@ -299,10 +336,11 @@ export async function runScan(
           id: `dns_dmarc_${Date.now()}`,
           severity: "LOW",
           title: `[DNS / Anti-Spoofing] ${dmarc.found ? `Kebijakan DMARC masih longgar (p=${dmarc.policy ?? "none"})` : "DMARC Record (_dmarc) tidak ditemukan"}`,
-          endpoint: `dns://_dmarc.${domainHost}`,
-          evidence: dmarc.value ? `TXT: ${dmarc.value}` : `Tidak ada record v=DMARC1 pada _dmarc.${domainHost}`,
+          endpoint: `dns://_dmarc.${mailDomain}`,
+          evidence: dmarc.value ? `TXT: ${dmarc.value}` : `Tidak ada record v=DMARC1 pada _dmarc.${mailDomain}`,
           impact: dmarc.note,
-          fix: "Tambahkan record `_dmarc` dengan policy `p=quarantine` atau `p=reject`.",
+          fix: dmarcFix,
+          confidence: "verified",
           category: "passive-discovery",
         });
       }
@@ -501,10 +539,6 @@ export async function runScan(
       await log(scanId, `[PHP-UPLOAD] dilewati: ${(e as Error).message}`);
     }
 
-    await log(scanId, "Mengecek security headers & postur Edge WAF/Cloudflare...");
-    const headerFindings = await budget.spend(() => testSecurityHeaders(origin, cfClearance));
-    await bumpRequestCount(scanId);
-    if (headerFindings) for (const f of headerFindings) await addFinding(scanId, f);
 
     for (const target of testTargets) {
       if (!budget.canSpend(3)) {

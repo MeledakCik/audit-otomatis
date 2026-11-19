@@ -55,9 +55,9 @@ export function LoginForm() {
 
       {/* Center Login Card */}
       <div className="mx-auto w-full max-w-md my-auto py-8">
-        <div className="rounded-3xl border border-purple-500/30 bg-gradient-to-b from-[#171128] via-[#120d1f] to-sunken p-6 sm:p-8 shadow-2xl shadow-purple-950/40 space-y-6">
+        <div className="rounded-3xl border border-purple-500/30 bg-gradient-to-b from-[#171128] via-[#120d1f] to-sunken p-6 sm:p-8 space-y-6">
           <div className="flex flex-col items-center text-center space-y-2">
-            <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-purple-600 to-pink-600 grid place-items-center text-white shadow-lg shadow-purple-600/30">
+            <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-purple-600 to-pink-600 grid place-items-center text-white">
               <ShieldAlert className="h-7 w-7" />
             </div>
             <div className="inline-flex items-center gap-1.5 rounded-full bg-purple-500/15 border border-purple-500/30 px-3 py-0.5 text-xs font-mono font-bold uppercase tracking-widest text-purple-300">
@@ -130,7 +130,7 @@ export function LoginForm() {
             <button
               type="submit"
               disabled={busy}
-              className="w-full h-11 rounded-xl bg-gradient-to-r from-purple-600 via-fuchsia-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-xs font-bold uppercase tracking-wider text-white shadow-lg shadow-purple-600/30 disabled:opacity-50 cursor-pointer"
+              className="w-full h-11 rounded-xl bg-gradient-to-r from-purple-600 via-fuchsia-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-xs font-bold uppercase tracking-wider text-white disabled:opacity-50 cursor-pointer"
             >
               {busy ? "Memverifikasi Sesi…" : "Masuk ke Admin Console →"}
             </button>

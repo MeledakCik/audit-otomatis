@@ -139,14 +139,19 @@ export function domSinksToFindings(sinks: Sink[], sourceLabel: string): Finding[
       };
     }
 
+    // Kalibrasi: runtime framework → INFO; tanpa sumber user di dekatnya → LOW; ada aliran sumber→sink → tetap.
+    const severity = s.framework ? "INFO" : s.tainted ? toLegacySeverity(s.severity) : "LOW";
+    const label = s.framework ? " (runtime framework, kemungkinan aman)" : s.tainted ? " (ada sumber input user di dekatnya)" : "";
     return {
       id: newId(),
-      severity: toLegacySeverity(s.severity),
-      title: `Potensi DOM XSS sink: ${s.type}`,
+      severity,
+      title: `Potensi DOM XSS sink: ${s.type}${label}`,
       endpoint: sourceLabel,
       evidence: s.evidence,
-      impact:
-        "Sink DOM ini bisa jadi vektor XSS kalau data yang masuk berasal dari sumber yang bisa dikontrol pengguna (URL, postMessage, dsb) tanpa sanitasi. Deteksi ini regex pattern-matching di source, bukan bukti exploitability — wajib direview manual.",
+      confidence: s.framework || !s.tainted ? "pattern-only" : "likely",
+      impact: s.framework
+        ? "Pola ini berada di bundle runtime framework (React/Next.js/vendor), yang lazim memakai innerHTML secara terkontrol. Hampir selalu bukan kerentanan aplikasi."
+        : "Sink DOM ini bisa jadi vektor XSS kalau data yang masuk berasal dari sumber yang bisa dikontrol pengguna (URL, postMessage, dsb) tanpa sanitasi. Deteksi ini regex pattern-matching di source, bukan bukti exploitability — wajib direview manual.",
       fix: "Review kode di sekitar sink ini. Ganti innerHTML/outerHTML/document.write dengan textContent atau sanitizer (mis. DOMPurify), hindari eval/setTimeout dengan argumen string, dan validasi/encode nilai dari location.hash atau location.search sebelum dipakai.",
       cwe: "CWE-79",
       category: "dom-xss-sink",
@@ -285,6 +290,7 @@ export function authCheckToFindings(results: AuthCheckResult[]): Finding[] {
           : "Tambahkan rate limiting (mis. per-IP atau per-token) di endpoint ini kalau belum di-enforce di layer manapun.",
         cwe: isBypass ? "CWE-284" : "CWE-799",
         category: isBypass ? "auth-bypass" : "missing-rate-limit",
+        confidence: isBypass ? "likely" : "pattern-only",
       });
     }
   }

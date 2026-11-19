@@ -191,7 +191,7 @@ export default function ScanExposureClient() {
       {/* Header Section */}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex items-start gap-3.5">
-          <div className="h-10 w-10 grid place-items-center rounded-xl bg-gradient-to-br from-[#c084fc] to-[#9333ea] text-white shadow-lg shadow-purple-500/20 shrink-0 mt-0.5">
+          <div className="h-10 w-10 grid place-items-center rounded-xl bg-accent/10 border border-accent/20 text-accent shrink-0 mt-0.5">
             <LucideCloudCheck className="h-5 w-5 text-foreground" strokeWidth={2.5} />
           </div>
           <div className="space-y-1">

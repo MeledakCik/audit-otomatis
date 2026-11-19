@@ -32,7 +32,7 @@ export function ActionChecklist() {
       <div className="p-4 grid sm:grid-cols-2 gap-3">
         {ACTIONS.map((a) => (
           <div key={a.title} className="flex gap-3 rounded-xl border border-border-strong bg-surface-raised p-3">
-            <div className="h-8 w-8 shrink-0 grid place-items-center rounded-lg bg-gradient-to-br from-[#c084fc] to-[#9333ea] text-white">
+            <div className="h-8 w-8 shrink-0 grid place-items-center rounded-lg bg-accent/10 border border-accent/20 text-accent">
               <a.icon className="h-4 w-4" strokeWidth={2.5} />
             </div>
             <div className="space-y-0.5">

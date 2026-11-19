@@ -172,7 +172,7 @@ export function ScanDashboard({
             className={cn(
               "inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-mono font-bold transition-all cursor-pointer",
               activeTab === "overview"
-                ? "bg-purple-600 text-white shadow-lg shadow-purple-600/25"
+                ? "bg-purple-600 text-white"
                 : "border border-border bg-foreground/[0.03] text-soft hover:text-foreground"
             )}
           >
@@ -186,7 +186,7 @@ export function ScanDashboard({
             className={cn(
               "inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-mono font-bold transition-all cursor-pointer",
               activeTab === "sentinel"
-                ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg shadow-pink-600/25"
+                ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white"
                 : "border border-purple-500/30 bg-purple-500/10 text-purple-200 hover:bg-purple-500/20"
             )}
           >
@@ -205,7 +205,7 @@ export function ScanDashboard({
             className={cn(
               "inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-mono font-bold transition-all cursor-pointer",
               activeTab === "endpoints"
-                ? "bg-purple-600 text-white shadow-lg shadow-purple-600/25"
+                ? "bg-purple-600 text-white"
                 : "border border-border bg-foreground/[0.03] text-soft hover:text-foreground"
             )}
           >

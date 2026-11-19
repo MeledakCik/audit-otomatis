@@ -3,7 +3,6 @@ import {
   ArrowRight, ShieldCheck, Radar, Lock, TrendingUp, Network, ClipboardCheck,
   Check, Globe, AtSign, EyeOff, ServerCog, FileCheck2, Sparkles, Terminal
 } from "lucide-react";
-import { GlassCanvas } from "@/components/landing/glass-canvas";
 import { LandingNav } from "@/components/landing/landing-nav";
 import { AUTHOR } from "@/lib/author";
 import Image from "next/image";
@@ -94,7 +93,6 @@ export function LandingPage() {
       <main id="main" className="relative">
         {/* ===== HERO ===== */}
         <section className="relative isolate min-h-[100svh] flex items-center pt-32 pb-20 px-4 sm:px-6">
-          <GlassCanvas className="absolute inset-0 -z-10 w-full h-full opacity-80 [mask-image:linear-gradient(to_bottom,black_50%,transparent_100%)]" />
 
           <div className="max-w-6xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
             {/* Kiri: pesan utama */}

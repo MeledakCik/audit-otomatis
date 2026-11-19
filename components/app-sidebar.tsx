@@ -8,7 +8,7 @@ import {
   ShieldAlert, KeyRound, AlertTriangle, FileCode2, Award, Wrench,
   Network, Globe, Radio, Layers, Eye, UserCheck, ShieldCheck,
   BookOpen, Code2, Settings, ChevronRight, ChevronDown, AtSign,
-  PanelLeftClose, PanelLeftOpen, X,
+  PanelLeftClose, PanelLeftOpen, X, FileArchive,
 } from "lucide-react";
 import { SENTINEL_NAV_ITEMS, type NavModuleItem } from "@/lib/nav-items";
 import { AUTHOR } from "@/lib/author";
@@ -22,7 +22,7 @@ const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   alert: AlertTriangle, "file-code": FileCode2, award: Award, wrench: Wrench,
   network: Network, globe: Globe, radio: Radio, layers: Layers, eye: Eye,
   "user-check": UserCheck, "shield-check": ShieldCheck, book: BookOpen,
-  code: Code2, settings: Settings,
+  code: Code2, settings: Settings, "file-archive": FileArchive,
 };
 
 export function ModuleIcon({ name, className = "w-4 h-4" }: { name: string; className?: string }) {

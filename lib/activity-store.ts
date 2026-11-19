@@ -21,7 +21,8 @@ export type ActivityModule =
   | "JS_SUPPLY_CHAIN"
   | "SSL_CHECKER"
   | "MAINTENANCE_LOG"
-  | "ENDPOINT_TEST";
+  | "ENDPOINT_TEST"
+  | "SOURCE_AUDIT";
 
 export type ActivityStatus =
   | "SUCCESS"
@@ -86,6 +87,7 @@ export const MODULE_LABELS: Record<ActivityModule, string> = {
   SSL_CHECKER: "SSL/TLS Checker",
   MAINTENANCE_LOG: "Maintenance Log AI",
   ENDPOINT_TEST: "API Endpoint Tester",
+  SOURCE_AUDIT: "Source Code Audit (ZIP)",
 };
 
 const globalForActivity = globalThis as unknown as {

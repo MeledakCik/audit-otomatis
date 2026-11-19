@@ -291,7 +291,7 @@ export default function ThreatLab() {
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Header Title (Diubah ke Threads Labs) */}
         <div className="flex items-start gap-3">
-          <div className="p-2.5 rounded-2xl bg-gradient-to-br from-purple-600 to-fuchsia-600 shadow-lg shadow-purple-500/20 text-white mt-1">
+          <div className="p-2.5 rounded-2xl bg-gradient-to-br from-purple-600 to-fuchsia-600 text-white mt-1">
             <Cpu className="w-6 h-6" />
           </div>
           <div>
@@ -308,7 +308,7 @@ export default function ThreatLab() {
         </div>
 
         {/* Header Controls (Cyber Input Card) */}
-        <div className="rounded-2xl border border-purple-900/30 bg-panel/80 backdrop-blur-xl p-5 shadow-xl shadow-purple-950/10 space-y-5">
+        <div className="rounded-2xl border border-purple-900/30 bg-panel/80 backdrop-blur-xl p-5 space-y-5">
           <div className="flex items-center gap-2 text-xs font-semibold tracking-wider text-purple-400 uppercase border-b border-purple-900/20 pb-3">
             <Target className="w-4 h-4" />
             <span>Target Configuration</span>
@@ -483,7 +483,7 @@ export default function ThreatLab() {
 
         {/* Results Table */}
         {batchData && (batchData.results?.length ?? 0) > 0 && (
-          <div className="overflow-hidden rounded-2xl border border-purple-900/30 bg-panel/80 backdrop-blur-xl shadow-xl shadow-purple-950/10">
+          <div className="overflow-hidden rounded-2xl border border-purple-900/30 bg-panel/80 backdrop-blur-xl">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead className="border-b border-purple-900/20 bg-sunken/60 text-purple-300 uppercase tracking-wider text-xs">
@@ -530,7 +530,7 @@ export default function ThreatLab() {
         )}
 
         {/* Realtime Terminal Console */}
-        <div className="overflow-hidden rounded-2xl border border-purple-900/30 bg-sunken/90 font-mono text-xs shadow-xl shadow-purple-950/20">
+        <div className="overflow-hidden rounded-2xl border border-purple-900/30 bg-sunken/90 font-mono text-xs">
           <div className="flex items-center justify-between border-b border-purple-900/20 bg-panel/80 px-4 py-3 text-zinc-400">
             <div className="flex items-center gap-2">
               <Terminal className="h-3.5 w-3.5 text-fuchsia-400" />

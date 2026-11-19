@@ -65,7 +65,8 @@ export interface Finding {
   cwe?: string; // referensi CWE-xxx kalau relevan (boleh beberapa, dipisah koma)
   cve?: string[]; // CVE terkait (mis. hasil pencocokan versi)
   rce?: boolean; // true = potensi eksekusi kode jarak jauh (indikator pasif, BUKAN bukti eksploitasi)
-  confidence?: "verified" | "version-based"; // verified = isi respons tervalidasi; version-based = cocok dari versi terdeteksi
+  /** verified = tervalidasi dari respons; version-based = cocok dari versi; likely = pola + konteks kuat; pattern-only = cocok pola saja, perlu review manual. */
+  confidence?: "verified" | "version-based" | "likely" | "pattern-only"; // verified = isi respons tervalidasi; version-based = cocok dari versi terdeteksi
   poc?: string; // contoh request non-destruktif (curl), hanya ilustrasi
   category?: FindingCategory;
 }

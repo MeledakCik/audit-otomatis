@@ -150,7 +150,7 @@ export function VerifiedBadge({ variant = "header", className }: VerifiedBadgePr
           onClick={() => setOpen(false)}
         >
           <div
-            className="relative w-full max-w-lg rounded-2xl border border-emerald-500/35 bg-[#110c1d] p-6 text-soft shadow-2xl shadow-emerald-950/40 animate-fade-up"
+            className="relative w-full max-w-lg rounded-2xl border border-emerald-500/35 bg-[#110c1d] p-6 text-soft animate-fade-up"
             onClick={(e) => e.stopPropagation()}
           >
             <button
