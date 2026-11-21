@@ -7,7 +7,7 @@ interface CheckBody {
 
 /**
  * Cek heuristik takeover untuk SATU subdomain: CNAME lookup via DNS-over-HTTPS
- * + satu GET request pasif untuk cocokkan fingerprint. Dijalankan per-item dari
+ * + satu HTTPS GET read-only untuk mencocokkan fingerprint. Dijalankan per-item dari
  * client (dengan concurrency terbatas) supaya tidak membanjiri target maupun
  * resolver DoH.
  */

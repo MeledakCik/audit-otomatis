@@ -1,4 +1,5 @@
 import { isPrivateOrReservedHost } from "@/lib/validate-domain";
+import { requestPublicHttps } from "@/lib/public-https";
 import { matchSignatureByCname, bodyMatchesFingerprint } from "./signatures";
 import type { SubdomainRow } from "./types";
 
@@ -42,34 +43,27 @@ async function resolveCname(hostname: string): Promise<string | null> {
 }
 
 async function fetchBodySnippet(hostname: string): Promise<{ status: number | null; snippet: string }> {
-  for (const scheme of ["https", "http"] as const) {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), HTTP_TIMEOUT_MS);
-    try {
-      const res = await fetch(`${scheme}://${hostname}/`, {
-        method: "GET",
-        redirect: "follow",
-        signal: controller.signal,
-        headers: { "User-Agent": "Sentinel-ID-SubdomainWatch/1.0 (+https://www.sentinel-id.net)" },
-      });
-      clearTimeout(timeout);
-      const text = await res.text();
-      return { status: res.status, snippet: text.slice(0, BODY_SNIPPET_LIMIT) };
-    } catch {
-      clearTimeout(timeout);
-      // coba skema berikutnya (http fallback) sebelum menyerah
-    }
+  try {
+    const res = await requestPublicHttps(`https://${hostname}/`, {
+      method: "GET",
+      signal: AbortSignal.timeout(HTTP_TIMEOUT_MS),
+      userAgent: "Sentinel-ID-SubdomainWatch/1.0 (+https://www.sentinel-id.net)",
+      accept: "text/html,application/xhtml+xml,*/*;q=0.8",
+      maxBodyBytes: BODY_SNIPPET_LIMIT,
+    });
+    return { status: res.statusCode, snippet: res.bodyPrefix };
+  } catch {
+    return { status: null, snippet: "" };
   }
-  return { status: null, snippet: "" };
 }
 
 /**
  * Cek heuristik takeover satu subdomain — 100% pasif:
  * 1) CNAME lookup via DoH Cloudflare.
  * 2) Kalau CNAME cocok pola layanan pihak-ketiga yang dikenal rentan,
- *    lakukan satu GET request biasa (sama seperti membuka di browser) untuk
- *    mencocokkan fingerprint body "resource belum diklaim".
- * Tidak ada exploit, tidak ada payload, tidak ada bruteforce.
+ *    lakukan satu HTTPS GET terbatas ke alamat publik yang sudah divalidasi
+ *    untuk mencocokkan fingerprint body "resource belum diklaim".
+ * Tidak ada exploit, payload, redirect follow, HTTP downgrade, atau bruteforce.
  */
 export async function checkSubdomainTakeover(subdomain: string, rootDomain: string): Promise<SubdomainRow> {
   const base: SubdomainRow = {

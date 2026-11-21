@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Loader2, Radar, ShieldCheck } from "lucide-react";
+import { SubdomainLiveAudit } from "@/components/sentinel/subdomain-live-audit";
 
 export function DomainCheckPanel() {
   const router = useRouter();
@@ -101,6 +102,7 @@ export function DomainCheckPanel() {
           Hanya target publik yang dapat diakses melalui HTTPS. Gunakan pada domain yang Anda berwenang uji. Pemeriksaan tidak mengeksekusi shell, webshell, RCE, atau payload destruktif; batas laju dan proteksi SSRF tetap aktif.
         </p>
       </section>
+      <SubdomainLiveAudit domain={domain} />
     </div>
   );
 }

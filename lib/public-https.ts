@@ -23,13 +23,15 @@ interface RequestOptions {
   contentType?: string;
   origin?: string;
   referer?: string;
+  authorization?: string;
+  cookie?: string;
 }
 
 export async function requestPublicHttps(rawUrl: string, options: RequestOptions): Promise<PublicHttpsResponse> {
   const started = performance.now();
   const { url, resolvedIp } = await assertPublicHttpsTarget(rawUrl, options.signal);
   options.signal.throwIfAborted();
-  const { method, signal, userAgent, accept = "*/*", maxBodyBytes = 0, body, contentType, origin, referer } = options;
+  const { method, signal, userAgent, accept = "*/*", maxBodyBytes = 0, body, contentType, origin, referer, authorization, cookie } = options;
 
   return new Promise((resolve, reject) => {
     // Pakai IP hasil validasi untuk soket dan hostname asli untuk Host serta TLS.
@@ -51,6 +53,8 @@ export async function requestPublicHttps(rawUrl: string, options: RequestOptions
         ...(body ? { "Content-Length": String(body.length) } : {}),
         ...(origin ? { Origin: origin } : {}),
         ...(referer ? { Referer: referer } : {}),
+        ...(authorization ? { Authorization: authorization } : {}),
+        ...(cookie ? { Cookie: cookie } : {}),
       },
     }, (res) => {
       const headers = new Headers();
