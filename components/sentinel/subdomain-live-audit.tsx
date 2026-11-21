@@ -16,7 +16,21 @@ type LiveRow = {
   hsts: boolean;
   frameProtection: boolean;
   nosniff: boolean;
-  fileForms: Array<{ endpoint: string; fields: string[] }>;
+  fileForms: Array<{
+    endpoint: string;
+    fields: string[];
+    test?: {
+      state: "tested" | "error" | "skipped";
+      field: string;
+      statusCode?: number;
+      accepted?: boolean;
+      filename?: string;
+      sha256?: string;
+      links?: Array<{ url: string; sameOrigin: boolean }>;
+      publicRetrieval?: { statusCode: number; contentMatchesSample: boolean } | null;
+      error?: string;
+    };
+  }>;
   cname: string | null;
   takeoverRisk: TakeoverRisk;
   takeoverReason: string | null;
@@ -126,7 +140,7 @@ export function SubdomainLiveAudit({ domain }: { domain: string }) {
           </div>
           <div>
             <h2 className="font-semibold">Audit live semua subdomain</h2>
-            <p className="mt-1 max-w-2xl text-xs leading-relaxed text-muted">Temukan hostname dari Certificate Transparency, lalu cek HTTPS publik, CNAME takeover, security headers, challenge edge, dan form upload pada halaman awal setiap host.</p>
+            <p className="mt-1 max-w-2xl text-xs leading-relaxed text-muted">Temukan hostname dari Certificate Transparency, cek HTTPS/CNAME/header, lalu kirim sampel teks otomatis jika form upload ditemukan.</p>
           </div>
         </div>
         <button
@@ -136,13 +150,13 @@ export function SubdomainLiveAudit({ domain }: { domain: string }) {
           className="flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-lg border border-accent/30 bg-accent/10 px-3 text-xs font-semibold text-accent hover:bg-accent/15 disabled:cursor-wait disabled:opacity-50"
         >
           {busy ? <Loader2 aria-hidden className="size-4 motion-safe:animate-spin" /> : <Radar aria-hidden className="size-4" />}
-          {busy ? "Cek subdomain…" : "Cek semua subdomain"}
+          {busy ? "Cek subdomain + POST…" : "Cek subdomain + POST"}
         </button>
       </div>
 
       <p className="flex items-start gap-2 text-xs leading-relaxed text-muted">
         <ShieldCheck aria-hidden className="mt-0.5 size-4 shrink-0 text-ok" />
-        Hanya admin. Maksimal 100 nama dari CT plus domain induk; hostname privat/internal dilewati oleh SSRF guard. Hasil CT bukan jaminan bahwa seluruh DNS subdomain telah ditemukan.
+        Hanya admin. Maksimal 100 nama CT plus domain induk; form upload yang ditemukan menerima sampel `.txt` acak non-eksekusi (maksimal 10 POST per audit). Host privat/internal dilewati. CT tidak menjamin seluruh DNS subdomain ditemukan.
       </p>
 
       {error && <p role="alert" className="rounded-lg border border-danger/30 bg-danger/5 p-3 text-sm text-danger">{error}</p>}
@@ -200,7 +214,23 @@ export function SubdomainLiveAudit({ domain }: { domain: string }) {
                     </td>
                     <td className="px-3 py-3 text-muted">
                       {row.fileForms.length ? row.fileForms.map((form) => (
-                        <p key={form.endpoint} className="max-w-[340px] break-all">POST {form.endpoint} · field {form.fields.join(", ")}</p>
+                        <div key={form.endpoint} className="max-w-[360px] space-y-1 break-all">
+                          <p>POST {form.endpoint} · field {form.fields.join(", ")}</p>
+                          {form.test?.state === "tested" && (
+                            <p className={form.test.accepted ? "text-ok" : "text-warn"}>
+                              HTTP {form.test.statusCode} · {form.test.accepted ? "sampel diterima" : "ditolak"} · {form.test.filename}
+                            </p>
+                          )}
+                          {form.test?.state === "tested" && form.test.sha256 && <p className="text-muted">SHA-256 {form.test.sha256}</p>}
+                          {form.test?.state === "tested" && form.test.publicRetrieval?.contentMatchesSample && (
+                            <p className="text-ok">File bisa dibaca publik; konten cocok dengan sampel.</p>
+                          )}
+                          {form.test?.links?.map((link) => (
+                            <a key={link.url} href={link.url} target="_blank" rel="noreferrer" className="block text-accent underline">{link.url}</a>
+                          ))}
+                          {form.test?.state === "error" && <p className="text-warn">POST tidak terkirim: {form.test.error}</p>}
+                          {form.test?.state === "skipped" && <p className="text-muted">POST dilewati: {form.test.error}</p>}
+                        </div>
                       )) : "Tidak ditemukan di halaman awal"}
                     </td>
                     <td className="px-3 py-3 text-muted">

@@ -1,3 +1,4 @@
+import { createHash, randomBytes } from "node:crypto";
 import { NextResponse } from "next/server";
 import { guardAdmin, noStore } from "@/lib/sentinel/admin-auth";
 import { normalizeDomainCheckTarget } from "@/lib/sentinel/domain-check";
@@ -5,12 +6,26 @@ import { lookupSubdomainsFromCrtSh } from "@/lib/subdomain-watch/crt";
 import { checkSubdomainTakeover } from "@/lib/subdomain-watch/takeover-check";
 import type { TakeoverRisk } from "@/lib/subdomain-watch/types";
 import { requestPublicHttps } from "@/lib/public-https";
+import { testFileUpload } from "@/lib/sentinel/domain-check";
 import { assertPublicHttpsTarget, SsrfBlockedError } from "@/lib/ssrf-guard";
 import { rateLimit } from "@/lib/sentinel/redis";
 import { extractRequestIdentity, logUserActivity } from "@/lib/activity-store";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
+const MAX_AUTO_UPLOAD_POSTS = 10;
+
+type AutoUploadResult = {
+  state: "tested" | "error" | "skipped";
+  field: string;
+  statusCode?: number;
+  accepted?: boolean;
+  filename?: string;
+  sha256?: string;
+  links?: Array<{ url: string; sameOrigin: boolean }>;
+  publicRetrieval?: { statusCode: number; contentMatchesSample: boolean } | null;
+  error?: string;
+};
 
 type LiveSubdomainResult = {
   host: string;
@@ -23,7 +38,7 @@ type LiveSubdomainResult = {
   hsts: boolean;
   frameProtection: boolean;
   nosniff: boolean;
-  fileForms: Array<{ endpoint: string; fields: string[] }>;
+  fileForms: Array<{ endpoint: string; fields: string[]; test?: AutoUploadResult }>;
   cname: string | null;
   takeoverRisk: TakeoverRisk;
   takeoverReason: string | null;
@@ -54,7 +69,10 @@ function findFileForms(html: string, origin: string): LiveSubdomainResult["fileF
     try {
       const endpoint = new URL(action, origin);
       if (endpoint.origin === origin && endpoint.protocol === "https:" && !endpoint.username && !endpoint.password) {
-        forms.push({ endpoint: endpoint.href, fields: [...new Set(fields)] });
+        const uniqueFields = [...new Set(fields)];
+        if (!forms.some((form) => form.endpoint === endpoint.href && form.fields.join("\0") === uniqueFields.join("\0"))) {
+          forms.push({ endpoint: endpoint.href, fields: uniqueFields });
+        }
       }
     } catch {
       // Skip malformed form actions.
@@ -176,7 +194,65 @@ export async function POST(req: Request) {
   }
   await Promise.all(Array.from({ length: Math.min(5, hosts.length) }, () => worker()));
 
+  const uploadTargets = rows.flatMap((row) => row.fileForms.map((form) => ({ row, form })));
+  const testTargets = uploadTargets.slice(0, MAX_AUTO_UPLOAD_POSTS);
+  for (const target of uploadTargets.slice(MAX_AUTO_UPLOAD_POSTS)) {
+    target.form.test = { state: "skipped", field: target.form.fields[0] ?? "", error: `Batas ${MAX_AUTO_UPLOAD_POSTS} POST sampel per audit.` };
+  }
+
+  let uploadCursor = 0;
+  async function uploadWorker() {
+    while (uploadCursor < testTargets.length) {
+      const target = testTargets[uploadCursor++];
+      const field = target.form.fields[0];
+      if (!field) continue;
+      const sampleId = randomBytes(6).toString("hex");
+      const filename = `sentinel-test-${sampleId}.txt`;
+      const sample = Buffer.from(`Sentinel-ID benign upload probe ${sampleId}\n`, "utf8");
+      try {
+        const result = await testFileUpload({
+          domain: target.row.host,
+          endpoint: new URL(target.form.endpoint),
+          fieldName: field,
+          filename,
+          file: sample,
+          signal: AbortSignal.timeout(8000),
+        });
+        const safeLinks = result.links
+          .filter((link) => {
+            if (!link.sameOrigin) return false;
+            try {
+              const url = new URL(link.url);
+              return !url.search && url.pathname.split("/").some((segment) => decodeURIComponent(segment) === filename);
+            } catch {
+              return false;
+            }
+          })
+          .map((link) => {
+            const url = new URL(link.url);
+            url.search = "";
+            return { url: url.href, sameOrigin: true };
+          });
+        target.form.test = {
+          state: "tested",
+          field,
+          statusCode: result.statusCode,
+          accepted: result.accepted,
+          filename,
+          sha256: createHash("sha256").update(sample).digest("hex"),
+          links: safeLinks,
+          publicRetrieval: result.publicRetrieval,
+        };
+      } catch {
+        target.form.test = { state: "error", field, error: "Endpoint tidak dapat diuji melalui HTTPS publik." };
+      }
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(2, testTargets.length) }, () => uploadWorker()));
+
   const liveCount = rows.filter((row) => row.statusCode !== null).length;
+  const autoPostCount = testTargets.length;
+  const acceptedPostCount = testTargets.filter((target) => target.form.test?.accepted === true).length;
   await logUserActivity({
     req,
     ip: identity.ip,
@@ -186,8 +262,8 @@ export async function POST(req: Request) {
     action: "Audit live semua subdomain CT oleh admin",
     target: rootDomain,
     status: "SUCCESS",
-    summary: `${liveCount}/${rows.length} host merespons; sumber ${discovery.source ?? "CT"}.`,
-    meta: { found: discovery.totalBeforeLimit, checked: rows.length, live: liveCount, source: discovery.source },
+    summary: `${liveCount}/${rows.length} host merespons; ${acceptedPostCount}/${autoPostCount} POST sampel diterima; sumber ${discovery.source ?? "CT"}.`,
+    meta: { found: discovery.totalBeforeLimit, checked: rows.length, live: liveCount, autoPostCount, acceptedPostCount, source: discovery.source },
   }).catch(() => {});
 
   return NextResponse.json({

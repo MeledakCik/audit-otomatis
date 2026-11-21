@@ -149,7 +149,14 @@ export async function testFileUpload(input: {
     .trim()
     .slice(0, 360);
   const links = safeUploadLinks(result.bodyPrefix, contentType, input.endpoint, result.headers.get("location") ?? undefined);
-  const storedLink = links.find((link) => link.sameOrigin);
+  const storedLink = links.find((link) => {
+    if (!link.sameOrigin) return false;
+    try {
+      return new URL(link.url).pathname.split("/").some((segment) => decodeURIComponent(segment) === input.filename);
+    } catch {
+      return false;
+    }
+  });
   let publicRetrieval: { statusCode: number; contentMatchesSample: boolean } | null = null;
 
   if (result.statusCode >= 200 && result.statusCode < 300 && storedLink) {
