@@ -54,7 +54,7 @@ function parsePage(origin: string, pageUrl: string, html: string): PageParseResu
     if (!resolved) return;
     try {
       const u = new URL(resolved);
-      if (u.hostname !== originUrl.hostname) return;
+      if (u.origin !== originUrl.origin) return;
       u.hash = "";
       internalLinks.push(normalizeCrawlUrl(u.toString()));
     } catch {
@@ -199,7 +199,7 @@ export async function crawlSite(
         const res = await fetch(normUrl, {
           method: "GET",
           headers: chromeHeaders(next.depth > 0 ? origin : undefined, cfClearance),
-          redirect: "follow",
+          redirect: "manual",
         });
         const body = await res.text();
         return { status: res.status, headers: res.headers, body };

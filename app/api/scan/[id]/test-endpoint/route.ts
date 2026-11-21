@@ -2,6 +2,7 @@ import { getScan } from "@/lib/scan-store";
 import { chromeHeaders } from "@/lib/crawler";
 import { isPrivateOrReservedHost } from "@/lib/validate-domain";
 import { logUserActivity } from "@/lib/activity-store";
+import { guardPrivateScan } from "@/lib/sentinel/scan-access";
 
 export const runtime = "nodejs";
 
@@ -32,6 +33,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   if (!scan) {
     return Response.json({ error: "Scan tidak ditemukan atau sudah kedaluwarsa." }, { status: 404 });
   }
+  const denied = await guardPrivateScan(req, scan);
+  if (denied) return denied;
 
   let body: { url?: string };
   try {
@@ -86,7 +89,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const res = await fetch(target.toString(), {
       method: "GET",
       headers: chromeHeaders(),
-      redirect: "follow",
+      redirect: "manual",
       signal: controller.signal,
     });
 

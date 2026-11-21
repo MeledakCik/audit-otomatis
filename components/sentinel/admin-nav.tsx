@@ -7,7 +7,7 @@ import { Activity, ArrowUpRight, FlaskConical, KeyRound, Lock, LogOut } from "lu
 import { cn } from "@/lib/utils";
 
 const items = [
-  { href: "/admin/test", label: "Uji Domain", icon: FlaskConical },
+  { href: "/admin/test", label: "Audit", icon: FlaskConical },
   { href: "/admin/activities", label: "Aktivitas", icon: Activity },
   { href: "/admin/vault", label: "Vault", icon: Lock },
   { href: "/admin/requests", label: "Klaim", icon: KeyRound },

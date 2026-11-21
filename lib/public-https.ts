@@ -14,18 +14,22 @@ export interface PublicHttpsResponse {
 }
 
 interface RequestOptions {
-  method: "GET" | "HEAD";
+  method: "GET" | "HEAD" | "POST";
   signal: AbortSignal;
   userAgent: string;
   accept?: string;
   maxBodyBytes?: number;
+  body?: Buffer;
+  contentType?: string;
+  origin?: string;
+  referer?: string;
 }
 
 export async function requestPublicHttps(rawUrl: string, options: RequestOptions): Promise<PublicHttpsResponse> {
   const started = performance.now();
   const { url, resolvedIp } = await assertPublicHttpsTarget(rawUrl, options.signal);
   options.signal.throwIfAborted();
-  const { method, signal, userAgent, accept = "*/*", maxBodyBytes = 0 } = options;
+  const { method, signal, userAgent, accept = "*/*", maxBodyBytes = 0, body, contentType, origin, referer } = options;
 
   return new Promise((resolve, reject) => {
     // Pakai IP hasil validasi untuk soket dan hostname asli untuk Host serta TLS.
@@ -43,6 +47,10 @@ export async function requestPublicHttps(rawUrl: string, options: RequestOptions
         "User-Agent": userAgent,
         "Accept": accept,
         "Accept-Encoding": "identity",
+        ...(contentType ? { "Content-Type": contentType } : {}),
+        ...(body ? { "Content-Length": String(body.length) } : {}),
+        ...(origin ? { Origin: origin } : {}),
+        ...(referer ? { Referer: referer } : {}),
       },
     }, (res) => {
       const headers = new Headers();
@@ -89,6 +97,6 @@ export async function requestPublicHttps(rawUrl: string, options: RequestOptions
       res.once("end", () => finish(false));
     });
     req.once("error", reject);
-    req.end();
+    req.end(body);
   });
 }

@@ -10,7 +10,7 @@ export default async function ScanReportPage({
   const { id } = await params;
   const scan = await getScan(id);
 
-  if (!scan) {
+  if (!scan || scan.adminOnly) {
     notFound();
   }
 

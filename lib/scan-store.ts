@@ -67,11 +67,12 @@ function scheduleMemCleanup(id: string) {
   }, SCAN_TTL_SECONDS * 1000).unref?.();
 }
 
-function freshState(id: string, domain: string, origin: string): ScanState {
+function freshState(id: string, domain: string, origin: string, adminOnly = false): ScanState {
   return {
     id,
     domain,
     origin,
+    ...(adminOnly ? { adminOnly: true } : {}),
     status: "queued",
     createdAt: Date.now(),
     logs: [],
@@ -100,12 +101,12 @@ async function persistMetaToDb(id: string, force = false): Promise<void> {
   if (!force && now - prev < 3000) return;
   lastPersist.set(id, now);
 
-  const { logs: _logs, ...meta } = state;
+  const meta = Object.fromEntries(Object.entries(state).filter(([key]) => key !== "logs")) as ScanMeta;
   await getKv().setJSON(metaKey(id), meta, SCAN_TTL_SECONDS);
 }
 
-export async function createScan(id: string, domain: string, origin: string): Promise<ScanState> {
-  const state = freshState(id, domain, origin);
+export async function createScan(id: string, domain: string, origin: string, options?: { adminOnly?: boolean }): Promise<ScanState> {
+  const state = freshState(id, domain, origin, options?.adminOnly);
   memScans.set(id, state);
   scheduleMemCleanup(id);
   await persistMetaToDb(id, true);
@@ -351,6 +352,7 @@ export async function setDiscoveredEndpoints(id: string, endpoints: DiscoveredEn
     state.endpoints = endpoints;
   }
   await emit(id, { type: "endpoints", endpoints });
+  await persistMetaToDb(id, true);
 }
 
 export async function setGraph(id: string, graph: GraphData): Promise<void> {

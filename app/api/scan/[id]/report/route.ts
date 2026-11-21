@@ -1,5 +1,6 @@
 import { getScan } from "@/lib/scan-store";
 import { renderPentestReportHtml } from "@/lib/report-html";
+import { guardPrivateScan } from "@/lib/sentinel/scan-access";
 
 export async function GET(
   req: Request,
@@ -11,6 +12,8 @@ export async function GET(
   if (!scan) {
     return new Response("Scan tidak ditemukan.", { status: 404 });
   }
+  const denied = await guardPrivateScan(req, scan);
+  if (denied) return denied;
 
   const url = new URL(req.url);
   const download = url.searchParams.get("download") === "1";

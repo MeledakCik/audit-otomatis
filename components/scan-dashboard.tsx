@@ -9,6 +9,7 @@ import { FindingsTable } from "@/components/findings-table";
 import { EndpointsTable } from "@/components/endpoints-table";
 import { GraphView } from "@/components/graph-view";
 import { SentinelAudit } from "@/components/sentinel/sentinel-audit";
+import { DiscoveredUploadTest } from "@/components/sentinel/discovered-upload-test";
 import { VerifiedBadge } from "@/components/verified-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,9 +32,11 @@ const SEV_ORDER: Severity[] = ["CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"];
 export function ScanDashboard({
   scanId,
   domain,
+  adminMode = false,
 }: {
   scanId: string;
   domain: string;
+  adminMode?: boolean;
 }) {
   const { connect, status, logs, findings, endpoints, blockedReason } =
     useScanStream();
@@ -57,6 +60,9 @@ export function ScanDashboard({
 
   const isTerminal =
     status === "done" || status === "error" || status === "blocked_cloudflare" || status === "stopped";
+  const uploadTargets = adminMode && findings.some((finding) => finding.category === "php-upload")
+    ? endpoints.filter((endpoint) => endpoint.method === "POST" && endpoint.fileFields?.length)
+    : [];
 
   return (
     <div className="flex flex-1 flex-col min-h-full">
@@ -65,9 +71,9 @@ export function ScanDashboard({
         <div className="mx-auto max-w-6xl px-4 sm:px-6 py-3.5 flex flex-wrap items-center justify-between gap-3 rounded-[20px] shadow-sm">
           <div className="flex items-center gap-3 min-w-0">
             <Link
-              href="/dashboard"
+              href={adminMode ? "/admin/test" : "/dashboard"}
               className="flex items-center justify-center h-9 w-9 rounded-xl border border-border bg-foreground/[0.03] hover:bg-foreground/[0.08] text-soft transition-colors shrink-0"
-              title="Kembali ke Beranda Scan"
+              title={adminMode ? "Kembali ke Security Audit" : "Kembali ke Beranda Scan"}
             >
               <ArrowLeft className="h-4 w-4" />
             </Link>
@@ -82,7 +88,7 @@ export function ScanDashboard({
                 </span>
               </div>
               <div className="text-xs font-mono text-muted">
-                Full Passive Audit &amp; Sentinel Encrypted Vault
+                {adminMode ? "Audit keamanan bertahap · scope admin" : "Full Passive Audit & Sentinel Encrypted Vault"}
               </div>
             </div>
           </div>
@@ -90,7 +96,7 @@ export function ScanDashboard({
           <div className="flex items-center gap-2.5 flex-wrap">
             <VerifiedBadge variant="header" className="hidden md:inline-flex" />
             <StatusPill status={status} />
-            <Link href={`/scan/${scanId}/report`}>
+            <Link href={adminMode ? `/api/scan/${scanId}/report` : `/scan/${scanId}/report`}>
               <Button
                 variant="outline"
                 size="sm"
@@ -180,24 +186,26 @@ export function ScanDashboard({
             <span>Temuan &amp; Live Log ({findings.length})</span>
           </button>
 
-          <button
-            type="button"
-            onClick={() => setActiveTab("sentinel")}
-            className={cn(
-              "inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-mono font-bold transition-all cursor-pointer",
-              activeTab === "sentinel"
-                ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white"
-                : "border border-purple-500/30 bg-purple-500/10 text-purple-200 hover:bg-purple-500/20"
-            )}
-          >
-            <Lock className="h-3.5 w-3.5" />
-            <span>Sentinel Vault &amp; Klaim Domain</span>
-            {counts.CRITICAL > 0 && (
-              <span className="rounded-full bg-red-500 px-1.5 py-0.2 text-xs text-white font-extrabold">
-                {counts.CRITICAL} CRIT
-              </span>
-            )}
-          </button>
+          {!adminMode && (
+            <button
+              type="button"
+              onClick={() => setActiveTab("sentinel")}
+              className={cn(
+                "inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-mono font-bold transition-all cursor-pointer",
+                activeTab === "sentinel"
+                  ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white"
+                  : "border border-purple-500/30 bg-purple-500/10 text-purple-200 hover:bg-purple-500/20"
+              )}
+            >
+              <Lock className="h-3.5 w-3.5" />
+              <span>Sentinel Vault &amp; Klaim Domain</span>
+              {counts.CRITICAL > 0 && (
+                <span className="rounded-full bg-red-500 px-1.5 py-0.2 text-xs text-white font-extrabold">
+                  {counts.CRITICAL} CRIT
+                </span>
+              )}
+            </button>
+          )}
 
           <button
             type="button"
@@ -224,13 +232,15 @@ export function ScanDashboard({
                     <ShieldAlert className="h-4 w-4 text-purple-400" />
                     <span>Daftar Temuan Keamanan ({findings.length})</span>
                   </CardTitle>
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab("sentinel")}
-                    className="text-xs font-mono text-purple-300 hover:text-purple-200 underline cursor-pointer"
-                  >
-                    Buka Sentinel Vault &amp; Klaim Kepemilikan →
-                  </button>
+                  {!adminMode && (
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab("sentinel")}
+                      className="text-xs font-mono text-purple-300 hover:text-purple-200 underline cursor-pointer"
+                    >
+                      Buka Sentinel Vault &amp; Klaim Kepemilikan →
+                    </button>
+                  )}
                 </CardHeader>
                 <div className="overflow-y-auto thin-scroll max-h-[50vh] lg:max-h-[62vh]">
                   <FindingsTable findings={findings} />
@@ -253,15 +263,28 @@ export function ScanDashboard({
               </Card>
             </div>
 
-            {/* Integrated Sentinel Vault & Domain Claim directly below findings */}
-            <div className="pt-2">
-              <SentinelAudit initialDomain={domain} embedded autoLoadPublic />
-            </div>
+            {uploadTargets.length > 0 && (
+              <section className="space-y-3 rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4 sm:p-5">
+                <div>
+                  <h2 className="font-semibold text-amber-200">Form upload terdeteksi</h2>
+                  <p className="mt-1 text-xs leading-relaxed text-muted">Pilih endpoint yang ditemukan untuk satu validasi POST aman. Hanya sampel .txt non-eksekusi; hasil 2xx belum membuktikan file bisa dieksekusi.</p>
+                </div>
+                {uploadTargets.map((endpoint) => endpoint.fileFields?.map((fieldName) => (
+                  <DiscoveredUploadTest key={`${endpoint.url}:${fieldName}`} scanId={scanId} endpoint={endpoint.url} fieldName={fieldName} />
+                )))}
+              </section>
+            )}
+
+            {!adminMode && (
+              <div className="pt-2">
+                <SentinelAudit initialDomain={domain} embedded autoLoadPublic />
+              </div>
+            )}
           </div>
         )}
 
         {/* Tab 2: Dedicated Sentinel Vault & Domain Ownership Claim */}
-        {activeTab === "sentinel" && (
+        {!adminMode && activeTab === "sentinel" && (
           <div className="animate-fade-up">
             <SentinelAudit initialDomain={domain} embedded autoLoadPublic />
           </div>

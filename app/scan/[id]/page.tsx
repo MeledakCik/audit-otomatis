@@ -15,6 +15,8 @@ export default async function ScanPage({
   const sp = await searchParams;
   let scan = await getScan(id);
 
+  if (scan?.adminOnly) notFound();
+
   if (!scan && sp?.domain) {
     const cleanDomain = sp.domain.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/\/.*$/, "");
     if (cleanDomain) {

@@ -1,7 +1,8 @@
 import { getScan } from "@/lib/scan-store";
+import { guardPrivateScan } from "@/lib/sentinel/scan-access";
 
 export async function GET(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
@@ -13,6 +14,8 @@ export async function GET(
       headers: { "Content-Type": "application/json" },
     });
   }
+  const denied = await guardPrivateScan(req, scan);
+  if (denied) return denied;
 
   const filename = `graph-${scan.domain}-${scan.id}.json`;
 

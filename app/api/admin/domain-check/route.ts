@@ -1,41 +1,20 @@
 import { NextResponse } from "next/server";
 import { guardAdmin, noStore } from "@/lib/sentinel/admin-auth";
-import { checkDomain, hasCurrentDomainProof } from "@/lib/sentinel/domain-check";
+import { checkDomain, normalizeDomainCheckTarget } from "@/lib/sentinel/domain-check";
 import { rateLimit } from "@/lib/sentinel/redis";
-import { AUTH_KEY_RE, getAuth, listAuth } from "@/lib/sentinel/store";
 import { SsrfBlockedError } from "@/lib/ssrf-guard";
 
 export const runtime = "nodejs";
 export const maxDuration = 15;
-
-export async function GET(req: Request) {
-  const denied = await guardAdmin(req);
-  if (denied) return denied;
-
-  const domains = new Map<string, { key: string; domain: string }>();
-  for (const { key, rec } of await listAuth()) {
-    if (hasCurrentDomainProof(rec) && !domains.has(rec.domain)) {
-      domains.set(rec.domain, { key, domain: rec.domain });
-    }
-  }
-  const items = Array.from(domains.values()).sort((a, b) => a.domain.localeCompare(b.domain));
-  return NextResponse.json({ items }, { headers: noStore });
-}
 
 export async function POST(req: Request) {
   const denied = await guardAdmin(req);
   if (denied) return denied;
 
   const body = await req.json().catch(() => null);
-  const match = typeof body?.key === "string" && body.key.length <= 332 && AUTH_KEY_RE.exec(body.key);
-  if (!match) {
-    return NextResponse.json({ error: "Pilih domain terverifikasi." }, { status: 400, headers: noStore });
-  }
-
-  const [, domain, userId] = match;
-  const record = await getAuth(domain, userId);
-  if (!record || record.domain !== domain || record.userId !== userId || !hasCurrentDomainProof(record)) {
-    return NextResponse.json({ error: "Bukti kepemilikan domain sudah tidak berlaku." }, { status: 409, headers: noStore });
+  const domain = normalizeDomainCheckTarget(body?.domain);
+  if (!domain) {
+    return NextResponse.json({ error: "Masukkan domain atau URL web yang valid." }, { status: 400, headers: noStore });
   }
 
   if (!(await rateLimit("admin-domain-check", "admin", 8, 60))) {

@@ -5,6 +5,7 @@ export interface DiscoveredEndpoint {
   method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
   source: string; // e.g. "/static/chunk.js:42" or "crawler:<a href>"
   payload?: string[]; // nama field body/payload, kalau bisa dideteksi statis (mis. dari JSON.stringify({...}) atau form input)
+  fileFields?: string[]; // input file dari form yang ditemukan; hanya untuk validasi upload bertahap
 }
 
 export interface FormInfo {
@@ -137,6 +138,7 @@ export interface ScanState {
   id: string;
   domain: string;
   origin: string;
+  adminOnly?: boolean;
   status: ScanStatus;
   createdAt: number;
   logs: ScanLogEvent[];

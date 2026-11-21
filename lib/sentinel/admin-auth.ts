@@ -55,10 +55,14 @@ export const cookieOpts = (maxAge: number) => ({
   maxAge,
 });
 
+export const noStore = { "Cache-Control": "private, no-store, max-age=0, must-revalidate" };
+
 /** Untuk route handler admin. Return Response kalau DITOLAK, null kalau lolos. */
 export async function guardAdmin(req: Request): Promise<NextResponse | null> {
   const token = (await cookies()).get(COOKIE)?.value;
-  if (!(await verifySession(token))) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!(await verifySession(token))) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401, headers: noStore });
+  }
 
   if (!["GET", "HEAD"].includes(req.method)) {
     // CSRF: cookie sudah SameSite=Strict; ini lapis kedua (Origin harus sama host).
@@ -66,9 +70,7 @@ export async function guardAdmin(req: Request): Promise<NextResponse | null> {
     const host = req.headers.get("host");
     let ok = false;
     try { ok = !!origin && !!host && new URL(origin).host === host; } catch { ok = false; }
-    if (!ok) return NextResponse.json({ error: "Bad origin" }, { status: 403 });
+    if (!ok) return NextResponse.json({ error: "Bad origin" }, { status: 403, headers: noStore });
   }
   return null;
 }
-
-export const noStore = { "Cache-Control": "no-store, max-age=0" };

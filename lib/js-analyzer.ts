@@ -367,7 +367,7 @@ export async function fetchJsFiles(
 
   for (const url of toFetch) {
     try {
-      const res = await fetch(url, { headers: chromeHeaders(), method: "GET" });
+      const res = await fetch(url, { headers: chromeHeaders(), method: "GET", redirect: "manual" });
       if (!res.ok) continue;
       const contentLength = res.headers.get("content-length");
       if (contentLength && parseInt(contentLength, 10) > MAX_JS_FILE_BYTES) {
@@ -406,7 +406,7 @@ export async function analyzeJsFiles(
 
   for (const url of toFetch) {
     try {
-      const res = await fetch(url, { headers: chromeHeaders(), method: "GET" });
+      const res = await fetch(url, { headers: chromeHeaders(), method: "GET", redirect: "manual" });
       if (!res.ok) continue;
       const contentLength = res.headers.get("content-length");
       if (contentLength && parseInt(contentLength, 10) > MAX_JS_FILE_BYTES) {

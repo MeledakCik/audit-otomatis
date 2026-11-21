@@ -152,8 +152,14 @@ export async function runScan(
     }
 
     await setStatus(scanId, "analyzing_js");
-    await log(scanId, `Mengunduh hingga ${Math.min(crawl.allScripts.length, 20)} file JS eksternal...`);
-    const jsFiles = await fetchJsFiles(crawl.allScripts, (msg) => log(scanId, msg));
+    const adminOnly = (await getScan(scanId))?.adminOnly === true;
+    const scriptUrls = adminOnly
+      ? crawl.allScripts.filter((url) => {
+          try { return new URL(url).origin === new URL(origin).origin; } catch { return false; }
+        })
+      : crawl.allScripts;
+    await log(scanId, `Mengunduh hingga ${Math.min(scriptUrls.length, 20)} file JS${adminOnly ? " pada origin target" : ""}...`);
+    const jsFiles = await fetchJsFiles(scriptUrls, (msg) => log(scanId, msg));
     await bumpRequestCount(scanId, jsFiles.length);
     await bumpJsFilesScanned(scanId, jsFiles.length);
 
@@ -676,15 +682,18 @@ function buildDiscoveredList(
   function add(ep: DiscoveredEndpoint) {
     let normalized: string;
     try {
-      normalized = new URL(ep.url, origin).toString();
+      const url = new URL(ep.url, origin);
+      if (url.origin !== new URL(origin).origin) return;
+      normalized = url.toString();
     } catch {
       return;
     }
     const key = `${ep.method} ${normalized}`;
     const existingIdx = out.findIndex((e) => `${e.method} ${e.url}` === key);
     if (existingIdx !== -1) {
-      if (!out[existingIdx].payload && ep.payload) {
-        out[existingIdx] = { ...ep, url: normalized };
+      const existing = out[existingIdx];
+      if ((!existing.payload && ep.payload) || (!existing.fileFields?.length && ep.fileFields?.length)) {
+        out[existingIdx] = { ...existing, ...ep, url: normalized };
       }
       return;
     }
@@ -701,6 +710,9 @@ function buildDiscoveredList(
       method,
       source: "crawler:form",
       ...(form.inputs.length > 0 ? { payload: form.inputs } : {}),
+      ...(form.fileInputs?.length
+        ? { fileFields: [...new Set(form.fileInputs.map((input) => input.name).filter(Boolean))] }
+        : {}),
     });
   }
   for (const ep of jsEndpoints) {
@@ -723,6 +735,7 @@ function buildTestTargets(
     let normalized: string;
     try {
       const u = new URL(url, origin);
+      if (u.origin !== new URL(origin).origin) return;
       for (const field of payloadFields ?? []) {
         if (field === "...spread" || u.searchParams.has(field)) continue;
         u.searchParams.set(field, "test");

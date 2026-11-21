@@ -79,7 +79,7 @@ async function tryFetchFile(url: string, origin: string, cfClearance?: string): 
     const res = await fetch(url, {
       method: "GET",
       headers: chromeHeaders(origin, cfClearance),
-      redirect: "follow",
+      redirect: "manual",
     });
     if (!res.ok) {
       return { path, found: false, status: res.status, extractedPaths: [] };

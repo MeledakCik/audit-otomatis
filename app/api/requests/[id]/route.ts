@@ -1,10 +1,11 @@
 import { getScan } from "@/lib/scan-store";
 import { detectTechStack } from "@/lib/detect-tech";
+import { guardPrivateScan } from "@/lib/sentinel/scan-access";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
@@ -15,6 +16,8 @@ export async function GET(
     if (!scan) {
       return Response.json({ error: `scan:${id}: not found` }, { status: 404 });
     }
+    const denied = await guardPrivateScan(req, scan);
+    if (denied) return denied;
 
     const pages = scan.pages ?? [];
     const techStack = detectTechStack(pages);
@@ -31,7 +34,6 @@ export async function GET(
       techStack,
     });
   } catch (err) {
-    // eslint-disable-next-line no-console
     console.error(`[api/requests/${id}] gagal ambil detail scan:`, err);
     const message = err instanceof Error ? err.message : "Gagal ambil detail scan.";
     return Response.json({ error: message }, { status: 500 });

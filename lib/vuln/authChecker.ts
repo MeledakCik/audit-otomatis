@@ -75,7 +75,7 @@ export async function checkAuthBypass(endpoint: string): Promise<AuthCheckResult
     res = await fetch(endpoint, {
       method: "GET",
       credentials: "omit",
-      redirect: "follow",
+      redirect: "manual",
       headers: { ...(chromeHeaders() as Record<string, string>), Accept: "application/json, text/plain, */*" },
     });
   } catch {

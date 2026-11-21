@@ -1,5 +1,6 @@
 import { getScan, getLogsSince } from "@/lib/scan-store";
 import type { ScanLogEvent } from "@/lib/types";
+import { guardPrivateScan } from "@/lib/sentinel/scan-access";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -39,6 +40,8 @@ export async function GET(
       }
     );
   }
+  const denied = await guardPrivateScan(req, scan);
+  if (denied) return denied;
 
   // Dukung resume: kalau browser reconnect (mis. karena stream sebelumnya
   // ditutup di batas MAX_STREAM_MS), EventSource otomatis kirim header ini

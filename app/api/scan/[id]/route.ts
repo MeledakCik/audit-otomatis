@@ -1,8 +1,9 @@
 import { getScan } from "@/lib/scan-store";
+import { guardPrivateScan } from "@/lib/sentinel/scan-access";
 
 
 export async function GET(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
@@ -11,6 +12,8 @@ export async function GET(
   if (!scan) {
     return Response.json({ error: "Scan tidak ditemukan." }, { status: 404 });
   }
+  const denied = await guardPrivateScan(req, scan);
+  if (denied) return denied;
 
   return Response.json({
     id: scan.id,

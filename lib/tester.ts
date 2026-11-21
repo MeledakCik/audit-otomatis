@@ -98,6 +98,7 @@ export async function testResponseLeakage(url: string, cfClearance?: string): Pr
     const res = await fetch(url, {
       method: "GET",
       headers: chromeHeaders(url, cfClearance),
+      redirect: "manual",
     });
     const text = await res.text();
     const cf = detectCloudflareChallenge(res.status, res.headers, text.slice(0, 2000));
@@ -134,6 +135,7 @@ export async function testAntiAutomation(url: string): Promise<Finding | null> {
       headers: {
         "User-Agent": "curl/8.0",
       },
+      redirect: "manual",
     });
     const text = await res.text();
     const cf = detectCloudflareChallenge(res.status, res.headers, text.slice(0, 2000));
@@ -293,6 +295,7 @@ export async function testSecurityHeaders(
       const res = await fetch(origin, {
         method: "GET",
         headers: chromeHeaders(undefined, cfClearance),
+        redirect: "manual",
       });
       status = res.status;
       headers = res.headers;
