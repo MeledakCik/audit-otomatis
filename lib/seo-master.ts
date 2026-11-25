@@ -632,7 +632,7 @@ export function buildMasterJsonLdGraph() {
         },
         sameAs: [
           "https://kasyaf-cv.my.id",
-          "https://github.com/MeledakCik/audit-otomatis",
+          "https://depupstudio.com/sentinel",
         ],
         areaServed: "Worldwide",
         knowsLanguage: ["id-ID", "en-US", "en-GB", "ms-MY", "ja-JP", "de-DE"],
