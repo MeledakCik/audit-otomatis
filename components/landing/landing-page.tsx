@@ -4,7 +4,7 @@ import {
   Check, Globe, AtSign, EyeOff, ServerCog, FileCheck2, Sparkles, Terminal
 } from "lucide-react";
 import { LandingNav } from "@/components/landing/landing-nav";
-import { AUTHOR } from "@/lib/author";
+import { AUTHOR, VENDOR } from "@/lib/author";
 import Image from "next/image";
 const FEATURES = [
   {
@@ -345,8 +345,17 @@ export function LandingPage() {
 
       <footer className="px-4 sm:px-6 pb-10 relative">
         <div className="max-w-6xl mx-auto border-t border-border/50 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted">
-          <span>
-            © {new Date().getFullYear()} Sentinel-ID · oleh{" "}
+          <span className="text-center sm:text-left">
+            © {new Date().getFullYear()} Sentinel-ID · produk{" "}
+            <a
+              href={VENDOR.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-foreground text-accent underline-offset-4 hover:underline transition-colors"
+            >
+              {VENDOR.name}
+            </a>{" "}
+            · oleh{" "}
             <a
               href={AUTHOR.websiteUrl}
               target="_blank"
@@ -356,7 +365,10 @@ export function LandingPage() {
               {AUTHOR.name}
             </a>
           </span>
-          <nav aria-label="Tautan footer" className="flex gap-6">
+          <nav aria-label="Tautan footer" className="flex flex-wrap justify-center gap-x-6 gap-y-2">
+            <a href={VENDOR.privacyUrl} target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">
+              Privasi
+            </a>
             <Link href="/docs" className="hover:text-foreground transition-colors">
               Dokumentasi
             </Link>

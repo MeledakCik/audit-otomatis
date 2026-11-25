@@ -11,7 +11,7 @@ import {
   PanelLeftClose, PanelLeftOpen, X, FileArchive,
 } from "lucide-react";
 import { SENTINEL_NAV_ITEMS, type NavModuleItem } from "@/lib/nav-items";
-import { AUTHOR } from "@/lib/author";
+import { AUTHOR, VENDOR } from "@/lib/author";
 
 export { SENTINEL_NAV_ITEMS };
 export type { NavModuleItem };
@@ -200,6 +200,10 @@ export function AppSidebar({
                 <a href={AUTHOR.instagramUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-soft hover:text-accent truncate">
                   <AtSign className="w-4 h-4 shrink-0" aria-hidden /> {AUTHOR.instagramHandle}
                 </a>
+              </div>
+              <div className="flex items-center gap-3 border-t border-border pt-2 text-xs text-muted-dim">
+                <a href={VENDOR.url} target="_blank" rel="noopener noreferrer" className="hover:text-accent truncate">{VENDOR.name}</a>
+                <a href={VENDOR.privacyUrl} target="_blank" rel="noopener noreferrer" className="hover:text-accent">Privasi</a>
               </div>
             </div>
           </div>
