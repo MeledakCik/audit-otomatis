@@ -227,7 +227,7 @@ export default function SSLScannerClient() {
       <div className="rounded-2xl border border-line bg-panel p-4 sm:p-6 lg:p-8">
         <div className="flex items-center gap-3 mb-4">
           <Lock className="h-4 w-4 text-ok" />
-          <span className="font-mono text-xs uppercase tracking-widest text-ok">
+          <span className="font-mono text-xs uppercase tracking-wider text-ok">
             Target Domain
           </span>
           <span className="h-px flex-1 bg-line" />

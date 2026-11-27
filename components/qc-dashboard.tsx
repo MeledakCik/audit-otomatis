@@ -49,7 +49,7 @@ export function QcDashboard({
               href="/qc"
               className="flex items-center gap-2.5 group min-w-0"
             >
-              <span className="h-2 w-2 rounded-full bg-accent shrink-0 shadow-[0_0_8px_1px_var(--accent)] animate-pulse" />
+              <span className="h-2 w-2 rounded-full bg-accent shrink-0 animate-pulse" />
               <span className="text-sm font-bold tracking-wide uppercase text-gradient-accent group-hover:brightness-125 transition-all truncate">
                 QC OTOMATIS &amp; SEO MASTER
               </span>
@@ -73,7 +73,7 @@ export function QcDashboard({
       <div className="flex-1 mx-auto w-full max-w-5xl px-4 sm:px-6 py-5 sm:py-6 flex flex-col gap-4">
         {status === "error" && errorMessage && (
           <div className="rounded-xl border border-sev-high/40 bg-sev-high/10 px-4 py-3 text-xs text-sev-high leading-relaxed animate-fade-up">
-            <span className="font-bold uppercase tracking-widest block mb-1">
+            <span className="font-bold uppercase tracking-wider block mb-1">
               QC dihentikan
             </span>
             {errorMessage}
@@ -192,7 +192,7 @@ export function QcDashboard({
                     </div>
                     {result.perf.metrics.lcpElement && (
                       <div className="rounded-lg border border-sev-high/30 bg-sev-high/[0.06] px-3 py-2">
-                        <div className="text-xs uppercase tracking-widest text-muted-dim mb-1">
+                        <div className="text-xs uppercase tracking-wider text-muted-dim mb-1">
                           Elemen Penyebab LCP
                         </div>
                         {result.perf.metrics.lcpElement.selector && (
@@ -243,7 +243,7 @@ export function QcDashboard({
               {result.content ? (
                 <div className="grid lg:grid-cols-2 gap-3 px-3 py-2">
                   <div className="min-h-0">
-                    <div className="text-xs uppercase tracking-widest text-muted-dim px-1 pb-1.5">
+                    <div className="text-xs uppercase tracking-wider text-muted-dim px-1 pb-1.5">
                       Broken Links ({result.content.brokenLinks.length})
                     </div>
                     <div className="overflow-y-auto thin-scroll max-h-[30vh] flex flex-col gap-1">
@@ -264,7 +264,7 @@ export function QcDashboard({
                     </div>
                   </div>
                   <div className="min-h-0">
-                    <div className="text-xs uppercase tracking-widest text-muted-dim px-1 pb-1.5">
+                    <div className="text-xs uppercase tracking-wider text-muted-dim px-1 pb-1.5">
                       A11y Issues
                     </div>
                     <div className="overflow-y-auto thin-scroll max-h-[30vh]">
@@ -303,7 +303,7 @@ export function QcDashboard({
 function MetricCell({ label, value }: { label: string; value: string | null }) {
   return (
     <div className="rounded-lg border border-border bg-surface-raised px-2.5 py-1.5">
-      <div className="text-xs uppercase tracking-widest text-muted-dim">
+      <div className="text-xs uppercase tracking-wider text-muted-dim">
         {label}
       </div>
       <div className="text-foreground">{value ?? "-"}</div>

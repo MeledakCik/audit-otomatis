@@ -81,7 +81,7 @@ export function ResultsTable({ report, checkedCount, onCheckMore, checkingMore, 
               <TabsTrigger value="all">All Subdomains ({report.rows.length})</TabsTrigger>
               <TabsTrigger
                 value="takeover"
-                className="data-[state=active]:!shadow-[0_0_0_1px_var(--sev-critical)] data-[state=active]:!text-sev-critical data-[state=active]:!bg-sev-critical/15"
+                className="data-[state=active]:!ring-1 data-[state=active]:!ring-sev-critical data-[state=active]:!text-sev-critical data-[state=active]:!bg-sev-critical/15"
               >
                 <ShieldAlert className="h-3 w-3" /> Potential Takeover ({highRiskRows.length})
               </TabsTrigger>
@@ -116,7 +116,7 @@ export function ResultsTable({ report, checkedCount, onCheckMore, checkingMore, 
         <div className="overflow-x-auto rounded-xl border border-border">
           <table className="w-full text-xs font-mono">
             <thead>
-              <tr className="border-b border-border text-xs uppercase tracking-widest text-muted-dim">
+              <tr className="border-b border-border text-xs uppercase tracking-wider text-muted-dim">
                 <th className="text-left px-4 py-2.5 font-semibold">Subdomain</th>
                 <th className="text-left px-4 py-2.5 font-semibold">Source</th>
                 <th className="text-left px-4 py-2.5 font-semibold">Status</th>

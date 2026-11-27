@@ -26,7 +26,7 @@ const STATUS: Record<PlatformStatus, { label: string; cls: string; icon: typeof 
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="rounded-xl border border-border bg-surface p-5 space-y-3">
-      <div className="text-xs font-mono tracking-widest uppercase text-accent font-semibold">{title}</div>
+      <div className="text-xs font-mono tracking-wider uppercase text-accent font-semibold">{title}</div>
       {children}
     </div>
   );

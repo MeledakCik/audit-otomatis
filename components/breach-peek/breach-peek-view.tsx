@@ -87,14 +87,14 @@ export function BreachPeekView() {
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-[1600px] mx-auto">
+    <div className="space-y-8">
       <div className="flex items-start gap-3">
         <div className="h-10 w-10 grid place-items-center rounded-xl bg-accent/10 border border-accent/20 text-accent shrink-0">
           <Radar className="h-5 w-5 text-foreground" strokeWidth={2.5} />
         </div>
         <div>
           <h1 className="text-lg font-extrabold tracking-tight text-foreground flex items-center gap-2">
-            Breach Peek <span className="text-xs font-bold uppercase tracking-widest text-accent">Free</span>
+            Breach Peek <span className="text-xs font-bold uppercase tracking-wider text-accent">Free</span>
             <Lock className="h-4 w-4 text-accent" />
           </h1>
           <p className="text-xs font-mono text-muted-dim">

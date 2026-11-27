@@ -39,12 +39,12 @@ export function LandingNav() {
 
   return (
     <header
-      className="fixed inset-x-0 top-0 z-50 px-3 sm:px-6"
-      style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 0.5rem)" }}
+      className="fixed inset-x-0 top-0 z-50 px-4 sm:px-6 lg:px-8 border-b border-border bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/70"
+      style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
     >
       <nav
         aria-label="Navigasi utama"
-        className="max-w-6xl mx-auto glass-panel rounded-2xl px-3 sm:px-4 py-2 flex items-center justify-between gap-3"
+        className="max-w-6xl mx-auto h-14 flex items-center justify-between gap-3"
       >
         {/* Brand */}
         <Link
@@ -52,10 +52,10 @@ export function LandingNav() {
           className="flex items-center gap-2.5 min-w-0"
           onClick={() => setOpen(false)}
         >
-          <span className="w-9 h-9 rounded-xl bg-gradient-accent flex items-center justify-center text-white shrink-0">
-            <Shield className="w-5 h-5" aria-hidden />
+          <span className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center text-accent-fg shrink-0">
+            <Shield className="w-4 h-4" aria-hidden />
           </span>
-          <span className="font-bold tracking-tight text-base truncate">
+          <span className="font-semibold tracking-tight text-[15px] truncate">
             Sentinel-ID
           </span>
         </Link>
@@ -66,7 +66,7 @@ export function LandingNav() {
             <li key={l.href}>
               <a
                 href={l.href}
-                className="px-3 py-2 rounded-lg text-sm text-soft hover:text-foreground hover:bg-foreground/5 transition-colors"
+                className="px-3 py-2 rounded-lg text-sm text-muted hover:text-foreground transition-colors"
               >
                 {l.label}
               </a>
@@ -79,25 +79,25 @@ export function LandingNav() {
           <button
             type="button"
             onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
-            className="p-2.5 rounded-xl border border-border hover:bg-foreground/5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
+            className="p-2 rounded-lg text-muted hover:text-foreground hover:bg-foreground/5 transition-colors"
             aria-label="Ganti tema terang/gelap"
           >
-            <Sun className="w-4 h-4 text-amber-400 hidden dark:block" aria-hidden />
-            <Moon className="w-4 h-4 text-indigo-600 dark:hidden" aria-hidden />
+            <Sun className="w-4 h-4 hidden dark:block" aria-hidden />
+            <Moon className="w-4 h-4 dark:hidden" aria-hidden />
           </button>
 
           <Link
             href="/dashboard"
-            className="hidden sm:inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-gradient-accent hover:brightness-110 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
+            className="hidden sm:inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg text-sm font-medium bg-accent text-accent-fg hover:bg-accent-dim transition-colors"
           >
-            Masuk ke Dashboard <ArrowRight className="w-4 h-4" aria-hidden />
+            Dashboard <ArrowRight className="w-4 h-4" aria-hidden />
           </Link>
 
           {/* Mobile toggle */}
           <button
             type="button"
             onClick={() => setOpen((v) => !v)}
-            className="md:hidden p-2.5 rounded-xl border border-border hover:bg-foreground/5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
+            className="md:hidden p-2 rounded-lg text-muted hover:text-foreground hover:bg-foreground/5 transition-colors"
             aria-label={open ? "Tutup menu" : "Buka menu"}
             aria-expanded={open}
             aria-controls={menuId}
@@ -114,11 +114,11 @@ export function LandingNav() {
       {/* Mobile menu panel */}
       <div
         id={menuId}
-        className={`md:hidden max-w-6xl mx-auto mt-2 glass-panel rounded-2xl overflow-hidden transition-[max-height,opacity] duration-200 ease-out ${
+        className={`md:hidden border-t border-border overflow-hidden transition-[max-height,opacity] duration-200 ease-out ${
           open ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
         }`}
       >
-        <ul className="p-2 flex flex-col">
+        <ul className="max-w-6xl mx-auto py-3 flex flex-col">
           {LINKS.map((l) => (
             <li key={l.href}>
               <a
@@ -130,11 +130,11 @@ export function LandingNav() {
               </a>
             </li>
           ))}
-          <li className="mt-1 pt-2 border-t border-border/60">
+          <li className="mt-2 pt-3 border-t border-border">
             <Link
               href="/dashboard"
               onClick={() => setOpen(false)}
-              className="inline-flex w-full items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-gradient-accent hover:brightness-110 transition"
+              className="inline-flex w-full items-center justify-center gap-2 h-10 rounded-lg text-sm font-medium bg-accent text-accent-fg hover:bg-accent-dim transition-colors"
             >
               Masuk ke Dashboard <ArrowRight className="w-4 h-4" aria-hidden />
             </Link>

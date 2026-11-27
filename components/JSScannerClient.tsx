@@ -164,7 +164,7 @@ export default function JSScannerClient() {
       {/* Input Section */}
       <div className="rounded-2xl border border-line bg-panel p-4 sm:p-6 lg:p-8">
         <div className="flex items-center gap-3 mb-4">
-          <span className="font-mono text-xs uppercase tracking-widest text-ok">
+          <span className="font-mono text-xs uppercase tracking-wider text-ok">
             Target URL
           </span>
           <span className="h-px flex-1 bg-line" />

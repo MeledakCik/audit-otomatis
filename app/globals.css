@@ -14,9 +14,9 @@
   --surface-raised: #ffffff;
   --panel: #ffffff;          /* kartu / tabel solid */
   --sunken: #f4f4f5;         /* area inset: code, log, input */
-  --line: #e4e4e7;           /* divider solid */
-  --border: #e4e4e7;
-  --border-strong: #c4b5fd;
+  --line: #ececef;           /* divider solid */
+  --border: #e7e7ea;
+  --border-strong: #d4d4d8;
   --foreground: #18181b;
   --soft: #3f3f46;           /* teks sekunder yang masih jelas */
   --muted: #52525b;
@@ -40,6 +40,7 @@
   --glass-bg: #ffffff;
   --glass-hi: transparent;
   --glass-shadow: none;
+  --shadow-card: 0 1px 2px rgba(24, 24, 27, 0.04);
   color-scheme: light;
 }
 
@@ -49,9 +50,9 @@
   --surface-raised: #18181b;
   --panel: #111113;
   --sunken: #0c0c0e;
-  --line: #27272a;
-  --border: #27272a;
-  --border-strong: #6d28d9;
+  --line: #222226;
+  --border: #232327;
+  --border-strong: #3f3f46;
   --foreground: #fafafa;
   --soft: #d4d4d8;
   --muted: #a1a1aa;
@@ -75,6 +76,7 @@
   --glass-bg: #111113;
   --glass-hi: transparent;
   --glass-shadow: none;
+  --shadow-card: none;
   color-scheme: dark;
 }
 
@@ -127,8 +129,12 @@ html {
 body {
   font-family: var(--font-sans);
   background: var(--background);
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
+
+h1, h2, h3 { line-height: 1.25; letter-spacing: -0.01em; }
 
 /* Kelas lama dipertahankan agar komponen tetap jalan, tapi tampil solid & tenang. */
 .bg-gradient-accent {
@@ -144,8 +150,8 @@ body {
 .glass-pill {
   background: var(--panel);
   border: 1px solid var(--border);
-  box-shadow: none;
-  transition: border-color 0.2s ease, background-color 0.2s ease;
+  box-shadow: var(--shadow-card);
+  transition: border-color 0.15s ease, background-color 0.15s ease;
 }
 .glass-pill { background: transparent; }
 
@@ -169,10 +175,11 @@ body {
   }
 }
 
-/* Mode hemat: diaktifkan otomatis oleh GlassCanvas pada perangkat menengah ke bawah */
-[data-perf="low"] .glass-panel,
-[data-perf="low"] .glass-pill {
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-  background: var(--surface-raised);
-}
+/* Gambar & media tidak pernah melebar keluar layar */
+img, video, canvas, svg { max-width: 100%; }
+
+/* Tabel lebar tetap bisa di-scroll di layar kecil */
+main table { font-variant-numeric: tabular-nums; }
+
+/* Blok kode/log panjang tidak merusak layout */
+pre { overflow-x: auto; }

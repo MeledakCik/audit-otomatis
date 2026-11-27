@@ -21,7 +21,7 @@ function StatusRow({
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <span
-            className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-bold tracking-widest uppercase ${
+            className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-bold tracking-wider uppercase ${
               pass ? "text-ok border-ok/40 bg-ok/10" : "text-sev-critical border-sev-critical/40 bg-sev-critical/10"
             }`}
           >

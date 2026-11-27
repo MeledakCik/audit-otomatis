@@ -210,8 +210,8 @@ export function SeoMasterView({ isDark = true }: { isDark?: boolean }) {
   const [copiedCode, setCopiedCode] = useState<boolean>(false);
 
   const glassCard = isDark
-    ? "bg-foreground/[0.04] backdrop-blur-2xl border border-foreground/[0.11] shadow-[0_24px_60px_-15px_rgba(0,0,0,0.65)]"
-    : "bg-foreground/75 backdrop-blur-2xl border border-slate-900/[0.08] shadow-[0_20px_50px_-12px_rgba(15,23,42,0.07)]";
+    ? "bg-foreground/[0.04] backdrop-blur-2xl border border-foreground/[0.11] shadow-[var(--shadow-card)]"
+    : "bg-foreground/75 backdrop-blur-2xl border border-slate-900/[0.08] shadow-[var(--shadow-card)]";
   const glassPill = isDark
     ? "bg-foreground/[0.06] backdrop-blur-xl border border-foreground/[0.1]"
     : "bg-foreground/85 backdrop-blur-xl border border-slate-900/[0.08]";
@@ -306,7 +306,7 @@ export const metadata: Metadata = {
   return (
     <div className="space-y-8">
       {/* Top Bento Hero for SEO Master */}
-      <div className={`rounded-3xl p-6 sm:p-8 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center ${glassCard}`}>
+      <div className={`rounded-2xl p-6 sm:p-8 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center ${glassCard}`}>
         <div className="lg:col-span-7 space-y-4">
           <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono text-emerald-500 ${glassPill}`}>
             <TrendingUp className="w-3.5 h-3.5" />
@@ -363,7 +363,7 @@ export const metadata: Metadata = {
       {/* Progressive-Disclosure Signal Inspector & 13 Hreflang Matrix */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left: 35+ Signals Categorized Inspector (7 cols) */}
-        <div className={`lg:col-span-7 rounded-3xl p-6 space-y-5 ${glassCard}`}>
+        <div className={`lg:col-span-7 rounded-2xl p-6 space-y-5 ${glassCard}`}>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h2 className="text-lg font-bold">Inspeksi Sinyal SEO Teknis</h2>
@@ -435,7 +435,7 @@ export const metadata: Metadata = {
         </div>
 
         {/* Right: Ready-to-Paste Rank #1 Code Generator (5 cols) */}
-        <div className={`lg:col-span-5 rounded-3xl p-6 flex flex-col justify-between space-y-4 ${glassCard}`}>
+        <div className={`lg:col-span-5 rounded-2xl p-6 flex flex-col justify-between space-y-4 ${glassCard}`}>
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <div>
@@ -500,8 +500,8 @@ export function SentinelVaultView({ isDark = true }: { isDark?: boolean }) {
   const [verifyNotice, setVerifyNotice] = useState<string>("");
 
   const glassCard = isDark
-    ? "bg-foreground/[0.04] backdrop-blur-2xl border border-foreground/[0.11] shadow-[0_24px_60px_-15px_rgba(0,0,0,0.65)]"
-    : "bg-foreground/75 backdrop-blur-2xl border border-slate-900/[0.08] shadow-[0_20px_50px_-12px_rgba(15,23,42,0.07)]";
+    ? "bg-foreground/[0.04] backdrop-blur-2xl border border-foreground/[0.11] shadow-[var(--shadow-card)]"
+    : "bg-foreground/75 backdrop-blur-2xl border border-slate-900/[0.08] shadow-[var(--shadow-card)]";
   const glassPill = isDark
     ? "bg-foreground/[0.06] backdrop-blur-xl border border-foreground/[0.1]"
     : "bg-foreground/85 backdrop-blur-xl border border-slate-900/[0.08]";
@@ -530,7 +530,7 @@ export function SentinelVaultView({ isDark = true }: { isDark?: boolean }) {
   return (
     <div className="space-y-8">
       {/* Top Bento Hero for Sentinel Vault AES-256-GCM */}
-      <div className={`rounded-3xl p-6 sm:p-8 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center ${glassCard}`}>
+      <div className={`rounded-2xl p-6 sm:p-8 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center ${glassCard}`}>
         <div className="lg:col-span-7 space-y-4">
           <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono text-pink-500 ${glassPill}`}>
             <Lock className="w-3.5 h-3.5" />
@@ -570,7 +570,7 @@ export function SentinelVaultView({ isDark = true }: { isDark?: boolean }) {
       {/* Main Grid: Encrypted Evidence Vault Table + Domain Ownership Claim Wizard */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left: Sensitive Artifacts & Redaction Inspector (7 cols) */}
-        <div className={`lg:col-span-7 rounded-3xl p-6 space-y-5 ${glassCard}`}>
+        <div className={`lg:col-span-7 rounded-2xl p-6 space-y-5 ${glassCard}`}>
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               <h2 className="text-lg font-bold">Brankas Bukti File Sensitif</h2>
@@ -648,10 +648,10 @@ export function SentinelVaultView({ isDark = true }: { isDark?: boolean }) {
         </div>
 
         {/* Right: Domain Ownership Claim Wizard (5 cols) */}
-        <div className={`lg:col-span-5 rounded-3xl p-6 flex flex-col justify-between space-y-5 ${glassCard}`}>
+        <div className={`lg:col-span-5 rounded-2xl p-6 flex flex-col justify-between space-y-5 ${glassCard}`}>
           <form onSubmit={handleVerifyOwnership} className="space-y-4">
             <div>
-              <span className="text-xs font-mono uppercase tracking-widest text-purple-400 font-semibold">
+              <span className="text-xs font-mono uppercase tracking-wider text-purple-400 font-semibold">
                 Verifikasi Kepemilikan Sah
               </span>
               <h2 className="text-lg font-bold mt-1">

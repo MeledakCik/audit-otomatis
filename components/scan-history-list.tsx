@@ -132,7 +132,7 @@ export function ScanHistoryList() {
               <div className="overflow-x-auto">
                 <table className="w-full text-xs font-mono">
                   <thead>
-                    <tr className="border-b border-border text-xs uppercase tracking-widest text-muted-dim">
+                    <tr className="border-b border-border text-xs uppercase tracking-wider text-muted-dim">
                       <th className="text-left font-semibold px-4 py-2.5">ID</th>
                       <th className="text-left font-semibold px-4 py-2.5">Hostname</th>
                       <th className="text-left font-semibold px-4 py-2.5">Date</th>

@@ -217,7 +217,7 @@ export default function ScanExposureClient() {
       <div className="rounded-2xl border border-line bg-panel p-4 sm:p-6 md:p-8 shadow-xl">
         {/* Target Domain Section Header */}
         <div className="flex items-center gap-3 mb-4">
-          <span className="font-mono text-xs font-semibold uppercase tracking-widest text-ok">
+          <span className="font-mono text-xs font-semibold uppercase tracking-wider text-ok">
             Target Domain
           </span>
           <span className="h-px flex-1 bg-line" />
@@ -337,7 +337,7 @@ export default function ScanExposureClient() {
             <div className="rounded-2xl border border-line bg-panel p-4 sm:p-6 shadow-xl">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <p className="font-mono text-xs font-semibold uppercase tracking-widest text-muted">
+                  <p className="font-mono text-xs font-semibold uppercase tracking-wider text-muted">
                     Ringkasan Hasil
                   </p>
                   <p className="mt-1 text-sm font-semibold text-foreground flex items-center gap-2">
@@ -403,7 +403,7 @@ export default function ScanExposureClient() {
           {/* Target Info */}
           <div className="rounded-2xl border border-line bg-panel p-4 sm:p-6 shadow-xl">
             <div className="flex items-center gap-3 mb-3">
-              <span className="font-mono text-xs font-semibold uppercase tracking-widest text-ok">
+              <span className="font-mono text-xs font-semibold uppercase tracking-wider text-ok">
                 Target Pemindaian
               </span>
               <span className="h-px flex-1 bg-line" />
@@ -421,7 +421,7 @@ export default function ScanExposureClient() {
           {/* Headers */}
           <div className="rounded-2xl border border-line bg-panel p-4 sm:p-6 shadow-xl">
             <div className="flex items-center gap-3 mb-4">
-              <span className="font-mono text-xs font-semibold uppercase tracking-widest text-ok">
+              <span className="font-mono text-xs font-semibold uppercase tracking-wider text-ok">
                 Header Respons
               </span>
               <span className="h-px flex-1 bg-line" />
@@ -456,7 +456,7 @@ export default function ScanExposureClient() {
           <div className="rounded-2xl border border-line bg-panel p-4 sm:p-6 shadow-xl">
             <div className="flex items-center justify-between gap-3 mb-4">
               <div className="flex items-center gap-3 flex-1">
-                <span className="font-mono text-xs font-semibold uppercase tracking-widest text-ok">
+                <span className="font-mono text-xs font-semibold uppercase tracking-wider text-ok">
                   Temuan Auditing
                 </span>
                 <span className="h-px flex-1 bg-line" />
@@ -517,7 +517,7 @@ export default function ScanExposureClient() {
           {result.sensitivePathCheck && (
             <div className="rounded-2xl border border-line bg-panel p-4 sm:p-6 shadow-xl">
               <div className="flex items-center gap-3 mb-4">
-                <span className="font-mono text-xs font-semibold uppercase tracking-widest text-warn">
+                <span className="font-mono text-xs font-semibold uppercase tracking-wider text-warn">
                   Hasil Pemeriksaan Path &amp; Status Brankas AES-256-GCM
                 </span>
                 <span className="h-px flex-1 bg-line" />

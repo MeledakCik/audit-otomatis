@@ -37,7 +37,7 @@ export function InputPanel({
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-surface shadow-[0_12px_32px_-16px_rgba(0,0,0,0.5)] p-4 space-y-4">
+    <div className="rounded-2xl border border-border bg-surface shadow-[var(--shadow-card)] p-4 space-y-4">
       <div className="flex rounded-xl border border-border-strong bg-surface-raised p-1">
         <ModeTab active={mode === "email"} onClick={() => setMode("email")} icon={Mail} label="Email" />
         <ModeTab active={mode === "domain"} onClick={() => setMode("domain")} icon={Globe} label="Domain" />
@@ -108,7 +108,7 @@ function ModeTab({
       onClick={onClick}
       className={cn(
         "flex-1 flex items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-semibold tracking-wide transition-colors",
-        active ? "bg-gradient-accent text-accent-fg shadow-[0_0_16px_-4px_var(--accent)]" : "text-muted hover:text-foreground"
+        active ? "bg-gradient-accent text-accent-fg" : "text-muted hover:text-foreground"
       )}
     >
       <Icon className="h-3.5 w-3.5" />

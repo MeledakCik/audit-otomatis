@@ -131,7 +131,7 @@ export default function NodeExplorerPage() {
       <div className="absolute bottom-1/3 right-10 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
 
       <div className="max-w-7xl mx-auto space-y-6 relative z-10">
-        <div className="flex flex-col gap-6 bg-gradient-to-br from-[#0b0f19]/90 to-[#070a12]/90 border border-zinc-800/80 p-6 md:p-8 rounded-3xl shadow-2xl backdrop-blur-xl relative overflow-hidden group">
+        <div className="flex flex-col gap-6 bg-gradient-to-br from-[#0b0f19]/90 to-[#070a12]/90 border border-zinc-800/80 p-6 md:p-8 rounded-2xl shadow-2xl backdrop-blur-xl relative overflow-hidden group">
           <div className="absolute top-0 right-0 w-64 h-32 bg-gradient-to-l from-emerald-500/5 to-transparent pointer-events-none" />
 
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -270,7 +270,7 @@ export default function NodeExplorerPage() {
           </div>
         )}
         {loading ? (
-          <div className="flex flex-col items-center justify-center p-24 bg-sunken/40 border border-zinc-800/80 rounded-3xl text-center space-y-4">
+          <div className="flex flex-col items-center justify-center p-24 bg-sunken/40 border border-zinc-800/80 rounded-2xl text-center space-y-4">
             <div className="relative">
               <div className="w-12 h-12 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin" />
               <div className="absolute inset-0 flex items-center justify-center">
@@ -282,7 +282,7 @@ export default function NodeExplorerPage() {
             </p>
           </div>
         ) : filteredNodes.length === 0 ? (
-          <div className="flex flex-col items-center justify-center p-20 bg-sunken/40 border border-zinc-800/80 rounded-3xl text-center space-y-3">
+          <div className="flex flex-col items-center justify-center p-20 bg-sunken/40 border border-zinc-800/80 rounded-2xl text-center space-y-3">
             <div className="p-4 rounded-2xl bg-panel border border-zinc-800 text-zinc-500">
               <AlertCircle className="w-8 h-8" />
             </div>
@@ -310,7 +310,7 @@ export default function NodeExplorerPage() {
                 <div
                   key={node.id || index}
                   onClick={() => setSelectedId(isSelected ? null : node.id)}
-                  className={`group relative flex flex-col justify-between p-5 rounded-3xl border transition-all duration-300 cursor-pointer backdrop-blur-xl shadow-xl hover:-translate-y-1 ${
+                  className={`group relative flex flex-col justify-between p-5 rounded-2xl border transition-all duration-300 cursor-pointer backdrop-blur-xl shadow-xl hover:-translate-y-1 ${
                     isSelected
                       ? "bg-accent/10 border border-accent/20 border-emerald-500/80 shadow-emerald-950/50 ring-2 ring-emerald-500/30 scale-[1.01]"
                       : "bg-sunken/70 hover:bg-panel/80 border-zinc-800/80 hover:border-zinc-700/80 hover:shadow-2xl"
@@ -388,7 +388,7 @@ export default function NodeExplorerPage() {
                     )}
                   </div>
                   {isSelected && (
-                    <div className="absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-emerald-500 via-emerald-300 to-transparent rounded-b-3xl shadow-[0_0_15px_rgba(16,185,129,0.8)]" />
+                    <div className="absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-emerald-500 via-emerald-300 to-transparent rounded-b-3xl" />
                   )}
                 </div>
               );

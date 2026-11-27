@@ -58,7 +58,7 @@ export function QcForm() {
       />
 
       <div className="flex flex-col gap-2.5 rounded-xl border border-border-strong bg-surface-raised px-3.5 py-3">
-        <span className="text-xs uppercase tracking-widest text-muted-dim">Modul QC</span>
+        <span className="text-xs uppercase tracking-wider text-muted-dim">Modul QC</span>
         <label className="flex items-center gap-2.5 cursor-pointer group">
           <Checkbox checked={seo} onCheckedChange={(v) => setSeo(v === true)} disabled={pending} />
           <span className="text-xs text-muted group-hover:text-foreground">SEO Master &amp; International</span>

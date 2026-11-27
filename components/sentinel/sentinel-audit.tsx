@@ -133,8 +133,8 @@ export function SentinelAudit(props: SentinelAuditProps = {}) {
   const isDark = propDark !== undefined ? propDark : detectedDark;
 
   const glassCard = isDark
-    ? "bg-[#110E20]/70 backdrop-blur-2xl border border-foreground/[0.09] shadow-[0_20px_50px_-15px_rgba(0,0,0,0.65)] text-soft"
-    : "bg-foreground/80 backdrop-blur-2xl border border-slate-900/[0.08] shadow-[0_16px_40px_-12px_rgba(15,23,42,0.06)] text-slate-900";
+    ? "bg-[#110E20]/70 backdrop-blur-2xl border border-foreground/[0.09] shadow-[var(--shadow-card)] text-soft"
+    : "bg-foreground/80 backdrop-blur-2xl border border-slate-900/[0.08] shadow-[var(--shadow-card)] text-slate-900";
   const glassPill = isDark
     ? "bg-foreground/[0.05] border border-foreground/[0.09]"
     : "bg-slate-900/[0.04] border border-slate-900/[0.08]";
@@ -173,7 +173,7 @@ export function SentinelAudit(props: SentinelAuditProps = {}) {
   return (
     <div className="space-y-6">
       {/* Top Bento Hero for Sentinel Vault AES-256-GCM */}
-      <div className={`rounded-3xl p-6 grid grid-cols-1 xl:grid-cols-12 gap-6 items-start ${glassCard}`}>
+      <div className={`rounded-2xl p-6 grid grid-cols-1 xl:grid-cols-12 gap-6 items-start ${glassCard}`}>
         <div className="xl:col-span-7 space-y-3">
           <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono text-pink-500 ${glassPill}`}>
             <Lock className="w-3.5 h-3.5" />
@@ -213,7 +213,7 @@ export function SentinelAudit(props: SentinelAuditProps = {}) {
       {/* Main Grid: Encrypted Evidence Vault Table + Domain Ownership Claim Wizard */}
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
         {/* Left: Sensitive Artifacts & Redaction Inspector (7 cols) */}
-        <div className={`xl:col-span-7 rounded-3xl p-6 space-y-4 ${glassCard}`}>
+        <div className={`xl:col-span-7 rounded-2xl p-6 space-y-4 ${glassCard}`}>
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               <h3 className="text-base sm:text-lg font-bold">Brankas Bukti File Sensitif</h3>
@@ -291,10 +291,10 @@ export function SentinelAudit(props: SentinelAuditProps = {}) {
         </div>
 
         {/* Right: Domain Ownership Claim Wizard (5 cols) */}
-        <div className={`xl:col-span-5 rounded-3xl p-6 space-y-4 ${glassCard}`}>
+        <div className={`xl:col-span-5 rounded-2xl p-6 space-y-4 ${glassCard}`}>
           <form onSubmit={handleVerifyOwnership} className="space-y-3.5">
             <div>
-              <span className="text-xs font-mono uppercase tracking-widest text-purple-400 font-semibold">
+              <span className="text-xs font-mono uppercase tracking-wider text-purple-400 font-semibold">
                 Verifikasi Kepemilikan Sah
               </span>
               <h3 className="text-base sm:text-lg font-bold mt-0.5">

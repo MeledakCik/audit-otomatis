@@ -22,7 +22,7 @@ export function DetailDrawer({
       <div className="flex items-center justify-between px-4 py-3.5 border-b border-foreground/[0.06]">
         <div className="flex items-center gap-2 min-w-0">
           <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ background: color, boxShadow: `0 0 6px 1px ${color}90` }} />
-          <span className="text-xs font-mono font-bold uppercase tracking-widest" style={{ color }}>
+          <span className="text-xs font-mono font-bold uppercase tracking-wider" style={{ color }}>
             {node.type}
           </span>
         </div>
@@ -33,18 +33,18 @@ export function DetailDrawer({
 
       <div className="flex-1 overflow-y-auto thin-scroll p-4 space-y-4">
         <div>
-          <div className="text-xs font-mono uppercase tracking-widest text-muted-dim mb-1">Label</div>
+          <div className="text-xs font-mono uppercase tracking-wider text-muted-dim mb-1">Label</div>
           <div className="text-sm font-semibold text-foreground break-all font-mono">{node.label}</div>
         </div>
 
         <div>
-          <div className="text-xs font-mono uppercase tracking-widest text-muted-dim mb-1">URL</div>
+          <div className="text-xs font-mono uppercase tracking-wider text-muted-dim mb-1">URL</div>
           <div className="text-xs font-mono text-muted break-all">{node.url}</div>
         </div>
 
         {node.methods && node.methods.length > 0 && (
           <div>
-            <div className="text-xs font-mono uppercase tracking-widest text-muted-dim mb-1">Methods Found</div>
+            <div className="text-xs font-mono uppercase tracking-wider text-muted-dim mb-1">Methods Found</div>
             <div className="flex flex-wrap gap-1.5">
               {node.methods.map((m) => (
                 <span
@@ -60,7 +60,7 @@ export function DetailDrawer({
 
         {node.formMethod && (
           <div>
-            <div className="text-xs font-mono uppercase tracking-widest text-muted-dim mb-1">Form Method</div>
+            <div className="text-xs font-mono uppercase tracking-wider text-muted-dim mb-1">Form Method</div>
             <span className="rounded-full border border-accent/40 bg-accent/10 text-accent px-2 py-0.5 text-xs font-mono font-bold">
               {node.formMethod}
             </span>
@@ -69,7 +69,7 @@ export function DetailDrawer({
 
         {node.inputs && node.inputs.length > 0 && (
           <div>
-            <div className="text-xs font-mono uppercase tracking-widest text-muted-dim mb-1">Form Inputs</div>
+            <div className="text-xs font-mono uppercase tracking-wider text-muted-dim mb-1">Form Inputs</div>
             <div className="flex flex-wrap gap-1.5">
               {node.inputs.map((inp) => (
                 <span key={inp} className="rounded-md bg-surface-raised border border-border px-2 py-0.5 text-xs font-mono text-muted-dim">
@@ -81,14 +81,14 @@ export function DetailDrawer({
         )}
 
         <div>
-          <div className="text-xs font-mono uppercase tracking-widest text-muted-dim mb-1">Depth</div>
+          <div className="text-xs font-mono uppercase tracking-wider text-muted-dim mb-1">Depth</div>
           <div className="text-xs font-mono text-muted">{node.depth}</div>
         </div>
       </div>
 
       {node.type !== "EXTERNAL" && (
         <div className="p-4 border-t border-foreground/[0.06] space-y-2">
-          <div className="text-xs font-mono uppercase tracking-widest text-muted-dim">Deep-dive tools</div>
+          <div className="text-xs font-mono uppercase tracking-wider text-muted-dim">Deep-dive tools</div>
           <Link
             href={`/scan/headers?domain=${encodeURIComponent(hostname)}`}
             className="flex items-center gap-2 rounded-lg border border-border-strong px-3 py-2 text-xs font-mono text-foreground hover:border-accent hover:text-accent transition-colors"

@@ -218,7 +218,7 @@ export function ScanForm() {
           <Button
             type="submit"
             disabled={pending || !checked}
-            className="w-full h-11 bg-gradient-to-r from-purple-600 via-fuchsia-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold tracking-wider rounded-xl shadow-[0_0_25px_-5px_rgba(168,85,247,0.6)] cursor-pointer"
+            className="w-full h-11 bg-gradient-to-r from-purple-600 via-fuchsia-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold tracking-wider rounded-xl cursor-pointer"
           >
             {pending ? (
               "MENYIAPKAN ENGINE AUDIT MENDALAM..."

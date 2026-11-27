@@ -33,7 +33,7 @@ export function RecordsTable({ rows, queryErrors }: { rows: DnsRecordRow[]; quer
           <div className="overflow-x-auto max-h-[420px] overflow-y-auto thin-scroll">
             <table className="w-full text-xs font-mono">
               <thead className="sticky top-0 bg-surface">
-                <tr className="border-b border-border text-xs uppercase tracking-widest text-muted-dim">
+                <tr className="border-b border-border text-xs uppercase tracking-wider text-muted-dim">
                   <th className="text-left px-4 py-2.5 font-semibold">Type</th>
                   <th className="text-left px-4 py-2.5 font-semibold">Value</th>
                   <th className="text-left px-4 py-2.5 font-semibold">TTL</th>

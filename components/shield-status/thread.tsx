@@ -78,7 +78,7 @@ const accentMap: Record<string, string> = {
 
 function StatTile({ icon: Icon, label, value, subtitle, accent = "zinc", valueClassName = "text-foreground" }: any) {
   return (
-    <div className="group relative overflow-hidden rounded-2xl border border-purple-900/30 bg-panel/80 p-4 backdrop-blur-xl transition-all hover:border-purple-800/30 hover:shadow-[0_0_20px_rgba(124,58,237,0.08)]">
+    <div className="group relative overflow-hidden rounded-2xl border border-purple-900/30 bg-panel/80 p-4 backdrop-blur-xl transition-all hover:border-purple-800/30">
       <div className={`absolute top-0 left-0 h-0.5 w-full bg-gradient-to-r ${accentMap[accent] || accentMap.zinc} opacity-60 group-hover:opacity-100 transition-opacity`} />
 
       <div className="flex items-center justify-between">
@@ -384,7 +384,7 @@ export default function ThreatLab() {
                 <button
                   onClick={startScan}
                   disabled={isLoading}
-                  className="w-full relative group overflow-hidden rounded-xl bg-gradient-to-r from-purple-700 via-fuchsia-600 to-purple-600 p-[1px] font-semibold text-xs transition-all duration-300 hover:shadow-[0_0_25px_rgba(168,85,247,0.4)] disabled:opacity-50"
+                  className="w-full relative group overflow-hidden rounded-xl bg-gradient-to-r from-purple-700 via-fuchsia-600 to-purple-600 p-[1px] font-semibold text-xs transition-all duration-300 disabled:opacity-50"
                 >
                   <div className="flex items-center justify-center gap-2 rounded-xl bg-[#130a21] px-4 py-2.5 transition-all duration-300 group-hover:bg-transparent text-foreground">
                     {isLoading ? (
@@ -399,7 +399,7 @@ export default function ThreatLab() {
                 <button
                   onClick={stopScan}
                   disabled={isLoading}
-                  className="w-full relative group overflow-hidden rounded-xl bg-gradient-to-r from-rose-700 to-pink-600 p-[1px] font-semibold text-xs transition-all duration-300 hover:shadow-[0_0_25px_rgba(244,63,94,0.4)] disabled:opacity-50"
+                  className="w-full relative group overflow-hidden rounded-xl bg-gradient-to-r from-rose-700 to-pink-600 p-[1px] font-semibold text-xs transition-all duration-300 disabled:opacity-50"
                 >
                   <div className="flex items-center justify-center gap-2 rounded-xl bg-[#1d080e] px-4 py-2.5 transition-all duration-300 group-hover:bg-transparent text-foreground">
                     {isLoading ? (

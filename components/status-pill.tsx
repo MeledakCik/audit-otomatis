@@ -27,7 +27,7 @@ const STYLES: Record<ScanStatus | "connecting", string> = {
   testing: "text-accent border-accent/50 bg-accent/10",
   blocked_cloudflare: "text-sev-high border-sev-high/50 bg-sev-high/10",
   stopped: "text-sev-high border-sev-high/50 bg-sev-high/10",
-  done: "text-accent-fg border-transparent bg-gradient-accent shadow-[0_0_16px_-4px_var(--accent)]",
+  done: "text-accent-fg border-transparent bg-gradient-accent",
   error: "text-sev-critical border-sev-critical/50 bg-sev-critical/10",
 };
 
@@ -45,7 +45,7 @@ export function StatusPill({ status }: { status: ScanStatus | "connecting" }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-bold uppercase tracking-widest",
+        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-bold uppercase tracking-wider",
         STYLES[status]
       )}
     >

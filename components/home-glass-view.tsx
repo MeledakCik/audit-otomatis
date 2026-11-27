@@ -7,15 +7,6 @@ import { Search, ArrowRight, Loader2, AlertCircle } from "lucide-react";
 import { SENTINEL_NAV_ITEMS } from "@/lib/nav-items";
 import { ModuleIcon } from "@/components/app-sidebar";
 
-const BADGE_TONE: Record<string, string> = {
-  pink: "bg-accent/10 text-accent",
-  emerald: "bg-ok/10 text-ok",
-  purple: "bg-accent-2/10 text-accent-2",
-  cyan: "bg-sev-low/10 text-sev-low",
-  amber: "bg-warn/10 text-warn",
-  rose: "bg-danger/10 text-danger",
-};
-
 const STATS = [
   { val: "50", label: "URL crawl" },
   { val: "100", label: "request maks" },
@@ -29,8 +20,8 @@ function Chip({ active, onClick, children }: { active: boolean; onClick: () => v
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className={`shrink-0 snap-start px-3.5 py-2 rounded-xl text-sm font-medium transition-colors ${
-        active ? "bg-gradient-accent text-white" : "text-muted hover:text-foreground hover:bg-foreground/5"
+      className={`shrink-0 snap-start px-3 h-8 rounded-lg text-sm transition-colors ${
+        active ? "bg-foreground/[0.08] text-foreground font-medium" : "text-muted hover:text-foreground"
       }`}
     >
       {children}
@@ -82,20 +73,20 @@ export function HomePage() {
   }
 
   return (
-    <div className="space-y-6 sm:space-y-8">
+    <div className="space-y-10 sm:space-y-12">
       {/* Scan */}
-      <section className="glass-panel rounded-3xl p-5 sm:p-8 space-y-6">
-        <div className="space-y-2">
-          <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-balance">
-            Audit domain Anda <span className="text-gradient-accent">secara pasif</span>
+      <section className="glass-panel rounded-2xl p-6 sm:p-8 space-y-6">
+        <div className="space-y-1.5">
+          <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-balance">
+            Audit domain Anda secara pasif
           </h1>
-          <p className="text-base text-muted">GET-only · tanpa payload · tanpa login</p>
+          <p className="text-sm text-muted">GET-only · tanpa payload · tanpa login</p>
         </div>
 
         <form onSubmit={handleRunScan} className="space-y-3" noValidate>
           <div className="flex flex-col sm:flex-row gap-2.5">
-            <label className="flex-1 flex items-center gap-2.5 px-3.5 rounded-xl bg-foreground/[0.04] border border-border focus-within:border-accent transition-colors">
-              <Search className="w-4 h-4 text-accent shrink-0" aria-hidden />
+            <label className="flex-1 flex items-center gap-2.5 px-3.5 rounded-xl bg-surface border border-border focus-within:border-accent focus-within:ring-2 focus-within:ring-accent/20 transition-colors">
+              <Search className="w-4 h-4 text-muted-dim shrink-0" aria-hidden />
               <span className="sr-only">Domain target</span>
               <input
                 type="text"
@@ -106,13 +97,13 @@ export function HomePage() {
                 value={domain}
                 onChange={(e) => setDomain(e.target.value)}
                 placeholder="contoh: sentinel-id.net"
-                className="w-full bg-transparent py-3.5 text-base font-mono focus:outline-none placeholder:text-muted-dim"
+                className="w-full bg-transparent h-11 text-[15px] font-mono focus:outline-none placeholder:text-muted-dim"
               />
             </label>
             <button
               type="submit"
               disabled={pending}
-              className="px-6 py-3.5 rounded-xl font-semibold text-base text-white bg-gradient-accent hover:brightness-110 disabled:opacity-60 transition flex items-center justify-center gap-2"
+              className="h-11 px-5 rounded-xl font-medium text-sm bg-accent text-accent-fg hover:bg-accent-dim disabled:opacity-60 transition-colors flex items-center justify-center gap-2"
             >
               {pending && <Loader2 className="w-4 h-4 animate-spin" />}
               {pending ? "Memulai…" : "Mulai audit"}
@@ -120,7 +111,7 @@ export function HomePage() {
             </button>
           </div>
 
-          <label className="flex items-start gap-2.5 text-sm text-soft cursor-pointer">
+          <label className="flex items-start gap-2.5 text-sm text-muted cursor-pointer">
             <input
               type="checkbox"
               checked={consent}
@@ -137,45 +128,47 @@ export function HomePage() {
           )}
         </form>
 
-        <dl className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <dl className="grid grid-cols-2 sm:grid-cols-4 gap-y-4 pt-6 border-t border-border">
           {STATS.map((s) => (
-            <div key={s.label} className="rounded-2xl bg-foreground/[0.04] px-4 py-3">
-              <dd className="text-xl font-bold">{s.val}</dd>
+            <div key={s.label} className="flex flex-col-reverse gap-0.5">
               <dt className="text-xs text-muted">{s.label}</dt>
+              <dd className="text-lg font-semibold tabular-nums">{s.val}</dd>
             </div>
           ))}
         </dl>
       </section>
 
       {/* Modul */}
-      <section className="space-y-4">
+      <section className="space-y-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-xl sm:text-2xl font-bold">{SENTINEL_NAV_ITEMS.length} modul</h2>
-          <div className="flex gap-1.5 overflow-x-auto thin-scroll snap-x max-w-full">
+          <h2 className="text-lg font-semibold">
+            Modul <span className="text-muted-dim font-normal">· {SENTINEL_NAV_ITEMS.length}</span>
+          </h2>
+          <div className="flex gap-1 overflow-x-auto thin-scroll snap-x max-w-full">
             {categories.map((c) => (
               <Chip key={c} active={category === c} onClick={() => setCategory(c)}>{c}</Chip>
             ))}
           </div>
         </div>
-        <ul className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3.5">
+        <ul className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
           {modules.map((m) => (
             <li key={m.id}>
               <Link
                 href={m.route}
-                className="glass-panel h-full rounded-2xl p-4 flex flex-col gap-2 hover:border-accent/40 hover:-translate-y-0.5"
+                className="glass-panel h-full rounded-2xl p-5 flex flex-col gap-2.5 hover:border-border-strong"
               >
                 <span className="flex items-center justify-between gap-2">
                   <span className="flex items-center gap-2.5 min-w-0">
-                    <ModuleIcon name={m.iconName} className="w-5 h-5 text-accent shrink-0" />
-                    <span className="text-base font-semibold truncate">{m.title}</span>
+                    <ModuleIcon name={m.iconName} className="w-4 h-4 text-accent shrink-0" />
+                    <span className="text-[15px] font-medium truncate">{m.title}</span>
                   </span>
                   {m.badge && (
-                    <span className={`text-xs font-mono font-semibold px-1.5 py-0.5 rounded shrink-0 ${BADGE_TONE[m.badgeTone ?? "pink"]}`}>
+                    <span className="text-[10px] font-mono text-muted-dim px-1.5 py-0.5 rounded border border-border shrink-0">
                       {m.badge}
                     </span>
                   )}
                 </span>
-                <span className="text-sm text-muted line-clamp-2">{m.description}</span>
+                <span className="text-sm text-muted leading-relaxed line-clamp-2">{m.description}</span>
               </Link>
             </li>
           ))}

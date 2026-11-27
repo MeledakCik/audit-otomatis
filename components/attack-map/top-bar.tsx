@@ -73,7 +73,7 @@ export function TopBar({ onScan, loading, hasReport, onFitView, onExportPng, onE
         <Legend />
         {liveStatus && (
           <div className="flex items-center gap-2 text-xs font-mono text-accent">
-            <span className="h-1.5 w-1.5 rounded-full bg-accent shadow-[0_0_8px_1px_var(--accent)] animate-pulse" />
+            <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
             {liveStatus}
           </div>
         )}

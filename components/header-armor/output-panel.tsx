@@ -18,12 +18,12 @@ function ScanningState() {
     <Card>
       <CardContent className="py-16">
         <div className="relative mx-auto h-40 w-full max-w-md overflow-hidden rounded-xl border border-accent/30 bg-sunken">
-          <div className="sentinel-scan-line absolute left-0 right-0 h-px bg-accent shadow-[0_0_12px_2px_var(--accent)]" />
+          <div className="sentinel-scan-line absolute left-0 right-0 h-px bg-accent" />
           <div className="absolute inset-0 grid place-items-center">
             <ScanSearch className="h-8 w-8 text-accent/70 animate-pulse" />
           </div>
         </div>
-        <p className="mt-6 text-center text-xs font-mono uppercase tracking-widest text-muted animate-pulse">
+        <p className="mt-6 text-center text-xs font-mono uppercase tracking-wider text-muted animate-pulse">
           Membaca response header target (GET only)...
         </p>
       </CardContent>

@@ -21,7 +21,7 @@ function MethodBadge({ method }: { method: DiscoveredEndpoint["method"] }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center justify-center rounded-full border px-2 py-0.5 text-xs font-bold tracking-widest uppercase shrink-0 w-14",
+        "inline-flex items-center justify-center rounded-full border px-2 py-0.5 text-xs font-bold tracking-wider uppercase shrink-0 w-14",
         METHOD_STYLES[method],
       )}
     >
@@ -180,7 +180,7 @@ function EndpointCard({
 
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center justify-between">
-              <span className="text-xs uppercase tracking-widest text-muted-dim">
+              <span className="text-xs uppercase tracking-wider text-muted-dim">
                 cURL — uji manual
               </span>
               <CopyButton text={curl} />
@@ -192,7 +192,7 @@ function EndpointCard({
 
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center justify-between flex-wrap gap-2">
-              <span className="text-xs uppercase tracking-widest text-muted-dim">
+              <span className="text-xs uppercase tracking-wider text-muted-dim">
                 {isGet
                   ? "Kirim request langsung"
                   : "Test langsung tidak tersedia untuk method ini"}
@@ -344,7 +344,7 @@ export function EndpointsTable({
               key={f}
               onClick={() => setFilter(f)}
               className={cn(
-                "rounded-full px-2.5 py-1 text-xs font-bold uppercase tracking-widest border transition-colors",
+                "rounded-full px-2.5 py-1 text-xs font-bold uppercase tracking-wider border transition-colors",
                 filter === f
                   ? "border-accent text-accent bg-accent/10"
                   : "border-border-strong text-muted-dim hover:text-muted",
@@ -395,7 +395,7 @@ function Row({
 }) {
   return (
     <div className="flex flex-col gap-0.5">
-      <span className="text-xs uppercase tracking-widest text-muted-dim">
+      <span className="text-xs uppercase tracking-wider text-muted-dim">
         {label}
       </span>
       <span

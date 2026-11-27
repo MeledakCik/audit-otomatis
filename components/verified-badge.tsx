@@ -49,7 +49,7 @@ export function VerifiedBadge({ variant = "header", className }: VerifiedBadgePr
           type="button"
           onClick={() => setOpen(true)}
           className={cn(
-            "group inline-flex flex-wrap items-center gap-3 rounded-2xl border border-emerald-500/35 bg-gradient-to-r from-emerald-500/15 via-blue-500/10 to-purple-500/15 px-4 py-2.5 text-left transition-all hover:border-emerald-400/60 hover:shadow-[0_0_25px_-5px_rgba(16,185,129,0.35)] cursor-pointer",
+            "group inline-flex flex-wrap items-center gap-3 rounded-2xl border border-emerald-500/35 bg-gradient-to-r from-emerald-500/15 via-blue-500/10 to-purple-500/15 px-4 py-2.5 text-left transition-all hover:border-emerald-400/60 cursor-pointer",
             className
           )}
         >

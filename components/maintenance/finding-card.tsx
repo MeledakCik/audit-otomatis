@@ -40,7 +40,7 @@ export function FindingCard({ finding, index, onToggleStep }: FindingCardProps) 
         <CardContent className="space-y-5">
           {/* Leak Location Map */}
           <div className="space-y-1.5">
-            <div className="flex items-center gap-1.5 text-xs font-mono font-bold uppercase tracking-widest text-muted">
+            <div className="flex items-center gap-1.5 text-xs font-mono font-bold uppercase tracking-wider text-muted">
               <MapPin className="h-3.5 w-3.5 text-accent" /> Leak Location Map
             </div>
             <div className="rounded-lg border border-border bg-surface-raised p-3 space-y-1.5 text-xs font-mono">
@@ -70,7 +70,7 @@ export function FindingCard({ finding, index, onToggleStep }: FindingCardProps) 
 
           {/* Attack Vector */}
           <div className="space-y-1.5">
-            <div className="flex items-center gap-1.5 text-xs font-mono font-bold uppercase tracking-widest text-muted">
+            <div className="flex items-center gap-1.5 text-xs font-mono font-bold uppercase tracking-wider text-muted">
               <ShieldAlert className="h-3.5 w-3.5 text-sev-high" /> Attack Vector
             </div>
             <p className="text-[13px] leading-relaxed text-foreground/90">{finding.attackVector}</p>
@@ -84,7 +84,7 @@ export function FindingCard({ finding, index, onToggleStep }: FindingCardProps) 
 
           {/* Remediation Steps */}
           <div className="space-y-1.5">
-            <div className="flex items-center gap-1.5 text-xs font-mono font-bold uppercase tracking-widest text-muted">
+            <div className="flex items-center gap-1.5 text-xs font-mono font-bold uppercase tracking-wider text-muted">
               <ListChecks className="h-3.5 w-3.5 text-emerald-400" /> Remediation Steps
             </div>
             <div className="space-y-2.5">

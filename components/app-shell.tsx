@@ -21,16 +21,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="relative min-h-dvh overflow-x-clip">
       <header
-        className="sticky top-0 z-40 px-3 sm:px-6"
-        style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 0.5rem)" }}
+        className="sticky top-0 z-40 border-b border-border bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/70"
+        style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
       >
-        <div className="max-w-[1400px] mx-auto glass-panel rounded-2xl px-3 sm:px-4 py-2 flex items-center justify-between gap-3">
+        <div className="max-w-[1440px] mx-auto h-14 px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             {!isAdmin && (
               <button
                 type="button"
                 onClick={() => setSidebarOpen(true)}
-                className="lg:hidden p-2.5 rounded-xl border border-border hover:bg-foreground/5"
+                className="lg:hidden -ml-1.5 p-2 rounded-lg text-muted hover:text-foreground hover:bg-foreground/5"
                 aria-label="Buka menu"
                 aria-expanded={sidebarOpen}
               >
@@ -38,35 +38,34 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </button>
             )}
             <Link href={isAdmin ? "/admin" : "/"} className="flex items-center gap-2.5 min-w-0">
-              <span className="w-9 h-9 rounded-xl bg-gradient-accent flex items-center justify-center text-white shrink-0">
-                <Shield className="w-5 h-5" />
+              <span className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center text-accent-fg shrink-0">
+                <Shield className="w-4 h-4" />
               </span>
-              <span className="font-bold tracking-tight text-base truncate">Sentinel-ID</span>
+              <span className="font-semibold tracking-tight text-[15px] truncate">Sentinel-ID</span>
             </Link>
-            {isAdmin && <span className="text-xs text-muted">Admin</span>}
+            {isAdmin && <span className="text-xs text-muted border-l border-border pl-3">Admin</span>}
           </div>
 
           <div className="flex items-center gap-2">
             {!isAdmin && (
-              <span className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs border border-ok/30 bg-ok/10 text-ok font-medium">
-                <BadgeCheck className="w-4 h-4" /> GDG Bandung Verified
+              <span className="hidden md:inline-flex items-center gap-1.5 text-xs text-muted">
+                <BadgeCheck className="w-4 h-4 text-ok" /> GDG Bandung Verified
               </span>
             )}
             <button
               type="button"
               onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
-              className="px-3 py-2 rounded-xl border border-border text-xs font-medium flex items-center gap-2 hover:bg-foreground/5"
+              className="p-2 rounded-lg text-muted hover:text-foreground hover:bg-foreground/5"
               aria-label="Ganti tema terang/gelap"
             >
-              <Sun className="w-4 h-4 text-amber-400 hidden dark:block" />
-              <Moon className="w-4 h-4 text-indigo-600 dark:hidden" />
-              <span className="hidden sm:inline">Tema</span>
+              <Sun className="w-4 h-4 hidden dark:block" />
+              <Moon className="w-4 h-4 dark:hidden" />
             </button>
           </div>
         </div>
       </header>
 
-      <div className="max-w-[1400px] mx-auto px-3 sm:px-6 pt-4 sm:pt-6 pb-16 flex gap-6 items-start">
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 pb-20 flex gap-8 items-start">
         {!isAdmin && <AppSidebar open={sidebarOpen} onClose={closeSidebar} />}
         <main id="main" className="flex-1 min-w-0">{children}</main>
       </div>

@@ -125,7 +125,7 @@ export function ScanDashboard({
       <div className="flex-1 mx-auto w-full max-w-6xl px-4 sm:px-6 py-6 flex flex-col gap-5">
         {blockedReason && (
           <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 px-4 py-3.5 text-xs text-amber-200 leading-relaxed animate-fade-up">
-            <span className="font-bold uppercase tracking-widest block mb-1 text-amber-400">
+            <span className="font-bold uppercase tracking-wider block mb-1 text-amber-400">
               Scan Dihentikan — Proteksi Cloudflare Challenge
             </span>
             {blockedReason}
@@ -140,7 +140,7 @@ export function ScanDashboard({
               className="rounded-2xl border border-foreground/[0.08] bg-gradient-to-b from-[#161024] to-sunken px-4 py-3.5 flex items-center justify-between gap-2 shadow-sm"
             >
               <div className="flex flex-col gap-0.5 min-w-0">
-                <span className="text-xs font-mono uppercase tracking-widest text-muted truncate">
+                <span className="text-xs font-mono uppercase tracking-wider text-muted truncate">
                   {sev}
                 </span>
                 <span

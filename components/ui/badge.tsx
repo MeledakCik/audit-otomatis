@@ -3,18 +3,18 @@ import { cn } from "@/lib/utils";
 import type { Severity } from "@/lib/types";
 
 const SEVERITY_STYLES: Record<Severity, string> = {
-  CRITICAL: "text-sev-critical border-sev-critical/40 bg-sev-critical/15",
-  HIGH: "text-sev-high border-sev-high/40 bg-sev-high/15",
-  MEDIUM: "text-sev-medium border-sev-medium/40 bg-sev-medium/15",
-  LOW: "text-sev-low border-sev-low/40 bg-sev-low/15",
-  INFO: "text-sev-info border-sev-info/40 bg-sev-info/15",
+  CRITICAL: "text-sev-critical border-sev-critical/25 bg-sev-critical/10",
+  HIGH: "text-sev-high border-sev-high/25 bg-sev-high/10",
+  MEDIUM: "text-sev-medium border-sev-medium/25 bg-sev-medium/10",
+  LOW: "text-sev-low border-sev-low/25 bg-sev-low/10",
+  INFO: "text-sev-info border-sev-info/25 bg-sev-info/10",
 };
 
 export function SeverityBadge({ severity }: { severity: Severity }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-bold tracking-widest uppercase shrink-0",
+        "inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-[11px] font-semibold tracking-wide uppercase shrink-0",
         SEVERITY_STYLES[severity]
       )}
     >
@@ -34,7 +34,7 @@ export function Badge({
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full border border-border-strong px-2.5 py-0.5 text-xs font-medium uppercase tracking-widest text-muted",
+        "inline-flex items-center rounded-md border border-border px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide text-muted",
         className
       )}
     >

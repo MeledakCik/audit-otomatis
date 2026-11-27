@@ -87,7 +87,7 @@ export function MaintenanceLogView() {
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-[1600px] mx-auto">
+    <div className="space-y-8">
       <div className="flex items-start gap-3">
         <div className="h-10 w-10 grid place-items-center rounded-xl bg-accent/10 border border-accent/20 text-accent shrink-0">
           <Wrench className="h-5 w-5 text-foreground" strokeWidth={2.5} />

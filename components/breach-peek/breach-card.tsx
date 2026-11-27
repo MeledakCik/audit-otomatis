@@ -6,7 +6,7 @@ export function BreachCard({ breach }: { breach: BreachDetail }) {
   const passwordExposed = breach.dataExposed.some((d) => /password/i.test(d));
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-4 shadow-[0_12px_32px_-16px_rgba(0,0,0,0.5)]">
+    <div className="rounded-2xl border border-border bg-surface p-4 shadow-[var(--shadow-card)]">
       <div className="flex items-start gap-3">
         <div className="h-11 w-11 shrink-0 grid place-items-center rounded-xl bg-surface-raised border border-border-strong text-muted font-bold text-sm uppercase">
           {breach.name.slice(0, 2)}

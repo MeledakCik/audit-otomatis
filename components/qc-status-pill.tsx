@@ -19,7 +19,7 @@ const STYLES: Record<QcStatus | "connecting", string> = {
   running_seo: "text-accent border-accent/50 bg-accent/10",
   running_perf: "text-accent border-accent/50 bg-accent/10",
   running_content: "text-accent border-accent/50 bg-accent/10",
-  done: "text-accent-fg border-transparent bg-gradient-accent shadow-[0_0_16px_-4px_var(--accent)]",
+  done: "text-accent-fg border-transparent bg-gradient-accent",
   error: "text-sev-critical border-sev-critical/50 bg-sev-critical/10",
 };
 
@@ -30,7 +30,7 @@ export function QcStatusPill({ status }: { status: QcStatus | "connecting" }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-bold uppercase tracking-widest",
+        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-bold uppercase tracking-wider",
         STYLES[status]
       )}
     >

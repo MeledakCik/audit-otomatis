@@ -133,7 +133,7 @@ function Row({
 }) {
   return (
     <div className="flex flex-col gap-0.5">
-      <span className="text-xs uppercase tracking-widest text-muted-dim">{label}</span>
+      <span className="text-xs uppercase tracking-wider text-muted-dim">{label}</span>
       <span
         className={cn(
           "leading-relaxed break-words",

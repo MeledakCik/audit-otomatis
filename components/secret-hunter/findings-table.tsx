@@ -40,7 +40,7 @@ export function FindingsTable({ findings }: { findings: SecretFinding[] }) {
           <div className="overflow-x-auto">
             <table className="w-full text-xs font-mono">
               <thead>
-                <tr className="border-b border-border text-xs uppercase tracking-widest text-muted-dim">
+                <tr className="border-b border-border text-xs uppercase tracking-wider text-muted-dim">
                   <th className="text-left px-4 py-2.5 font-semibold">Severity</th>
                   <th className="text-left px-4 py-2.5 font-semibold">Type</th>
                   <th className="text-left px-4 py-2.5 font-semibold">File</th>

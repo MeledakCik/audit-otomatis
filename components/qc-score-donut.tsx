@@ -28,7 +28,7 @@ export function QcScoreDonut({
     return (
       <div className="flex flex-col items-center gap-2">
         <div className="h-[132px] w-[132px]" />
-        <span className="text-xs font-mono uppercase tracking-widest text-muted">{label}</span>
+        <span className="text-xs font-mono uppercase tracking-wider text-muted">{label}</span>
       </div>
     );
   }
@@ -66,12 +66,12 @@ export function QcScoreDonut({
           ) : (
             <>
               <span className="text-2xl font-bold tabular-nums text-foreground">{score}</span>
-              <span className="text-xs text-muted-dim uppercase tracking-widest">/ 100</span>
+              <span className="text-xs text-muted-dim uppercase tracking-wider">/ 100</span>
             </>
           )}
         </div>
       </div>
-      <span className="text-xs font-mono uppercase tracking-widest text-muted">{label}</span>
+      <span className="text-xs font-mono uppercase tracking-wider text-muted">{label}</span>
     </div>
   );
 }

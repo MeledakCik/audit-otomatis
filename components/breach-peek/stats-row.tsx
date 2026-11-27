@@ -43,8 +43,8 @@ function StatCard({
     tone === "critical" ? "text-sev-critical" : tone === "clean" ? "text-sev-low" : "text-foreground";
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-4 flex flex-col gap-1.5 shadow-[0_12px_32px_-16px_rgba(0,0,0,0.5)]">
-      <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-muted">
+    <div className="rounded-2xl border border-border bg-surface p-4 flex flex-col gap-1.5 shadow-[var(--shadow-card)]">
+      <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-muted">
         <Icon className="h-3 w-3" />
         {label}
       </div>
